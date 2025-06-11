@@ -1,7 +1,7 @@
 -- client/ui/ui.lua
 -- District Zero UI Handler
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -10,7 +10,19 @@ local State = {
     isOpen = false,
     currentMenu = nil,
     currentData = nil,
-    notifications = {}
+    notifications = {},
+    menuConfig = {
+        position = vector2(0.85, 0.5),
+        width = 0.3,
+        height = 0.6,
+        title = "District Zero",
+        tabs = {
+            {name = 'districts', label = 'Districts', icon = '🗺️'},
+            {name = 'missions', label = 'Missions', icon = '🎯'},
+            {name = 'factions', label = 'Factions', icon = '👥'},
+            {name = 'stats', label = 'Stats', icon = '📊'}
+        }
+    }
 }
 
 -- UI Functions
@@ -25,7 +37,8 @@ local function ShowUI(menu, data)
     SendNUIMessage({
         action = 'show',
         menu = menu,
-        data = data
+        data = data,
+        config = State.menuConfig
     })
     
     return true
@@ -128,6 +141,16 @@ end)
 
 Events.RegisterEvent('dz:client:ui:notification', function(source, message, type)
     ShowNotification(message, type)
+end)
+
+-- Menu Toggle Handler
+RegisterNetEvent('dz:client:menu:toggle')
+AddEventHandler('dz:client:menu:toggle', function()
+    if State.isOpen then
+        HideUI()
+    else
+        ShowUI('main', State.currentData)
+    end
 end)
 
 -- Register cleanup handler

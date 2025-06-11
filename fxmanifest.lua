@@ -29,7 +29,9 @@ shared_scripts {
 
 -- Client Scripts
 client_scripts {
-    'client/*.lua'
+    'client/main/input.lua',
+    'client/ui/ui.lua',
+    'client/main/*.lua'
 }
 
 -- Server Scripts
