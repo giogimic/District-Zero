@@ -25,7 +25,8 @@ shared_scripts {
     '@ox_lib/init.lua',
     '@qb-core/shared/locale.lua',
     'config/*.lua',
-    'shared/*.lua'
+    'shared/*.lua',
+    'locales/*.json'
 }
 
 -- Client Scripts
@@ -44,16 +45,11 @@ server_scripts {
 }
 
 -- UI Files
-ui_page 'html/index.html'
+ui_page 'ui/dist/index.html'
 
 files {
-    'html/index.html',
-    'html/styles.css',
-    'html/script.js',
-    'html/assets/*.js',
-    'html/assets/*.css',
-    'html/assets/*.png',
-    'html/assets/*.svg'
+    'ui/dist/index.html',
+    'ui/dist/assets/**/*'
 }
 
 -- Resource Configuration

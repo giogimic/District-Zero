@@ -1,9 +1,7 @@
 -- client/ui/handler.lua
 -- District Zero UI Handler
 
-local QBX = exports.qbx_core:GetCoreObject()
-local Utils = require 'shared/utils'
-local Events = require 'shared/events'
+local QBCore = exports['qb-core']:GetCoreObject()
 
 -- UI State
 local State = {
@@ -21,11 +19,15 @@ local function ShowUI(menu, data)
     State.currentMenu = menu
     State.currentData = data
     
+    -- Get locale data
+    local locale = QBCore.Shared.Locale
+    
     SetNuiFocus(true, true)
     SendNUIMessage({
         action = 'show',
         menu = menu,
-        data = data
+        data = data,
+        locale = locale
     })
     
     return true
@@ -61,109 +63,169 @@ local function UpdateUI(data)
     return true
 end
 
--- Show notification
+-- Show notification using Qbox's notification system
 local function ShowNotification(message, type)
-    local id = #State.notifications + 1
-    
-    State.notifications[id] = {
-        message = message,
-        type = type,
-        time = GetGameTimer()
-    }
-    
-    SendNUIMessage({
-        action = 'notification',
-        id = id,
-        message = message,
-        type = type
-    })
-    
-    -- Remove notification after 5 seconds
-    SetTimeout(5000, function()
-        if State.notifications[id] then
-            State.notifications[id] = nil
-            SendNUIMessage({
-                action = 'removeNotification',
-                id = id
-            })
-        end
-    end)
-    
-    return id
+    QBCore.Functions.Notify(message, type)
 end
 
 -- NUI Callbacks
-RegisterNUICallback('close', function(data, cb)
-    HideUI()
-    cb('ok')
+RegisterNUICallback('getLocale', function(data, cb)
+    cb(QBCore.Shared.Locale)
 end)
 
-RegisterNUICallback('action', function(data, cb)
-    if not State.isOpen then
-        cb('error')
-        return
-    end
-    
-    -- Handle UI actions
-    if data.action == 'select' then
-        Events.TriggerEvent('dz:client:ui:select', 'client', data.value)
-    elseif data.action == 'back' then
-        Events.TriggerEvent('dz:client:ui:back', 'client')
-    elseif data.action == 'confirm' then
-        Events.TriggerEvent('dz:client:ui:confirm', 'client', data.value)
-    end
-    
-    cb('ok')
+RegisterNUICallback('factions/list', function(data, cb)
+    QBCore.Functions.TriggerCallback('district-zero:server:getFactions', function(factions)
+        cb(factions)
+    end)
+end)
+
+RegisterNUICallback('factions/create', function(data, cb)
+    TriggerServerEvent('district-zero:server:createFaction', data)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('factions/update', function(data, cb)
+    TriggerServerEvent('district-zero:server:updateFaction', data)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('factions/delete', function(data, cb)
+    TriggerServerEvent('district-zero:server:deleteFaction', data.id)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('events/list', function(data, cb)
+    QBCore.Functions.TriggerCallback('district-zero:server:getEvents', function(events)
+        cb(events)
+    end)
+end)
+
+RegisterNUICallback('events/create', function(data, cb)
+    TriggerServerEvent('district-zero:server:createEvent', data)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('events/update', function(data, cb)
+    TriggerServerEvent('district-zero:server:updateEvent', data)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('events/delete', function(data, cb)
+    TriggerServerEvent('district-zero:server:deleteEvent', data.id)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('events/start', function(data, cb)
+    TriggerServerEvent('district-zero:server:startEvent', data.id)
+    cb({ success = true })
+end)
+
+RegisterNUICallback('districts/list', function(data, cb)
+    QBCore.Functions.TriggerCallback('district-zero:server:getDistricts', function(districts)
+        cb(districts)
+    end)
+end)
+
+RegisterNUICallback('close', function(data, cb)
+    HideUI()
+    cb({ success = true })
 end)
 
 -- Event Handlers
-Events.RegisterEvent('dz:client:ui:show', function(source, menu, data)
+RegisterNetEvent('district-zero:client:openUI')
+AddEventHandler('district-zero:client:openUI', function(menu, data)
     ShowUI(menu, data)
 end)
 
-Events.RegisterEvent('dz:client:ui:hide', function(source)
+RegisterNetEvent('district-zero:client:closeUI')
+AddEventHandler('district-zero:client:closeUI', function()
     HideUI()
 end)
 
-Events.RegisterEvent('dz:client:ui:update', function(source, data)
+RegisterNetEvent('district-zero:client:updateUI')
+AddEventHandler('district-zero:client:updateUI', function(data)
     UpdateUI(data)
 end)
 
-Events.RegisterEvent('dz:client:ui:notification', function(source, message, type)
-    ShowNotification(message, type)
+RegisterNetEvent('district-zero:client:updateFactions')
+AddEventHandler('district-zero:client:updateFactions', function(factions)
+    SendNUIMessage({
+        action = 'updateFactions',
+        factions = factions
+    })
 end)
 
--- Register cleanup handler
-RegisterCleanup('state', function()
-    -- Cleanup state
-    State = {
-        isOpen = false,
-        currentMenu = nil,
-        currentData = nil,
-        notifications = {}
+RegisterNetEvent('district-zero:client:updateEvents')
+AddEventHandler('district-zero:client:updateEvents', function(events)
+    SendNUIMessage({
+        action = 'updateEvents',
+        events = events
+    })
+end)
+
+-- Menu Integration
+RegisterNetEvent('district-zero:client:openMenu')
+AddEventHandler('district-zero:client:openMenu', function()
+    local menu = {
+        {
+            header = QBCore.Shared.Locale['menu']['title'],
+            isMenuHeader = true
+        },
+        {
+            header = QBCore.Shared.Locale['menu']['factions'],
+            txt = QBCore.Shared.Locale['menu']['factions_desc'],
+            params = {
+                event = "district-zero:client:openUI",
+                args = {
+                    menu = "factions"
+                }
+            }
+        },
+        {
+            header = QBCore.Shared.Locale['menu']['events'],
+            txt = QBCore.Shared.Locale['menu']['events_desc'],
+            params = {
+                event = "district-zero:client:openUI",
+                args = {
+                    menu = "events"
+                }
+            }
+        },
+        {
+            header = QBCore.Shared.Locale['menu']['districts'],
+            txt = QBCore.Shared.Locale['menu']['districts_desc'],
+            params = {
+                event = "district-zero:client:openUI",
+                args = {
+                    menu = "districts"
+                }
+            }
+        },
+        {
+            header = QBCore.Shared.Locale['menu']['close'],
+            txt = "",
+            params = {
+                event = "qb-menu:closeMenu"
+            }
+        }
     }
     
-    -- Hide UI
-    HideUI()
+    exports['qb-menu']:openMenu(menu)
 end)
 
--- Register NUI cleanup handler
-RegisterCleanup('nui', function()
-    -- Hide UI
-    HideUI()
-    
-    -- Clear notifications
-    for id, _ in pairs(State.notifications) do
-        SendNUIMessage({
-            action = 'removeNotification',
-            id = id
-        })
+-- Command to open menu
+RegisterCommand('dz', function()
+    TriggerEvent('district-zero:client:openMenu')
+end)
+
+-- Key mapping
+RegisterKeyMapping('dz', QBCore.Shared.Locale['menu']['keybind'], 'keyboard', 'F6')
+
+-- Register cleanup handler
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() then
+        if State.isOpen then
+            HideUI()
+        end
     end
-    State.notifications = {}
-end)
-
--- Exports
-exports('ShowUI', ShowUI)
-exports('HideUI', HideUI)
-exports('UpdateUI', UpdateUI)
-exports('ShowNotification', ShowNotification) 
+end) 

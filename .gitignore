@@ -1,26 +1,47 @@
-# Dependencies
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node.js dependencies
 node_modules/
-.pnpm-store/
-
-# Build output
-html/dist/
-
-# IDE
-.vscode/
-.idea/
-
-# Logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
 
-# Environment
+# Environment files
 .env
-.env.local
 .env.*.local
 
-# System Files
-.DS_Store
-Thumbs.db 
+# Build outputs
+ui/dist/
+html/assets/
+dist/
+build/
+.vite/
+.cache/
+
+# Logs
+*.log
+
+# TypeScript
+*.tsbuildinfo
+
+# IDEs and editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# FiveM / Cfx
+.sourcemap
+fx_manifest.tmp
+
+# Linting and coverage
+.eslintcache
+coverage/
+
+# Misc
+*.bak
+*.tmp

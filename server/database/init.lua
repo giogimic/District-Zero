@@ -1,7 +1,90 @@
 -- District Zero Database Initialization
 
-local QBX = exports['qb-core']:GetCoreObject()
+local QBCore = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
+
+-- Initialize database
+CreateThread(function()
+    -- Wait for Qbox to be ready
+    while not QBCore do
+        Wait(100)
+    end
+    
+    -- Create migrations table if it doesn't exist
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS dz_migrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            name VARCHAR(255) NOT NULL,
+            applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ]])
+    
+    -- Run migrations
+    local appliedMigrations = {}
+    MySQL.query('SELECT name FROM dz_migrations', {}, function(result)
+        if result then
+            for _, row in ipairs(result) do
+                appliedMigrations[row.name] = true
+            end
+        end
+        
+        -- Get all migration files
+        local migrationFiles = {}
+        local files = os.listdir('server/database/migrations')
+        for _, file in ipairs(files) do
+            if file:match('%.sql$') then
+                table.insert(migrationFiles, file)
+            end
+        end
+        
+        -- Sort migration files
+        table.sort(migrationFiles)
+        
+        -- Apply pending migrations
+        for _, file in ipairs(migrationFiles) do
+            if not appliedMigrations[file] then
+                local path = 'server/database/migrations/' .. file
+                local content = LoadResourceFile(GetCurrentResourceName(), path)
+                
+                if content then
+                    -- Execute migration
+                    MySQL.query(content, {}, function(result)
+                        if result then
+                            -- Record migration
+                            MySQL.insert('INSERT INTO dz_migrations (name) VALUES (?)', {file})
+                            print('[District Zero] Applied migration: ' .. file)
+                        else
+                            print('[District Zero] Failed to apply migration: ' .. file)
+                        end
+                    end)
+                else
+                    print('[District Zero] Failed to load migration file: ' .. file)
+                end
+            end
+        end
+    end)
+end)
+
+-- Exports
+exports('GetFactions', function()
+    local result = MySQL.query.await('SELECT * FROM dz_factions')
+    return result or {}
+end)
+
+exports('GetDistricts', function()
+    local result = MySQL.query.await('SELECT * FROM dz_districts')
+    return result or {}
+end)
+
+exports('GetEvents', function()
+    local result = MySQL.query.await('SELECT * FROM dz_events ORDER BY start_time DESC')
+    return result or {}
+end)
+
+exports('GetDistrictControl', function(districtId)
+    local result = MySQL.query.await('SELECT * FROM dz_district_control WHERE district_id = ?', {districtId})
+    return result and result[1] or nil
+end)
 
 -- Initialize Database
 function InitializeDatabase()

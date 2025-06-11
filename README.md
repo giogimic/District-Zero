@@ -1,137 +1,153 @@
 # District Zero
 
-Advanced District Control System for FiveM servers using QBX Core framework.
+A FiveM resource for managing districts, factions, and events in your server.
 
 ## Features
 
-- District Control System
-- Mission Management
-- Faction System
-- Advanced UI
-- Performance Optimized
-- OneSync Compatible
+- **Districts**: Define and manage different areas of your map
+- **Factions**: Create and manage player factions with roles and permissions
+- **Events**: Schedule and run district events with rewards
+- **Modern UI**: Built with Vue.js and Vite for a smooth user experience
+- **Localization**: Support for multiple languages
+- **Database Migrations**: Automatic database schema updates
 
-## Dependencies
+## Requirements
 
-- [qbx_core](https://github.com/qbox-project/qbx_core)
-- [oxmysql](https://github.com/overextended/oxmysql)
+- FiveM Server
+- QBCore Framework
+- MySQL Database
+- Node.js 18+ (for development)
 
 ## Installation
 
-1. Ensure you have the required dependencies installed
-2. Place the resource in your server's resources folder
-3. Import the database schema:
-   ```sql
-   source server/database/migrations.sql
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/yourusername/district-zero.git
+   cd district-zero
    ```
-4. Add the resource to your server.cfg:
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Build the UI:
+
+   ```bash
+   npm run build
+   ```
+
+4. Copy the resource to your FiveM server's resources directory.
+
+5. Add the following to your server.cfg:
+
    ```cfg
-   ensure district_zero
+   ensure district-zero
    ```
 
-## Configuration
+6. Configure the database connection in `config/database.lua`.
 
-The resource can be configured through the following files:
+## Development
 
-- `config/districts.lua` - District settings
-- `config/missions.lua` - Mission settings
-- `config/factions.lua` - Faction settings
+1. Start the development server:
 
-## Usage
+   ```bash
+   npm run dev
+   ```
 
-### Commands
+2. The UI will be available at `http://localhost:3000`.
 
-- `/dzmenu` - Open the District Zero menu
-- `/dzhelp` - Show help information
+3. Make changes to the Vue components in `ui/src/`.
 
-### Key Bindings
+4. Build for production:
+   ```bash
+   npm run build
+   ```
 
-- `F5` - Open District Zero menu
-- `F6` - Toggle district view
-- `F7` - Toggle mission view
+## Database
+
+The resource uses MySQL for data storage. The database schema is managed through migrations in `server/database/migrations/`.
+
+To initialize the database:
+
+1. Create a new database named `district_zero`.
+2. The resource will automatically run migrations on startup.
+
+## Commands
+
+- `/dz` - Open the District Zero UI (default keybind: F6)
+
+## API
+
+### Server Exports
+
+```lua
+-- Get faction information
+exports['district-zero']:GetFaction(factionId)
+
+-- Get district information
+exports['district-zero']:GetDistrict(districtId)
+
+-- Get event information
+exports['district-zero']:GetEvent(eventId)
+
+-- Get district control information
+exports['district-zero']:GetDistrictControl(districtId)
+```
 
 ### Events
 
 #### Client Events
 
 ```lua
--- Open menu
-TriggerEvent('dz:client:menu:open')
+-- Open UI
+TriggerEvent('district-zero:client:openUI')
 
--- Close menu
-TriggerEvent('dz:client:menu:close')
-
--- Update district
-TriggerEvent('dz:client:district:update', districtData)
+-- Close UI
+TriggerEvent('district-zero:client:closeUI')
 ```
 
 #### Server Events
 
 ```lua
--- Start mission
-TriggerEvent('dz:server:mission:start', missionId)
+-- Create faction
+TriggerServerEvent('district-zero:server:createFaction', data)
 
--- Complete mission
-TriggerEvent('dz:server:mission:complete', missionId)
+-- Update faction
+TriggerServerEvent('district-zero:server:updateFaction', data)
 
--- Update district
-TriggerEvent('dz:server:district:update', districtId, data)
+-- Delete faction
+TriggerServerEvent('district-zero:server:deleteFaction', factionId)
+
+-- Create event
+TriggerServerEvent('district-zero:server:createEvent', data)
+
+-- Update event
+TriggerServerEvent('district-zero:server:updateEvent', data)
+
+-- Delete event
+TriggerServerEvent('district-zero:server:deleteEvent', eventId)
+
+-- Start event
+TriggerServerEvent('district-zero:server:startEvent', eventId)
 ```
 
-### Exports
+## Contributing
 
-#### Client Exports
-
-```lua
--- Get current district
-exports['district_zero']:GetCurrentDistrict()
-
--- Get active missions
-exports['district_zero']:GetActiveMissions()
-
--- Get faction info
-exports['district_zero']:GetFactionInfo()
-```
-
-#### Server Exports
-
-```lua
--- Get district data
-exports['district_zero']:GetDistrictData(districtId)
-
--- Get mission data
-exports['district_zero']:GetMissionData(missionId)
-
--- Get faction data
-exports['district_zero']:GetFactionData(factionId)
-```
-
-## Performance
-
-The resource is optimized for performance with:
-
-- Query caching
-- Event throttling
-- State validation
-- Resource cleanup
-- OneSync compatibility
-
-## Support
-
-For support, please:
-
-1. Check the [documentation](https://docs.fivem.net/docs/scripting-manual/)
-2. Search [existing issues](https://github.com/your-repo/issues)
-3. Create a new issue if needed
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Contributing
+## Acknowledgments
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request
+- [QBCore Framework](https://github.com/qbcore-framework)
+- [Vue.js](https://vuejs.org/)
+- [Vite](https://vitejs.dev/)

@@ -1,5 +1,5 @@
 -- District Zero Factions Handler
-local QBX = exports['qb-core']:GetCoreObject()
+local QBCore = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local factions = {}
 local factionMembers = {}
@@ -16,78 +16,93 @@ local function SafeCall(fn, ...)
     return result
 end
 
--- Initialize factions from config
+-- Initialize factions from database
 local function InitializeFactions()
-    -- Load factions from config or database
-    factions = Config.Factions or {}
-    
-    -- Initialize faction data
-    for id, faction in pairs(factions) do
-        factionMembers[id] = {}
-        factionResources[id] = faction.resources or {
-            money = 0,
-            materials = 0,
-            influence = 0
-        }
-        factionInfluence[id] = faction.influence or 0
-    end
+    MySQL.query('SELECT * FROM dz_factions', {}, function(result)
+        if result then
+            for _, faction in ipairs(result) do
+                -- Load faction members
+                MySQL.query('SELECT * FROM dz_faction_members WHERE faction_id = ?', {faction.id}, function(members)
+                    if members then
+                        faction.members = members
+                    end
+                end)
+            end
+        end
+    end)
 end
 
 -- Faction Management
 local function UpdateFaction(id, data)
-    if not factions[id] then return false end
+    if not data then return false end
     
-    -- Update faction data
-    for key, value in pairs(data) do
-        factions[id][key] = value
-    end
-    
-    -- Notify all clients
-    TriggerClientEvent('faction:update', -1, id, factions[id])
-    
-    return true
+    MySQL.update('UPDATE dz_factions SET name = ?, description = ?, color = ? WHERE id = ?',
+        {data.name, data.description, data.color, id},
+        function(affectedRows)
+            if affectedRows > 0 then
+                -- Notify all clients
+                TriggerClientEvent('district-zero:client:updateFactions', -1)
+                return true
+            end
+            return false
+        end
+    )
 end
 
 local function AddFactionMember(factionId, playerId)
-    if not factions[factionId] then return false end
-    
-    local player = QBX.Functions.GetPlayer(playerId)
+    local player = QBCore.Functions.GetPlayer(playerId)
     if not player then return false end
     
+    -- Check if player is already in a faction
+    if player.PlayerData.metadata.faction then
+        QBCore.Functions.Notify(playerId, 'You are already in a faction', 'error')
+        return false
+    end
+    
     -- Add player to faction
-    factionMembers[factionId][playerId] = {
-        id = playerId,
-        name = player.PlayerData.charinfo.firstname .. ' ' .. player.PlayerData.charinfo.lastname,
-        rank = 'recruit',
-        joinDate = os.time()
-    }
-    
-    -- Update player metadata
-    player.Functions.SetMetaData('faction', factionId)
-    
-    -- Notify all clients
-    TriggerClientEvent('faction:memberUpdate', -1, factionId, factionMembers[factionId])
-    
-    return true
+    MySQL.insert('INSERT INTO dz_faction_members (faction_id, player_id, role, join_date) VALUES (?, ?, ?, ?)',
+        {factionId, playerId, 'recruit', os.time()},
+        function(id)
+            if id then
+                -- Update player metadata
+                player.Functions.SetMetaData('faction', factionId)
+                
+                -- Notify all clients
+                TriggerClientEvent('district-zero:client:updateFactions', -1)
+                QBCore.Functions.Notify(playerId, 'Joined faction successfully', 'success')
+                return true
+            end
+            return false
+        end
+    )
 end
 
 local function RemoveFactionMember(factionId, playerId)
-    if not factions[factionId] then return false end
-    if not factionMembers[factionId][playerId] then return false end
+    local player = QBCore.Functions.GetPlayer(playerId)
+    if not player then return false end
     
-    local player = QBX.Functions.GetPlayer(playerId)
-    if player then
-        -- Remove faction from player metadata
-        player.Functions.SetMetaData('faction', nil)
+    -- Check if player is in the faction
+    if player.PlayerData.metadata.faction ~= factionId then
+        QBCore.Functions.Notify(playerId, 'You are not in this faction', 'error')
+        return false
     end
     
     -- Remove player from faction
-    factionMembers[factionId][playerId] = nil
-    
-    -- Notify all clients
-    TriggerClientEvent('faction:memberUpdate', -1, factionId, factionMembers[factionId])
-    
-    return true
+    MySQL.query('DELETE FROM dz_faction_members WHERE faction_id = ? AND player_id = ?',
+        {factionId, playerId},
+        function(affectedRows)
+            if affectedRows > 0 then
+                -- Update player metadata
+                player.Functions.SetMetaData('faction', nil)
+                
+                -- Notify all clients
+                TriggerClientEvent('district-zero:client:updateFactions', -1)
+                QBCore.Functions.Notify(playerId, 'Left faction successfully', 'success')
+                return true
+            end
+            return false
+        end
+    )
 end
 
 local function UpdateFactionResources(factionId, resourceType, amount)
@@ -125,7 +140,7 @@ end)
 RegisterNetEvent('faction:joinRequest')
 AddEventHandler('faction:joinRequest', function(factionId)
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
+    local player = QBCore.Functions.GetPlayer(source)
     if not player then return end
     
     -- Check if player is already in a faction
@@ -145,7 +160,7 @@ end)
 RegisterNetEvent('faction:leaveRequest')
 AddEventHandler('faction:leaveRequest', function()
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
+    local player = QBCore.Functions.GetPlayer(source)
     if not player then return end
     
     local factionId = player.PlayerData.metadata.faction
@@ -163,7 +178,7 @@ AddEventHandler('faction:leaveRequest', function()
 end)
 
 -- Commands
-QBX.Commands.Add('setfaction', 'Set player faction (Admin Only)', {
+QBCore.Commands.Add('setfaction', 'Set player faction (Admin Only)', {
     {name = 'playerId', help = 'Player ID'},
     {name = 'factionId', help = 'Faction ID or "none"'}
 }, true, function(source, args)
@@ -171,7 +186,7 @@ QBX.Commands.Add('setfaction', 'Set player faction (Admin Only)', {
     local factionId = args[2]
     
     if factionId == 'none' then
-        local player = QBX.Functions.GetPlayer(targetId)
+        local player = QBCore.Functions.GetPlayer(targetId)
         if player and player.PlayerData.metadata.faction then
             RemoveFactionMember(player.PlayerData.metadata.faction, targetId)
             TriggerClientEvent('QBCore:Notify', source, 'Removed player from faction', 'success')
@@ -185,7 +200,7 @@ QBX.Commands.Add('setfaction', 'Set player faction (Admin Only)', {
     end
 end, 'admin')
 
-QBX.Commands.Add('updatefaction', 'Update faction data (Admin Only)', {
+QBCore.Commands.Add('updatefaction', 'Update faction data (Admin Only)', {
     {name = 'factionId', help = 'Faction ID'},
     {name = 'key', help = 'Data key'},
     {name = 'value', help = 'New value'}
@@ -243,4 +258,99 @@ end)
 
 exports('UpdateFactionInfluence', function(factionId, amount)
     return UpdateFactionInfluence(factionId, amount)
+end)
+
+-- Callbacks
+QBCore.Functions.CreateCallback('district-zero:server:getFactions', function(source, cb)
+    MySQL.query('SELECT * FROM dz_factions', {}, function(result)
+        if result then
+            -- Load members for each faction
+            for _, faction in ipairs(result) do
+                MySQL.query('SELECT * FROM dz_faction_members WHERE faction_id = ?', {faction.id}, function(members)
+                    faction.members = members
+                end)
+            end
+            cb(result)
+        else
+            cb({})
+        end
+    end)
+end)
+
+-- Event Handlers
+RegisterNetEvent('district-zero:server:createFaction')
+AddEventHandler('district-zero:server:createFaction', function(data)
+    local source = source
+    local player = QBCore.Functions.GetPlayer(source)
+    
+    -- Check if player has permission
+    if not player.PlayerData.metadata.admin then
+        QBCore.Functions.Notify(source, 'You do not have permission to create factions', 'error')
+        return
+    end
+    
+    MySQL.insert('INSERT INTO dz_factions (name, description, color) VALUES (?, ?, ?)',
+        {data.name, data.description, data.color},
+        function(id)
+            if id then
+                -- Notify all clients
+                TriggerClientEvent('district-zero:client:updateFactions', -1)
+                QBCore.Functions.Notify(source, 'Faction created successfully', 'success')
+            else
+                QBCore.Functions.Notify(source, 'Failed to create faction', 'error')
+            end
+        end
+    )
+end)
+
+RegisterNetEvent('district-zero:server:updateFaction')
+AddEventHandler('district-zero:server:updateFaction', function(data)
+    local source = source
+    local player = QBCore.Functions.GetPlayer(source)
+    
+    -- Check if player has permission
+    if not player.PlayerData.metadata.admin then
+        QBCore.Functions.Notify(source, 'You do not have permission to update factions', 'error')
+        return
+    end
+    
+    if UpdateFaction(data.id, data) then
+        QBCore.Functions.Notify(source, 'Faction updated successfully', 'success')
+    else
+        QBCore.Functions.Notify(source, 'Failed to update faction', 'error')
+    end
+end)
+
+RegisterNetEvent('district-zero:server:deleteFaction')
+AddEventHandler('district-zero:server:deleteFaction', function(factionId)
+    local source = source
+    local player = QBCore.Functions.GetPlayer(source)
+    
+    -- Check if player has permission
+    if not player.PlayerData.metadata.admin then
+        QBCore.Functions.Notify(source, 'You do not have permission to delete factions', 'error')
+        return
+    end
+    
+    MySQL.query('DELETE FROM dz_factions WHERE id = ?', {factionId}, function(affectedRows)
+        if affectedRows > 0 then
+            -- Notify all clients
+            TriggerClientEvent('district-zero:client:updateFactions', -1)
+            QBCore.Functions.Notify(source, 'Faction deleted successfully', 'success')
+        else
+            QBCore.Functions.Notify(source, 'Failed to delete faction', 'error')
+        end
+    end)
+end)
+
+RegisterNetEvent('district-zero:server:joinFaction')
+AddEventHandler('district-zero:server:joinFaction', function(factionId)
+    local source = source
+    AddFactionMember(factionId, source)
+end)
+
+RegisterNetEvent('district-zero:server:leaveFaction')
+AddEventHandler('district-zero:server:leaveFaction', function(factionId)
+    local source = source
+    RemoveFactionMember(factionId, source)
 end) 

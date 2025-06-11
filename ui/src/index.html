@@ -1,178 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>District Zero</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Sidebar Navigation -->
-        <div class="sidebar">
-            <div class="logo">
-                <i class="fas fa-map-marked-alt"></i>
-                <span>District Zero</span>
-            </div>
-            <nav>
-                <a href="#" class="nav-item active" data-tab="abilities">
-                    <i class="fas fa-magic"></i>
-                    <span>Abilities</span>
-                </a>
-                <a href="#" class="nav-item" data-tab="districts">
-                    <i class="fas fa-map-marked-alt"></i>
-                    <span>Districts</span>
-                </a>
-                <a href="#" class="nav-item" data-tab="missions">
-                    <i class="fas fa-tasks"></i>
-                    <span>Missions</span>
-                </a>
-                <a href="#" class="nav-item" data-tab="factions">
-                    <i class="fas fa-users"></i>
-                    <span>Factions</span>
-                </a>
-                <a href="#" class="nav-item" data-tab="stats">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Stats</span>
-                </a>
-                <a href="#" class="nav-item" data-tab="config">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
-                </a>
-            </nav>
-            <div class="help-button" id="helpButton">
-                <i class="fas fa-question-circle"></i>
-                <span>Help</span>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <!-- Abilities Tab -->
-            <div class="tab-content active" id="abilities">
-                <h2><i class="fas fa-magic"></i> Abilities</h2>
-                <div class="abilities-grid">
-                    <div class="ability-card">
-                        <div class="ability-icon">
-                            <i class="fas fa-bolt"></i>
-                        </div>
-                        <h3>Speed Boost</h3>
-                        <p>Increase movement speed for 30 seconds</p>
-                        <div class="ability-info">
-                            <span class="cooldown"><i class="fas fa-clock"></i> 5m</span>
-                            <span class="cost"><i class="fas fa-bolt"></i> 25</span>
-                        </div>
-                        <button class="ability-button">Activate</button>
-                    </div>
-                    <!-- More ability cards... -->
-                </div>
-            </div>
-
-            <!-- Districts Tab -->
-            <div class="tab-content" id="districts">
-                <h2><i class="fas fa-map-marked-alt"></i> Districts</h2>
-                <div class="districts-map">
-                    <!-- Interactive map will be added here -->
-                </div>
-                <div class="districts-list">
-                    <!-- District list will be populated dynamically -->
-                </div>
-            </div>
-
-            <!-- Missions Tab -->
-            <div class="tab-content" id="missions">
-                <h2><i class="fas fa-tasks"></i> Missions</h2>
-                <div class="missions-container">
-                    <div class="mission-filters">
-                        <button class="filter-button active" data-filter="all">All</button>
-                        <button class="filter-button" data-filter="active">Active</button>
-                        <button class="filter-button" data-filter="available">Available</button>
-                        <button class="filter-button" data-filter="completed">Completed</button>
-                    </div>
-                    <div class="missions-list">
-                        <!-- Missions will be populated dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Factions Tab -->
-            <div class="tab-content" id="factions">
-                <h2><i class="fas fa-users"></i> Factions</h2>
-                <div class="factions-container">
-                    <div class="faction-info">
-                        <!-- Current faction info -->
-                    </div>
-                    <div class="factions-list">
-                        <!-- Available factions -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Stats Tab -->
-            <div class="tab-content" id="stats">
-                <h2><i class="fas fa-chart-bar"></i> Statistics</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <h3>District Control</h3>
-                        <div class="stat-chart">
-                            <!-- Chart will be added here -->
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <h3>Mission Progress</h3>
-                        <div class="stat-chart">
-                            <!-- Chart will be added here -->
-                        </div>
-                    </div>
-                    <!-- More stat cards... -->
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div class="tab-content" id="config">
-                <iframe src="config.html" frameborder="0"></iframe>
-            </div>
-        </div>
-
-        <!-- Help Overlay -->
-        <div class="help-overlay" id="helpOverlay">
-            <div class="help-content">
-                <h2>Welcome to District Zero!</h2>
-                <div class="help-sections">
-                    <div class="help-section">
-                        <h3><i class="fas fa-magic"></i> Abilities</h3>
-                        <p>Use your special abilities to gain advantages in districts. Each ability has a cooldown and energy cost.</p>
-                    </div>
-                    <div class="help-section">
-                        <h3><i class="fas fa-map-marked-alt"></i> Districts</h3>
-                        <p>Control districts to gain resources and influence. Each district has unique bonuses and challenges.</p>
-                    </div>
-                    <div class="help-section">
-                        <h3><i class="fas fa-tasks"></i> Missions</h3>
-                        <p>Complete missions to earn rewards and progress your faction. Missions refresh periodically.</p>
-                    </div>
-                    <div class="help-section">
-                        <h3><i class="fas fa-users"></i> Factions</h3>
-                        <p>Join a faction to work with other players and compete for district control.</p>
-                    </div>
-                </div>
-                <div class="keybinds">
-                    <h3>Keybinds</h3>
-                    <ul>
-                        <li><kbd>F6</kbd> Open/Close UI</li>
-                        <li><kbd>F7</kbd> Open Settings</li>
-                        <li><kbd>F8</kbd> Toggle Help</li>
-                    </ul>
-                </div>
-                <button class="close-help">Got it!</button>
-            </div>
-        </div>
-
-        <!-- Notifications -->
-        <div class="notifications" id="notifications"></div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html> 
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: transparent;
+      }
+      #app {
+        width: 100vw;
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
