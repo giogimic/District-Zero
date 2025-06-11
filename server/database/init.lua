@@ -86,7 +86,7 @@ exports('InsertDefaultData', InsertDefaultData)
 exports('GetDistricts', GetDistricts)
 exports('GetDistrictControl', GetDistrictControl)
 
--- Initialize on resource start
+-- Initialize database on resource start
 CreateThread(function()
     -- Wait for Qbox to be ready
     while not QBCore do
