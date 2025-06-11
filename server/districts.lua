@@ -4,8 +4,11 @@ local districtEvents = {}
 local districtPlayers = {}
 
 -- Districts Server Handler
-local QBX = exports.qbx_core:GetCoreObject()
+local QBX = exports['qbx_core']:GetSharedObject()
 local districts = {}
+local districtOwners = {}
+local districtResources = {}
+local districtInfluence = {}
 
 -- Initialize districts from config
 local function InitializeDistricts()
@@ -14,19 +17,18 @@ local function InitializeDistricts()
         return
     end
 
-    for id, district in pairs(Config.Districts) do
-        districts[id] = {
-            id = id,
-            name = district.name,
-            center = district.center,
-            radius = district.radius,
-            control = district.control or 'neutral',
-            influence = district.influence or 0,
-            lastUpdate = os.time(),
-            events = {},
-            missions = {},
-            npcs = {}
+    -- Load districts from config or database
+    districts = Config.Districts or {}
+    
+    -- Initialize district data
+    for id, district in pairs(districts) do
+        districtOwners[id] = district.owner or 'neutral'
+        districtResources[id] = district.resources or {
+            money = 0,
+            materials = 0,
+            influence = 0
         }
+        districtInfluence[id] = district.influence or 0
     end
     Utils.PrintDebug("Districts initialized")
 end
@@ -211,4 +213,145 @@ end)
 
 exports('GetDistrictControllingFaction', function(districtId)
     return activeDistricts[districtId] and activeDistricts[districtId].controllingFaction or nil
+end)
+
+-- District Management
+local function UpdateDistrict(id, data)
+    if not districts[id] then return false end
+    
+    -- Update district data
+    for key, value in pairs(data) do
+        districts[id][key] = value
+    end
+    
+    -- Notify all clients
+    TriggerClientEvent('district:update', -1, id, districts[id])
+    
+    return true
+end
+
+local function SetDistrictOwner(id, owner)
+    if not districts[id] then return false end
+    
+    districtOwners[id] = owner
+    districts[id].owner = owner
+    
+    -- Notify all clients
+    TriggerClientEvent('district:ownerUpdate', -1, id, owner)
+    
+    return true
+end
+
+local function UpdateDistrictResources(id, resourceType, amount)
+    if not districts[id] then return false end
+    if not districtResources[id] then return false end
+    
+    districtResources[id][resourceType] = (districtResources[id][resourceType] or 0) + amount
+    districts[id].resources = districtResources[id]
+    
+    -- Notify all clients
+    TriggerClientEvent('district:resourceUpdate', -1, id, resourceType, districtResources[id][resourceType])
+    
+    return true
+end
+
+local function UpdateDistrictInfluence(id, amount)
+    if not districts[id] then return false end
+    
+    districtInfluence[id] = (districtInfluence[id] or 0) + amount
+    districts[id].influence = districtInfluence[id]
+    
+    -- Notify all clients
+    TriggerClientEvent('district:influenceUpdate', -1, id, districtInfluence[id])
+    
+    return true
+end
+
+-- Event Handlers
+RegisterNetEvent('district:requestUpdate')
+AddEventHandler('district:requestUpdate', function()
+    local source = source
+    TriggerClientEvent('district:update', source, districts)
+end)
+
+RegisterNetEvent('district:captureAttempt')
+AddEventHandler('district:captureAttempt', function(districtId)
+    local source = source
+    local player = QBX.Functions.GetPlayer(source)
+    if not player then return end
+    
+    -- Check if player has required items/permissions
+    -- Add your capture logic here
+    
+    -- Example capture logic
+    if math.random() < 0.5 then -- 50% chance of success
+        SetDistrictOwner(districtId, player.PlayerData.citizenid)
+        TriggerClientEvent('QBCore:Notify', source, 'District captured successfully!', 'success')
+    else
+        TriggerClientEvent('QBCore:Notify', source, 'Failed to capture district', 'error')
+    end
+end)
+
+-- Commands
+QBX.Commands.Add('setdistrictowner', 'Set district owner (Admin Only)', {
+    {name = 'districtId', help = 'District ID'},
+    {name = 'owner', help = 'Owner ID or "neutral"'}
+}, true, function(source, args)
+    local districtId = tonumber(args[1])
+    local owner = args[2]
+    
+    if SetDistrictOwner(districtId, owner) then
+        TriggerClientEvent('QBCore:Notify', source, 'District owner updated', 'success')
+    else
+        TriggerClientEvent('QBCore:Notify', source, 'Failed to update district owner', 'error')
+    end
+end, 'admin')
+
+QBX.Commands.Add('updatedistrict', 'Update district data (Admin Only)', {
+    {name = 'districtId', help = 'District ID'},
+    {name = 'key', help = 'Data key'},
+    {name = 'value', help = 'New value'}
+}, true, function(source, args)
+    local districtId = tonumber(args[1])
+    local key = args[2]
+    local value = args[3]
+    
+    if UpdateDistrict(districtId, {[key] = value}) then
+        TriggerClientEvent('QBCore:Notify', source, 'District updated', 'success')
+    else
+        TriggerClientEvent('QBCore:Notify', source, 'Failed to update district', 'error')
+    end
+end, 'admin')
+
+-- Exports
+exports('GetDistricts', function()
+    return districts
+end)
+
+exports('GetDistrictOwner', function(districtId)
+    return districtOwners[districtId]
+end)
+
+exports('GetDistrictResources', function(districtId)
+    return districtResources[districtId]
+end)
+
+exports('GetDistrictInfluence', function(districtId)
+    return districtInfluence[districtId]
+end)
+
+exports('UpdateDistrict', function(districtId, data)
+    return UpdateDistrict(districtId, data)
+end)
+
+exports('SetDistrictOwner', function(districtId, owner)
+    return SetDistrictOwner(districtId, owner)
+end)
+
+exports('UpdateDistrictResources', function(districtId, resourceType, amount)
+    return UpdateDistrictResources(districtId, resourceType, amount)
+end)
+
+exports('UpdateDistrictInfluence', function(districtId, amount)
+    return UpdateDistrictInfluence(districtId, amount)
 end) 

@@ -53,20 +53,20 @@ end)
 -- Mission Timer
 function StartMissionTimer()
     CreateThread(function()
-        while isInMission and missionTimer > 0 do
+        while isInMission do
             Wait(1000)
             missionTimer = missionTimer - 1
+            
+            if missionTimer <= 0 then
+                FailMission("Time's up!")
+                break
+            end
             
             -- Update UI
             SendNUIMessage({
                 type = "updateTimer",
-                time = Utils.FormatTime(missionTimer)
+                time = missionTimer
             })
-
-            -- Check for mission timeout
-            if missionTimer <= 0 then
-                FailMission("Time's up!")
-            end
         end
     end)
 end
@@ -74,176 +74,105 @@ end
 -- Mission Blips
 function CreateMissionBlips(missionData)
     -- Clear existing blips
-    ClearMissionBlips()
-
-    -- Create new blips for objectives
-    for _, objective in ipairs(missionData.objectives) do
-        local location = Utils.GetRandomMissionLocation(objective.type)
-        if location then
-            local blip = AddBlipForCoord(location.x, location.y, location.z)
-            SetBlipSprite(blip, 1)
-            SetBlipColour(blip, 5)
-            SetBlipScale(blip, 0.8)
-            SetBlipAsShortRange(blip, true)
-            BeginTextCommandSetBlipName("STRING")
-            AddTextComponentString(objective.label)
-            EndTextCommandSetBlipName(blip)
-            table.insert(missionBlips, blip)
-        end
-    end
-end
-
-function ClearMissionBlips()
-    for _, blip in ipairs(missionBlips) do
+    for _, blip in pairs(missionBlips) do
         RemoveBlip(blip)
     end
     missionBlips = {}
+    
+    -- Create new blips
+    for _, location in ipairs(missionData.locations) do
+        local blip = AddBlipForCoord(location.x, location.y, location.z)
+        SetBlipSprite(blip, location.blipSprite or 1)
+        SetBlipColour(blip, location.blipColor or 1)
+        SetBlipScale(blip, location.blipScale or 1.0)
+        SetBlipAsShortRange(blip, true)
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(location.label or "Mission Location")
+        EndTextCommandSetBlipName(blip)
+        table.insert(missionBlips, blip)
+    end
 end
 
 -- Mission Markers
 function CreateMissionMarkers(missionData)
     -- Clear existing markers
-    ClearMissionMarkers()
-
-    -- Create new markers for objectives
-    for _, objective in ipairs(missionData.objectives) do
-        local location = Utils.GetRandomMissionLocation(objective.type)
-        if location then
-            table.insert(missionMarkers, {
-                location = location,
-                type = objective.type,
-                label = objective.label
-            })
-        end
+    missionMarkers = {}
+    
+    -- Create new markers
+    for _, location in ipairs(missionData.locations) do
+        table.insert(missionMarkers, {
+            coords = vector3(location.x, location.y, location.z),
+            type = location.markerType or 1,
+            size = location.markerSize or vector3(1.0, 1.0, 1.0),
+            color = location.markerColor or {r = 255, g = 255, b = 255, a = 100},
+            bobUpAndDown = location.markerBob or false,
+            faceCamera = location.markerFaceCamera or false,
+            rotate = location.markerRotate or false,
+            textureDict = location.markerTextureDict,
+            textureName = location.markerTextureName,
+            drawDistance = location.markerDrawDistance or 10.0
+        })
     end
 end
 
-function ClearMissionMarkers()
-    missionMarkers = {}
-end
-
--- Mission Completion
-function CompleteMission()
-    if not isInMission then return end
-
-    -- Calculate rewards
-    local timeBonus = math.floor((missionTimer / currentMission.timeLimit) * 100)
-    local totalReward = Utils.CalculateMissionReward(
-        currentMission.cashReward,
-        PlayerData.level or 1,
-        Config.Rewards.cashMultiplier
-    )
-
-    -- Trigger server event for rewards
-    Utils.TriggerServerEvent("completeMission", {
-        missionId = currentMission.id,
-        timeBonus = timeBonus,
-        totalReward = totalReward
-    })
-
-    -- Clean up
-    CleanupMission()
-    
-    Utils.SendNotification("success", "Mission completed! Reward: " .. Utils.FormatMoney(totalReward))
-end
-
-function FailMission(reason)
-    if not isInMission then return end
-
-    Utils.TriggerServerEvent("failMission", {
-        missionId = currentMission.id,
-        reason = reason
-    })
-
-    -- Clean up
-    CleanupMission()
-    
-    Utils.SendNotification("error", "Mission failed: " .. reason)
-end
-
+-- Mission Cleanup
 function CleanupMission()
-    isInMission = false
-    currentMission = nil
-    missionTimer = 0
-    ClearMissionBlips()
-    ClearMissionMarkers()
+    -- Clear blips
+    for _, blip in pairs(missionBlips) do
+        RemoveBlip(blip)
+    end
+    missionBlips = {}
     
-    -- Hide mission UI
+    -- Clear markers
+    missionMarkers = {}
+    
+    -- Reset mission state
+    currentMission = nil
+    isInMission = false
+    missionTimer = 0
+    missionStartTime = 0
+    
+    -- Hide UI
     SendNUIMessage({
         type = "hideMission"
     })
     SetNuiFocus(false, false)
 end
 
--- Mission Objective Tracking
-CreateThread(function()
-    while true do
-        Wait(0)
-        if isInMission and currentMission then
-            local playerPed = PlayerPedId()
-            local playerCoords = GetEntityCoords(playerPed)
-
-            for i, marker in ipairs(missionMarkers) do
-                local distance = #(playerCoords - marker.location)
-                
-                -- Draw marker
-                DrawMarker(1, marker.location.x, marker.location.y, marker.location.z - 1.0,
-                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                    1.0, 1.0, 1.0, 255, 255, 255, 100,
-                    false, true, 2, false, nil, nil, false)
-
-                -- Check for objective completion
-                if distance < 2.0 then
-                    if IsControlJustPressed(0, 38) then -- E key
-                        CompleteObjective(marker.type)
-                    end
-                end
-            end
-        else
-            Wait(1000)
-        end
-    end
-end)
-
-function CompleteObjective(objectiveType)
-    if not currentMission then return end
-
-    for i, objective in ipairs(currentMission.objectives) do
-        if objective.type == objectiveType then
-            objective.count = objective.count - 1
-            
-            -- Update UI
-            SendNUIMessage({
-                type = "updateObjective",
-                objectiveIndex = i,
-                remaining = objective.count
-            })
-
-            -- Check if all objectives are complete
-            local allComplete = true
-            for _, obj in ipairs(currentMission.objectives) do
-                if obj.count > 0 then
-                    allComplete = false
-                    break
-                end
-            end
-
-            if allComplete then
-                CompleteMission()
-            end
-
-            break
-        end
-    end
+-- Mission Failure
+function FailMission(reason)
+    if not isInMission then return end
+    
+    -- Notify server
+    TriggerServerEvent('apb:server:failMission', {
+        missionId = currentMission.id,
+        reason = reason
+    })
+    
+    -- Cleanup
+    CleanupMission()
+    
+    -- Notify player
+    Utils.SendNotification("error", "Mission failed: " .. reason)
 end
 
--- NUI Callbacks
-RegisterNUICallback('closeMission', function(data, cb)
-    SetNuiFocus(false, false)
-    cb('ok')
-end)
+-- Mission Success
+function CompleteMission()
+    if not isInMission then return end
+    
+    -- Notify server
+    TriggerServerEvent('apb:server:completeMission', {
+        missionId = currentMission.id
+    })
+    
+    -- Cleanup
+    CleanupMission()
+    
+    -- Notify player
+    Utils.SendNotification("success", "Mission completed successfully!")
+end
 
--- Security checks
+-- Security Checks
 CreateThread(function()
     while true do
         Wait(Config.Security.checkInterval)
