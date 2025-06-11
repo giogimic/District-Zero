@@ -1,30 +1,79 @@
-local activeMission = nil
-local missionBlips = {}
-local missionVehicle = nil
+-- Missions Client Handler
+local QBX = exports['qbx_core']:GetCore()
+local Utils = require 'shared/utils'
+
+-- Mission State
+local State = {
+    activeMission = nil,
+    missionVehicle = nil,
+    missionBlips = {},
+    missionMarkers = {},
+    isInMission = false,
+    missionTimer = 0,
+    missionStartTime = 0
+}
+
+-- Event Validation
+local function ValidateEvent(eventName, data)
+    if not eventName then
+        Utils.HandleError('Event name is required', 'VALIDATION', 'ValidateEvent')
+        return false
+    end
+    
+    if not data then
+        Utils.HandleError('Event data is required', 'VALIDATION', 'ValidateEvent')
+        return false
+    end
+    
+    return true
+end
 
 -- Initialize mission system
 Citizen.CreateThread(function()
     while true do
         Citizen.Wait(0)
-        if activeMission then
+        if State.activeMission then
             DrawMissionUI()
         end
     end
 end)
 
 -- Handle mission start
-RegisterNetEvent('mission:started')
-AddEventHandler('mission:started', function(mission)
-    activeMission = mission
-    SpawnMissionVehicle(mission.vehicle)
-    CreateMissionBlips(mission)
-    ShowNotification("Mission started: " .. Config.Missions[mission.type][mission.id].name)
+RegisterNetEvent('dz:mission:start')
+AddEventHandler('dz:mission:start', function(missionData)
+    if not ValidateEvent('dz:mission:start', missionData) then return end
+    
+    if State.isInMission then
+        Utils.SendNotification("error", "You are already in a mission!")
+        return
+    end
+
+    State.activeMission = missionData
+    State.isInMission = true
+    State.missionStartTime = GetGameTimer()
+    State.missionTimer = missionData.timeLimit
+
+    -- Create mission blips and markers
+    CreateMissionBlips(missionData)
+    CreateMissionMarkers(missionData)
+
+    -- Start mission timer
+    StartMissionTimer()
+
+    -- Show mission UI
+    SendNUIMessage({
+        type = "showMission",
+        mission = missionData
+    })
+    SetNuiFocus(true, true)
+
+    Utils.SendNotification("success", "Mission started: " .. missionData.label)
 end)
 
 -- Handle mission completion
 RegisterNetEvent('mission:completed')
 AddEventHandler('mission:completed', function(missionId, reward)
-    if activeMission and activeMission.id == missionId then
+    if State.activeMission and State.activeMission.id == missionId then
         ShowNotification("Mission completed! Reward: $" .. reward.money)
         CleanupMission()
     end
@@ -33,7 +82,7 @@ end)
 -- Handle mission failure
 RegisterNetEvent('mission:failed')
 AddEventHandler('mission:failed', function(missionId, reason)
-    if activeMission and activeMission.id == missionId then
+    if State.activeMission and State.activeMission.id == missionId then
         ShowNotification("Mission failed: " .. reason, "error")
         CleanupMission()
     end
@@ -42,7 +91,7 @@ end)
 -- Handle player joining mission
 RegisterNetEvent('mission:playerJoined')
 AddEventHandler('mission:playerJoined', function(missionId, player)
-    if activeMission and activeMission.id == missionId then
+    if State.activeMission and State.activeMission.id == missionId then
         local playerName = GetPlayerName(player)
         ShowNotification(playerName .. " joined the mission")
     end
@@ -50,10 +99,10 @@ end)
 
 -- Draw mission UI
 function DrawMissionUI()
-    if not activeMission then return end
+    if not State.activeMission then return end
     
-    local mission = Config.Missions[activeMission.type][activeMission.id]
-    local timeLeft = activeMission.endTime - os.time()
+    local mission = Config.Missions[State.activeMission.type][State.activeMission.id]
+    local timeLeft = State.missionTimer - (GetGameTimer() - State.missionStartTime) / 1000
     
     -- Draw mission info
     SetTextScale(0.5, 0.5)
@@ -97,14 +146,14 @@ function SpawnMissionVehicle(vehicleModel)
     local heading = GetEntityHeading(playerPed)
     
     -- Spawn vehicle
-    missionVehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, false)
-    SetPedIntoVehicle(playerPed, missionVehicle, -1)
-    SetVehicleEngineOn(missionVehicle, true, true, false)
+    State.missionVehicle = CreateVehicle(model, coords.x, coords.y, coords.z, heading, true, false)
+    SetPedIntoVehicle(playerPed, State.missionVehicle, -1)
+    SetVehicleEngineOn(State.missionVehicle, true, true, false)
     
     -- Set vehicle properties
-    SetVehicleDoorsLocked(missionVehicle, 2)
-    SetVehicleHasBeenOwnedByPlayer(missionVehicle, true)
-    SetEntityAsMissionEntity(missionVehicle, true, true)
+    SetVehicleDoorsLocked(State.missionVehicle, 2)
+    SetVehicleHasBeenOwnedByPlayer(State.missionVehicle, true)
+    SetEntityAsMissionEntity(State.missionVehicle, true, true)
     
     -- Release model
     SetModelAsNoLongerNeeded(model)
@@ -121,7 +170,7 @@ function CreateMissionBlips(mission)
     BeginTextCommandSetBlipName("STRING")
     AddTextComponentString("Mission Start")
     EndTextCommandSetBlipName(startBlip)
-    table.insert(missionBlips, startBlip)
+    table.insert(State.missionBlips, startBlip)
     
     -- Create objective blips
     local missionData = Config.Missions[mission.type][mission.id]
@@ -135,7 +184,7 @@ function CreateMissionBlips(mission)
             BeginTextCommandSetBlipName("STRING")
             AddTextComponentString("Mission Objective " .. (i - 1))
             EndTextCommandSetBlipName(blip)
-            table.insert(missionBlips, blip)
+            table.insert(State.missionBlips, blip)
         end
     end
 end
@@ -143,19 +192,26 @@ end
 -- Clean up mission
 function CleanupMission()
     -- Remove blips
-    for _, blip in ipairs(missionBlips) do
+    for _, blip in pairs(State.missionBlips) do
         RemoveBlip(blip)
     end
-    missionBlips = {}
+    State.missionBlips = {}
     
-    -- Remove vehicle
-    if missionVehicle and DoesEntityExist(missionVehicle) then
-        DeleteEntity(missionVehicle)
-    end
-    missionVehicle = nil
+    -- Remove markers
+    State.missionMarkers = {}
     
-    -- Clear active mission
-    activeMission = nil
+    -- Reset state
+    State.activeMission = nil
+    State.missionVehicle = nil
+    State.isInMission = false
+    State.missionTimer = 0
+    State.missionStartTime = 0
+    
+    -- Hide UI
+    SendNUIMessage({
+        type = "hideMission"
+    })
+    SetNuiFocus(false, false)
 end
 
 -- Show notification
@@ -169,11 +225,76 @@ function ShowNotification(message, type)
     EndTextCommandThefeedPostTicker(false, true)
 end
 
--- Export functions
+-- Mission Timer
+function StartMissionTimer()
+    CreateThread(function()
+        while State.isInMission do
+            Wait(1000)
+            State.missionTimer = State.missionTimer - 1
+            
+            if State.missionTimer <= 0 then
+                FailMission("Time's up!")
+                break
+            end
+            
+            -- Update UI
+            SendNUIMessage({
+                type = "updateTimer",
+                time = State.missionTimer
+            })
+        end
+    end)
+end
+
+-- Resource Stop Handler
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    if State.isInMission then
+        CleanupMission()
+    end
+end)
+
+-- Exports
 exports('GetActiveMission', function()
-    return activeMission
+    return State.activeMission
 end)
 
 exports('GetMissionVehicle', function()
-    return missionVehicle
-end) 
+    return State.missionVehicle
+end)
+
+exports('IsInMission', function()
+    return State.isInMission
+end)
+
+exports('GetMissionTimer', function()
+    return State.missionTimer
+end)
+
+-- Export Documentation
+--[[
+Mission System Exports:
+
+GetActiveMission()
+- Returns the currently active mission data
+- Returns: table or nil
+
+GetMissionVehicle()
+- Returns the vehicle associated with the current mission
+- Returns: entity or nil
+
+IsInMission()
+- Returns whether the player is currently in a mission
+- Returns: boolean
+
+GetMissionTimer()
+- Returns the remaining time for the current mission
+- Returns: number
+
+Usage:
+- Check active mission: exports['district_zero']:GetActiveMission()
+- Get mission vehicle: exports['district_zero']:GetMissionVehicle()
+- Check mission status: exports['district_zero']:IsInMission()
+- Get mission timer: exports['district_zero']:GetMissionTimer()
+]] 

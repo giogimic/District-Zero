@@ -1,16 +1,27 @@
 -- District Zero Main Client Handler
-local QBX = exports['qbx_core']:GetSharedObject()
-local isMenuOpen = false
-local menuVisible = false
-local isPlayerLoaded = false
+local QBX = exports['qbx_core']:GetCore()
+local Utils = require 'shared/utils'
+
+-- State Management
+local State = {
+    menu = {
+        isOpen = false,
+        isVisible = false,
+        currentTab = 'districts'
+    },
+    player = {
+        isLoaded = false,
+        data = nil
+    }
+}
 
 -- Initialize
 local function Initialize()
-    if not isPlayerLoaded then return end
+    if not State.player.isLoaded then return end
     
     -- Set up keybinds
     RegisterCommand('+toggleDistrictMenu', function()
-        if not isPlayerLoaded then return end
+        if not State.player.isLoaded then return end
         ToggleMenu()
     end, false)
     
@@ -19,41 +30,84 @@ end
 
 -- Toggle Menu
 function ToggleMenu()
-    if not isPlayerLoaded then return end
+    if not State.player.isLoaded then return end
     
-    isMenuOpen = not isMenuOpen
-    if isMenuOpen then
+    State.menu.isOpen = not State.menu.isOpen
+    if State.menu.isOpen then
         -- Refresh data when opening
-        TriggerServerEvent('district:requestUpdate')
-        TriggerServerEvent('faction:requestUpdate')
+        TriggerServerEvent('dz:district:requestUpdate')
+        TriggerServerEvent('dz:faction:requestUpdate')
+    else
+        -- Close all sub-menus
+        CloseAllMenus()
     end
+end
+
+-- Close All Menus
+function CloseAllMenus()
+    State.menu.isOpen = false
+    State.menu.currentTab = 'districts'
+    -- Close any open sub-menus
+    TriggerEvent('dz:ui:closeAll')
 end
 
 -- Player Load Handler
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-    isPlayerLoaded = true
-    menuVisible = true
+    State.player.isLoaded = true
+    State.player.data = QBX.Functions.GetPlayerData()
     Initialize()
 end)
 
 -- Player Unload Handler
 RegisterNetEvent('QBCore:Client:OnPlayerUnload')
 AddEventHandler('QBCore:Client:OnPlayerUnload', function()
-    isPlayerLoaded = false
-    menuVisible = false
-    isMenuOpen = false
+    State.player.isLoaded = false
+    State.player.data = nil
+    CloseAllMenus()
 end)
 
--- Export menu state
+-- State Update Handler
+RegisterNetEvent('dz:state:update')
+AddEventHandler('dz:state:update', function(newState)
+    if type(newState) ~= 'table' then return end
+    
+    for key, value in pairs(newState) do
+        if State[key] then
+            State[key] = value
+        end
+    end
+end)
+
+-- Resource Stop Handler
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Cleanup state
+    State = {
+        menu = {
+            isOpen = false,
+            isVisible = false,
+            currentTab = 'districts'
+        },
+        player = {
+            isLoaded = false,
+            data = nil
+        }
+    }
+end)
+
+-- Exports
 exports('IsMenuOpen', function()
-    return isMenuOpen and isPlayerLoaded
+    return State.menu.isOpen and State.player.isLoaded
 end)
 
-exports('IsMenuVisible', function()
-    return menuVisible and isPlayerLoaded
+exports('GetState', function()
+    return State
 end)
 
-exports('IsPlayerLoaded', function()
-    return isPlayerLoaded
+exports('SetState', function(key, value)
+    if not State[key] then return false end
+    State[key] = value
+    return true
 end) 

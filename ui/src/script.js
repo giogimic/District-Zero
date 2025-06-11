@@ -49,6 +49,286 @@ const elements = {
   closeButtons: document.querySelectorAll('.close-button'),
 };
 
+// Key Binding System
+const KeyBindings = {
+  // Default key bindings
+  defaults: {
+    mission_menu: 'F5',
+    district_menu: 'F6',
+    faction_menu: 'F7',
+    inventory: 'I',
+    map: 'M',
+  },
+
+  // Current key bindings
+  current: {},
+
+  // Reserved keys
+  reserved: ['ESC', 'TAB', 'ENTER', 'SPACE'],
+
+  // Initialize key bindings
+  init() {
+    // Load saved key bindings
+    const saved = localStorage.getItem('keyBindings');
+    this.current = saved ? JSON.parse(saved) : { ...this.defaults };
+
+    // Register key bindings
+    this.registerBindings();
+
+    // Listen for key press events
+    document.addEventListener('keydown', this.handleKeyPress.bind(this));
+  },
+
+  // Register key bindings
+  registerBindings() {
+    for (const [action, key] of Object.entries(this.current)) {
+      this.registerBinding(action, key);
+    }
+  },
+
+  // Register a single key binding
+  registerBinding(action, key) {
+    // Validate key
+    if (!this.validateKey(key)) {
+      console.error(`Invalid key binding for ${action}: ${key}`);
+      return false;
+    }
+
+    // Check for conflicts
+    if (this.hasConflict(action, key)) {
+      console.error(`Key binding conflict for ${action}: ${key}`);
+      return false;
+    }
+
+    // Register the binding
+    this.current[action] = key;
+    return true;
+  },
+
+  // Validate key
+  validateKey(key) {
+    // Check if key is reserved
+    if (this.reserved.includes(key)) {
+      return false;
+    }
+
+    // Check if key is valid
+    return /^[A-Z0-9]$/.test(key) || (key.startsWith('F') && /^[1-9][0-9]?$/.test(key.slice(1)));
+  },
+
+  // Check for conflicts
+  hasConflict(action, key) {
+    for (const [existingAction, existingKey] of Object.entries(this.current)) {
+      if (existingAction !== action && existingKey === key) {
+        return true;
+      }
+    }
+    return false;
+  },
+
+  // Handle key press
+  handleKeyPress(event) {
+    const key = event.key.toUpperCase();
+
+    // Find action for key
+    for (const [action, binding] of Object.entries(this.current)) {
+      if (binding === key) {
+        // Trigger action
+        this.triggerAction(action);
+        break;
+      }
+    }
+  },
+
+  // Trigger action
+  triggerAction(action) {
+    // Send message to game
+    fetch(`https://${GetParentResourceName()}/keyBinding`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: action,
+      }),
+    });
+  },
+
+  // Save key bindings
+  saveBindings() {
+    localStorage.setItem('keyBindings', JSON.stringify(this.current));
+  },
+
+  // Reset key bindings
+  resetBindings() {
+    this.current = { ...this.defaults };
+    this.registerBindings();
+    this.saveBindings();
+  },
+
+  // Update key binding
+  updateBinding(action, key) {
+    if (this.registerBinding(action, key)) {
+      this.saveBindings();
+      return true;
+    }
+    return false;
+  },
+};
+
+// Initialize key bindings
+KeyBindings.init();
+
+// Export key binding system
+window.KeyBindings = KeyBindings;
+
+// NUI State Management
+const NUIState = {
+  isVisible: false,
+  isFocused: false,
+  currentMenu: null,
+  errorCount: 0,
+  maxErrors: 3,
+
+  // Initialize NUI state
+  init() {
+    // Listen for messages from game
+    window.addEventListener('message', this.handleMessage.bind(this));
+
+    // Listen for visibility changes
+    document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+
+    // Listen for errors
+    window.addEventListener('error', this.handleError.bind(this));
+  },
+
+  // Handle messages from game
+  handleMessage(event) {
+    const data = event.data;
+
+    switch (data.type) {
+      case 'show':
+        this.show(data.menu);
+        break;
+      case 'hide':
+        this.hide();
+        break;
+      case 'update':
+        this.update(data);
+        break;
+      case 'error':
+        this.handleError(data.error);
+        break;
+    }
+  },
+
+  // Show NUI
+  show(menu) {
+    if (this.isVisible) {
+      this.hide();
+    }
+
+    this.currentMenu = menu;
+    this.isVisible = true;
+    this.isFocused = true;
+
+    // Show menu
+    document.getElementById(menu).style.display = 'block';
+
+    // Set focus
+    this.setFocus(true);
+  },
+
+  // Hide NUI
+  hide() {
+    if (!this.isVisible) return;
+
+    // Hide current menu
+    if (this.currentMenu) {
+      document.getElementById(this.currentMenu).style.display = 'none';
+    }
+
+    // Reset state
+    this.currentMenu = null;
+    this.isVisible = false;
+    this.isFocused = false;
+
+    // Remove focus
+    this.setFocus(false);
+  },
+
+  // Update NUI
+  update(data) {
+    if (!this.isVisible || !this.currentMenu) return;
+
+    // Update menu data
+    const menu = document.getElementById(this.currentMenu);
+    if (menu) {
+      // Update menu content
+      for (const [key, value] of Object.entries(data)) {
+        const element = menu.querySelector(`[data-bind="${key}"]`);
+        if (element) {
+          element.textContent = value;
+        }
+      }
+    }
+  },
+
+  // Set focus
+  setFocus(focused) {
+    this.isFocused = focused;
+
+    // Send focus state to game
+    fetch(`https://${GetParentResourceName()}/setFocus`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        focused: focused,
+      }),
+    });
+  },
+
+  // Handle visibility change
+  handleVisibilityChange() {
+    if (document.hidden) {
+      this.hide();
+    }
+  },
+
+  // Handle error
+  handleError(error) {
+    this.errorCount++;
+
+    // Log error
+    console.error('NUI Error:', error);
+
+    // Check error count
+    if (this.errorCount >= this.maxErrors) {
+      this.hide();
+      this.errorCount = 0;
+    }
+  },
+
+  // Cleanup
+  cleanup() {
+    this.hide();
+    this.errorCount = 0;
+  },
+};
+
+// Initialize NUI state
+NUIState.init();
+
+// Export NUI state
+window.NUIState = NUIState;
+
+// Cleanup on page unload
+window.addEventListener('unload', () => {
+  NUIState.cleanup();
+});
+
 // Initialize UI
 function init() {
   // Hide all UI elements by default

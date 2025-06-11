@@ -7,9 +7,9 @@ game 'gta5'
 use_experimental_fxv2_oal 'yes'
 lua54 'yes'
 
-author 'Your Name'
+author 'GioGimic'
 description 'District Zero - Dynamic Territory Control System'
-version '1.0.0'
+version '1.0.1'
 
 -- Dependencies
 dependencies {
@@ -43,3 +43,11 @@ ui_page 'html/index.html'
 files {
     'html/**/*'
 }
+
+-- Resource metadata
+provide 'district_zero'
+provide 'dz'
+
+-- Resource information
+repository 'https://github.com/GioGimic/district-zero'
+issues 'https://github.com/GioGimic/district-zero/issues'

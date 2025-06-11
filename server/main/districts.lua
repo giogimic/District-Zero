@@ -5,47 +5,53 @@ local districtPlayers = {}
 
 -- Districts Server Handler
 local QBX = exports['qbx_core']:GetCore()
-local districts = {}
-local districtOwners = {}
-local districtResources = {}
-local districtInfluence = {}
 local Utils = require 'shared/utils'
+
+-- State Management
+local State = {
+    districts = {},
+    owners = {},
+    resources = {},
+    influence = {},
+    players = {}
+}
 
 -- Initialize districts from config
 local function InitializeDistricts()
     if not Config or not Config.Districts then
-        print('[District Zero] Error: Config.Districts is not defined')
+        Utils.HandleError('Config.Districts is not defined', 'VALIDATION', 'InitializeDistricts')
         return
     end
 
     -- Load districts from config or database
-    districts = Config.Districts or {}
+    State.districts = Config.Districts or {}
     
     -- Initialize district data
-    for id, district in pairs(districts) do
-        districtOwners[id] = district.owner or 'neutral'
-        districtResources[id] = district.resources or {
+    for id, district in pairs(State.districts) do
+        State.owners[id] = district.owner or 'neutral'
+        State.resources[id] = district.resources or {
             money = 0,
             materials = 0,
             influence = 0
         }
-        districtInfluence[id] = district.influence or 0
+        State.influence[id] = district.influence or 0
+        State.players[id] = {}
     end
+    
     Utils.PrintDebug("Districts initialized")
 end
 
 -- Get players in district
 local function GetPlayersInDistrict(districtId)
-    local district = activeDistricts[districtId]
-    if not district then return {} end
+    if not State.districts[districtId] then return {} end
     
     local players = {}
     for _, player in ipairs(GetPlayers()) do
         local ped = GetPlayerPed(player)
         local coords = GetEntityCoords(ped)
-        local distance = #(coords - district.center)
+        local distance = #(coords - State.districts[districtId].center)
         
-        if distance <= district.radius then
+        if distance <= State.districts[districtId].radius then
             table.insert(players, player)
         end
     end
@@ -53,45 +59,24 @@ local function GetPlayersInDistrict(districtId)
 end
 
 -- Update district control
-local function UpdateDistrictControl(districtId)
-    local district = activeDistricts[districtId]
-    if not district then return end
+local function UpdateDistrictControl(districtId, factionId)
+    if not State.districts[districtId] then return false end
     
-    local players = GetPlayersInDistrict(districtId)
-    local factionCounts = {}
-    local maxCount = 0
-    local controllingFaction = nil
+    State.owners[districtId] = factionId
     
-    -- Count players per faction
-    for _, player in ipairs(players) do
-        local faction = exports['fivem-mm']:GetPlayerFaction(player)
-        if faction then
-            factionCounts[faction] = (factionCounts[faction] or 0) + 1
-            if factionCounts[faction] > maxCount then
-                maxCount = factionCounts[faction]
-                controllingFaction = faction
-            end
-        end
-    end
+    -- Notify all clients
+    TriggerClientEvent('dz:district:update', -1, districtId, {
+        owner = factionId,
+        resources = State.resources[districtId],
+        influence = State.influence[districtId]
+    })
     
-    -- Update control if changed
-    if controllingFaction ~= district.controllingFaction then
-        district.controllingFaction = controllingFaction
-        exports['fivem-mm']:UpdateDistrictControl(districtId, controllingFaction)
-        
-        -- Notify players
-        TriggerClientEvent('district:controlChanged', -1, districtId, controllingFaction)
-        
-        -- Trigger control change event
-        if controllingFaction then
-            TriggerEvent('district:onControlChanged', districtId, controllingFaction)
-        end
-    end
+    return true
 end
 
 -- Check for district events
 local function CheckDistrictEvents(districtId)
-    local district = activeDistricts[districtId]
+    local district = State.districts[districtId]
     if not district then return end
     
     -- Check event cooldown
@@ -107,7 +92,7 @@ end
 -- Handle district events
 RegisterNetEvent('district:triggerEvent')
 AddEventHandler('district:triggerEvent', function(districtId, eventType)
-    local district = activeDistricts[districtId]
+    local district = State.districts[districtId]
     if not district then return end
     
     -- Set event cooldown
@@ -133,7 +118,7 @@ end)
 
 -- PvP/PvE rule enforcement
 local function EnforceDistrictRules(districtId)
-    local district = activeDistricts[districtId]
+    local district = State.districts[districtId]
     if not district then return end
     
     local players = GetPlayersInDistrict(districtId)
@@ -157,8 +142,8 @@ CreateThread(function()
     while true do
         Wait(1000) -- Check every second
         
-        for districtId, _ in pairs(activeDistricts) do
-            UpdateDistrictControl(districtId)
+        for districtId, _ in pairs(State.districts) do
+            UpdateDistrictControl(districtId, State.owners[districtId])
             CheckDistrictEvents(districtId)
             EnforceDistrictRules(districtId)
         end
@@ -166,113 +151,126 @@ CreateThread(function()
 end)
 
 -- Player entered district
-RegisterNetEvent('district:playerEntered')
-AddEventHandler('district:playerEntered', function(districtId)
+RegisterNetEvent('dz:district:playerEntered')
+AddEventHandler('dz:district:playerEntered', function(districtId)
     local source = source
-    local district = activeDistricts[districtId]
-    if not district then return end
+    if not State.districts[districtId] then return end
     
     -- Add player to district
-    district.players[source] = true
+    State.players[districtId][source] = true
     
     -- Notify player
-    TriggerClientEvent('district:entered', source, district)
+    TriggerClientEvent('dz:district:entered', source, State.districts[districtId])
 end)
 
 -- Player left district
-RegisterNetEvent('district:playerLeft')
-AddEventHandler('district:playerLeft', function(districtId)
+RegisterNetEvent('dz:district:playerLeft')
+AddEventHandler('dz:district:playerLeft', function(districtId)
     local source = source
-    local district = activeDistricts[districtId]
-    if not district then return end
+    if not State.districts[districtId] then return end
     
     -- Remove player from district
-    district.players[source] = nil
+    State.players[districtId][source] = nil
     
     -- Notify player
-    TriggerClientEvent('district:left', source, districtId)
+    TriggerClientEvent('dz:district:left', source, districtId)
 end)
 
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
-    if (GetCurrentResourceName() ~= resourceName) then return end
+    if GetCurrentResourceName() ~= resourceName then return end
     InitializeDistricts()
 end)
 
--- Export functions
+-- Resource stop handler
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Cleanup state
+    State = {
+        districts = {},
+        owners = {},
+        resources = {},
+        influence = {},
+        players = {}
+    }
+end)
+
+-- Exports
 exports('GetDistrict', function(districtId)
-    return activeDistricts[districtId]
+    return State.districts[districtId]
 end)
 
 exports('GetDistrictPlayers', function(districtId)
-    return activeDistricts[districtId] and activeDistricts[districtId].players or {}
+    return State.players[districtId] or {}
 end)
 
 exports('IsPlayerInDistrict', function(playerId, districtId)
-    return activeDistricts[districtId] and activeDistricts[districtId].players[playerId] or false
+    return State.players[districtId] and State.players[districtId][playerId] or false
 end)
 
 exports('GetDistrictControllingFaction', function(districtId)
-    return activeDistricts[districtId] and activeDistricts[districtId].controllingFaction or nil
+    return State.owners[districtId]
 end)
 
--- District Management
-local function UpdateDistrict(id, data)
-    if not districts[id] then return false end
+exports('GetDistrictResources', function(districtId)
+    return State.resources[districtId]
+end)
+
+exports('GetDistrictInfluence', function(districtId)
+    return State.influence[districtId]
+end)
+
+exports('UpdateDistrict', function(districtId, data)
+    if not State.districts[districtId] then return false end
     
     -- Update district data
     for key, value in pairs(data) do
-        districts[id][key] = value
+        State.districts[districtId][key] = value
     end
     
     -- Notify all clients
-    TriggerClientEvent('district:update', -1, id, districts[id])
+    TriggerClientEvent('dz:district:update', -1, districtId, State.districts[districtId])
     
     return true
-end
+end)
 
-local function SetDistrictOwner(id, owner)
-    if not districts[id] then return false end
+exports('SetDistrictOwner', function(districtId, owner)
+    return UpdateDistrictControl(districtId, owner)
+end)
+
+exports('UpdateDistrictResources', function(districtId, resourceType, amount)
+    if not State.districts[districtId] then return false end
+    if not State.resources[districtId][resourceType] then return false end
     
-    districtOwners[id] = owner
-    districts[id].owner = owner
+    State.resources[districtId][resourceType] = State.resources[districtId][resourceType] + amount
     
     -- Notify all clients
-    TriggerClientEvent('district:ownerUpdate', -1, id, owner)
+    TriggerClientEvent('dz:district:update', -1, districtId, {
+        resources = State.resources[districtId]
+    })
     
     return true
-end
+end)
 
-local function UpdateDistrictResources(id, resourceType, amount)
-    if not districts[id] then return false end
-    if not districtResources[id] then return false end
+exports('UpdateDistrictInfluence', function(districtId, amount)
+    if not State.districts[districtId] then return false end
     
-    districtResources[id][resourceType] = (districtResources[id][resourceType] or 0) + amount
-    districts[id].resources = districtResources[id]
+    State.influence[districtId] = State.influence[districtId] + amount
     
     -- Notify all clients
-    TriggerClientEvent('district:resourceUpdate', -1, id, resourceType, districtResources[id][resourceType])
+    TriggerClientEvent('dz:district:update', -1, districtId, {
+        influence = State.influence[districtId]
+    })
     
     return true
-end
-
-local function UpdateDistrictInfluence(id, amount)
-    if not districts[id] then return false end
-    
-    districtInfluence[id] = (districtInfluence[id] or 0) + amount
-    districts[id].influence = districtInfluence[id]
-    
-    -- Notify all clients
-    TriggerClientEvent('district:influenceUpdate', -1, id, districtInfluence[id])
-    
-    return true
-end
+end)
 
 -- Event Handlers
 RegisterNetEvent('district:requestUpdate')
 AddEventHandler('district:requestUpdate', function()
     local source = source
-    TriggerClientEvent('district:update', source, districts)
+    TriggerClientEvent('district:update', source, State.districts)
 end)
 
 RegisterNetEvent('district:captureAttempt')
@@ -326,19 +324,19 @@ end, 'admin')
 
 -- Exports
 exports('GetDistricts', function()
-    return districts
+    return State.districts
 end)
 
 exports('GetDistrictOwner', function(districtId)
-    return districtOwners[districtId]
+    return State.owners[districtId]
 end)
 
 exports('GetDistrictResources', function(districtId)
-    return districtResources[districtId]
+    return State.resources[districtId]
 end)
 
 exports('GetDistrictInfluence', function(districtId)
-    return districtInfluence[districtId]
+    return State.influence[districtId]
 end)
 
 exports('UpdateDistrict', function(districtId, data)
