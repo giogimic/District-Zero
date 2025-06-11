@@ -15,8 +15,9 @@ version '1.0.0'
 shared_scripts {
     '@ox_lib/init.lua',
     '@qbx_core/shared/locale.lua',
-    'locales/*.lua',
-    'shared/*.lua'
+    'shared/utils.lua',
+    'shared/config.lua',
+    'locales/*.lua'
 }
 
 -- Client-side scripts

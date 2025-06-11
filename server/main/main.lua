@@ -1,19 +1,30 @@
--- server/main.lua
--- Server logic for APB systems (e.g., mission management, player data)
+-- server/main/main.lua
+-- Main server file for District Zero
 
-local QBCore = exports['qb-core']:GetCoreObject()
+local QBX = exports['qbx_core']:GetCore()
+local Utils = require 'shared/utils'
 local activeMissions = {}
 local playerData = {}
 
--- Initialize player data
-RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
+-- Initialize database
+CreateThread(function()
+    Utils.PrintDebug('Initializing database...')
+    -- Database initialization code here
+end)
+
+-- Player Management
+RegisterNetEvent('QBCore:Server:OnPlayerLoaded')
+AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
+    local source = source
+    local player = QBX.Functions.GetPlayer(source)
+    if not player then return end
+    
+    Utils.PrintDebug('Player loaded: ' .. player.PlayerData.citizenid)
+    -- Additional player load logic here
 
     -- Initialize player data if not exists
-    if not playerData[src] then
-        playerData[src] = {
+    if not playerData[source] then
+        playerData[source] = {
             faction = nil,
             xp = 0,
             level = 1,
@@ -24,19 +35,39 @@ RegisterNetEvent('QBCore:Server:OnPlayerLoaded', function()
         }
     end
 
-    Utils.PrintDebug("Player data initialized for " .. GetPlayerName(src))
+    Utils.PrintDebug("Player data initialized for " .. GetPlayerName(source))
 end)
 
-RegisterNetEvent('QBCore:Server:OnPlayerUnload', function()
-    local src = source
-    playerData[src] = nil
-    Utils.PrintDebug("Player data unloaded for " .. GetPlayerName(src))
+RegisterNetEvent('QBCore:Server:OnPlayerUnload')
+AddEventHandler('QBCore:Server:OnPlayerUnload', function()
+    local source = source
+    local player = QBX.Functions.GetPlayer(source)
+    if not player then return end
+    
+    Utils.PrintDebug('Player unloaded: ' .. player.PlayerData.citizenid)
+    -- Additional player unload logic here
+
+    playerData[source] = nil
+    Utils.PrintDebug("Player data unloaded for " .. GetPlayerName(source))
+end)
+
+-- Resource Management
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    Utils.PrintDebug('Resource started: ' .. resourceName)
+    -- Additional resource start logic here
+end)
+
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    Utils.PrintDebug('Resource stopped: ' .. resourceName)
+    -- Additional resource stop logic here
 end)
 
 -- Mission Management
 RegisterNetEvent('apb:server:startMission', function(missionType)
     local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
+    local Player = QBX.Functions.GetPlayer(src)
     if not Player then return end
 
     -- Check if player is already in a mission
@@ -73,7 +104,7 @@ end)
 
 RegisterNetEvent('apb:server:completeMission', function(data)
     local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
+    local Player = QBX.Functions.GetPlayer(src)
     if not Player then return end
 
     -- Verify mission exists
@@ -134,7 +165,7 @@ end)
 
 RegisterNetEvent('apb:server:failMission', function(data)
     local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
+    local Player = QBX.Functions.GetPlayer(src)
     if not Player then return end
 
     -- Verify mission exists
