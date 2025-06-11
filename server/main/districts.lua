@@ -16,6 +16,16 @@ local State = {
     players = {}
 }
 
+-- District State Management
+local DistrictState = {
+    districts = {},
+    players = {},
+    lastSync = 0,
+    syncInterval = 5000, -- 5 seconds
+    maxRetries = 3,
+    retryDelay = 1000
+}
+
 -- Initialize districts from config
 local function InitializeDistricts()
     if not Config or not Config.Districts then
@@ -180,6 +190,20 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     InitializeDistricts()
+    
+    -- Initialize district state
+    if not InitializeDistrictState() then
+        Utils.HandleError('Failed to initialize district state', 'INIT', 'onResourceStart')
+        return
+    end
+    
+    -- Start state sync loop
+    CreateThread(function()
+        while true do
+            SyncDistrictState()
+            Wait(DistrictState.syncInterval)
+        end
+    end)
 end)
 
 -- Resource stop handler
@@ -194,6 +218,15 @@ AddEventHandler('onResourceStop', function(resourceName)
         influence = {},
         players = {}
     }
+    
+    -- Save district state to database
+    for _, district in pairs(DistrictState.districts) do
+        MySQL.update('UPDATE dz_districts SET owner = ?, influence = ? WHERE id = ?', {
+            district.owner,
+            district.influence,
+            district.id
+        })
+    end
 end)
 
 -- Exports
@@ -353,4 +386,134 @@ end)
 
 exports('UpdateDistrictInfluence', function(districtId, amount)
     return UpdateDistrictInfluence(districtId, amount)
-end) 
+end)
+
+-- Initialize district state
+local function InitializeDistrictState()
+    -- Load districts from database
+    local success, result = pcall(function()
+        return MySQL.query.await('SELECT * FROM dz_districts')
+    end)
+    
+    if not success then
+        Utils.HandleError('Failed to load districts from database', 'DATABASE', 'InitializeDistrictState')
+        return false
+    end
+    
+    -- Initialize district state
+    for _, district in ipairs(result) do
+        DistrictState.districts[district.id] = {
+            id = district.id,
+            name = district.name,
+            owner = district.owner,
+            influence = district.influence,
+            lastUpdate = os.time(),
+            players = {},
+            isActive = false
+        }
+    end
+    
+    return true
+end
+
+-- Sync district state
+local function SyncDistrictState()
+    local currentTime = GetGameTimer()
+    
+    -- Check if it's time to sync
+    if currentTime - DistrictState.lastSync < DistrictState.syncInterval then
+        return
+    end
+    
+    -- Update last sync time
+    DistrictState.lastSync = currentTime
+    
+    -- Sync district state to all clients
+    for _, player in ipairs(GetPlayers()) do
+        local playerDistricts = {}
+        
+        -- Get player's current districts
+        for districtId, district in pairs(DistrictState.districts) do
+            if district.players[player] then
+                table.insert(playerDistricts, {
+                    id = district.id,
+                    name = district.name,
+                    owner = district.owner,
+                    influence = district.influence,
+                    isActive = district.isActive
+                })
+            end
+        end
+        
+        -- Send district state to player
+        TriggerClientEvent('dz:syncDistricts', player, playerDistricts)
+    end
+end
+
+-- Update district state
+local function UpdateDistrictState(districtId, data)
+    local district = DistrictState.districts[districtId]
+    if not district then
+        return false
+    end
+    
+    -- Update district data
+    for key, value in pairs(data) do
+        if district[key] ~= nil then
+            district[key] = value
+        end
+    end
+    
+    -- Update last update time
+    district.lastUpdate = os.time()
+    
+    -- Sync state to all players in district
+    for player, _ in pairs(district.players) do
+        TriggerClientEvent('dz:updateDistrict', player, districtId, data)
+    end
+    
+    return true
+end
+
+-- Add player to district
+local function AddPlayerToDistrict(player, districtId)
+    local district = DistrictState.districts[districtId]
+    if not district then
+        return false
+    end
+    
+    -- Add player to district
+    district.players[player] = true
+    DistrictState.players[player] = districtId
+    
+    -- Notify player
+    TriggerClientEvent('dz:enterDistrict', player, districtId)
+    
+    return true
+end
+
+-- Remove player from district
+local function RemovePlayerFromDistrict(player, districtId)
+    local district = DistrictState.districts[districtId]
+    if not district then
+        return false
+    end
+    
+    -- Remove player from district
+    district.players[player] = nil
+    DistrictState.players[player] = nil
+    
+    -- Notify player
+    TriggerClientEvent('dz:exitDistrict', player, districtId)
+    
+    return true
+end
+
+-- Export district state functions
+exports('GetDistrictState', function(districtId)
+    return DistrictState.districts[districtId]
+end)
+
+exports('UpdateDistrictState', UpdateDistrictState)
+exports('AddPlayerToDistrict', AddPlayerToDistrict)
+exports('RemovePlayerFromDistrict', RemovePlayerFromDistrict) 

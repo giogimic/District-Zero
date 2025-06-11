@@ -209,93 +209,46 @@ exports('AddItem', AddItem)
 exports('GetCharacterSkills', GetCharacterSkills)
 exports('UpdateSkill', UpdateSkill)
 
--- Database Handler
-local QBX = exports['qbx_core']:GetCore()
-local Utils = require 'shared/utils'
-
--- Database Configuration
-local Config = {
-    poolSize = 5,
-    timeout = 5000,
-    retries = 3,
-    cacheTTL = 300 -- 5 minutes
+-- Database Management
+local Database = {
+    maxRetries = 3,
+    retryDelay = 1000,
+    transactionTimeout = 5000
 }
 
--- Connection Pool
-local pool = {}
-
--- Initialize Pool
-local function InitializePool()
-    for i = 1, Config.poolSize do
-        pool[i] = {
-            inUse = false,
-            lastUsed = 0
-        }
-    end
-end
-
--- Get Connection
-local function GetConnection()
-    for i = 1, Config.poolSize do
-        if not pool[i].inUse then
-            pool[i].inUse = true
-            pool[i].lastUsed = os.time()
-            return i
-        end
-    end
-    return nil
-end
-
--- Release Connection
-local function ReleaseConnection(id)
-    if pool[id] then
-        pool[id].inUse = false
-    end
-end
-
--- Execute Query with Retry
-local function ExecuteQuery(query, params, retries)
-    retries = retries or Config.retries
-    local connId = GetConnection()
+-- Execute query with retry
+function Database.ExecuteQuery(query, params, retries)
+    retries = retries or 0
     
-    if not connId then
-        Utils.HandleError('No available database connections', 'DATABASE', 'ExecuteQuery')
+    -- Check retry limit
+    if retries >= Database.maxRetries then
+        Utils.HandleError('Max retries reached for query', 'DATABASE', 'ExecuteQuery')
         return nil
     end
     
+    -- Execute query
     local success, result = pcall(function()
         return MySQL.query.await(query, params)
     end)
     
-    ReleaseConnection(connId)
-    
+    -- Handle error
     if not success then
-        if retries > 0 then
-            Wait(1000)
-            return ExecuteQuery(query, params, retries - 1)
-        end
-        Utils.HandleError('Database query failed: ' .. tostring(result), 'DATABASE', 'ExecuteQuery')
-        return nil
+        Utils.HandleError('Database query failed', 'DATABASE', 'ExecuteQuery')
+        Wait(Database.retryDelay)
+        return Database.ExecuteQuery(query, params, retries + 1)
     end
     
     return result
 end
 
--- Execute Transaction
-local function ExecuteTransaction(queries)
-    local connId = GetConnection()
-    
-    if not connId then
-        Utils.HandleError('No available database connections', 'DATABASE', 'ExecuteTransaction')
-        return false
-    end
-    
-    local success = pcall(function()
-        MySQL.transaction.await(queries)
+-- Execute transaction
+function Database.ExecuteTransaction(queries)
+    -- Start transaction
+    local success, result = pcall(function()
+        return MySQL.transaction.await(queries)
     end)
     
-    ReleaseConnection(connId)
-    
+    -- Handle error
     if not success then
         Utils.HandleError('Transaction failed', 'DATABASE', 'ExecuteTransaction')
         return false
@@ -304,28 +257,140 @@ local function ExecuteTransaction(queries)
     return true
 end
 
--- Initialize
-CreateThread(function()
-    InitializePool()
+-- Initialize database
+function Database.Initialize()
+    -- Create tables if they don't exist
+    local queries = {
+        [[
+            CREATE TABLE IF NOT EXISTS dz_districts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(50) NOT NULL,
+                owner VARCHAR(50),
+                influence INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS dz_missions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(50) NOT NULL,
+                description TEXT,
+                reward INT DEFAULT 0,
+                difficulty INT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ]],
+        [[
+            CREATE TABLE IF NOT EXISTS dz_player_missions (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                player_id VARCHAR(50) NOT NULL,
+                mission_id INT NOT NULL,
+                status VARCHAR(20) DEFAULT 'active',
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                completed_at TIMESTAMP NULL,
+                FOREIGN KEY (mission_id) REFERENCES dz_missions(id)
+            )
+        ]]
+    }
+    
+    -- Execute transaction
+    if not Database.ExecuteTransaction(queries) then
+        Utils.HandleError('Failed to initialize database', 'DATABASE', 'Initialize')
+        return false
+    end
+    
+    return true
+end
+
+-- Save district data
+function Database.SaveDistrict(districtId, data)
+    -- Prepare query
+    local query = [[
+        UPDATE dz_districts 
+        SET owner = ?, influence = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    ]]
+    
+    -- Execute query
+    local result = Database.ExecuteQuery(query, {
+        data.owner,
+        data.influence,
+        districtId
+    })
+    
+    return result ~= nil
+end
+
+-- Load district data
+function Database.LoadDistrict(districtId)
+    -- Prepare query
+    local query = [[
+        SELECT * FROM dz_districts WHERE id = ?
+    ]]
+    
+    -- Execute query
+    local result = Database.ExecuteQuery(query, {districtId})
+    
+    if result and #result > 0 then
+        return result[1]
+    end
+    
+    return nil
+end
+
+-- Save mission data
+function Database.SaveMission(missionId, data)
+    -- Prepare query
+    local query = [[
+        UPDATE dz_missions 
+        SET name = ?, description = ?, reward = ?, difficulty = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    ]]
+    
+    -- Execute query
+    local result = Database.ExecuteQuery(query, {
+        data.name,
+        data.description,
+        data.reward,
+        data.difficulty,
+        missionId
+    })
+    
+    return result ~= nil
+end
+
+-- Load mission data
+function Database.LoadMission(missionId)
+    -- Prepare query
+    local query = [[
+        SELECT * FROM dz_missions WHERE id = ?
+    ]]
+    
+    -- Execute query
+    local result = Database.ExecuteQuery(query, {missionId})
+    
+    if result and #result > 0 then
+        return result[1]
+    end
+    
+    return nil
+end
+
+-- Initialize database on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Initialize database
+    if not Database.Initialize() then
+        Utils.HandleError('Failed to initialize database', 'INIT', 'onResourceStart')
+        return
+    end
 end)
 
--- Exports
-exports('Query', ExecuteQuery)
-exports('Transaction', ExecuteTransaction)
-
--- Event Handlers
-RegisterNetEvent('dz:database:query')
-AddEventHandler('dz:database:query', function(query, params, cb)
-    if not query then return end
-    
-    local result = ExecuteQuery(query, params)
-    if cb then cb(result) end
-end)
-
-RegisterNetEvent('dz:database:transaction')
-AddEventHandler('dz:database:transaction', function(queries, cb)
-    if not queries then return end
-    
-    local success = ExecuteTransaction(queries)
-    if cb then cb(success) end
-end) 
+-- Export database functions
+exports('SaveDistrict', Database.SaveDistrict)
+exports('LoadDistrict', Database.LoadDistrict)
+exports('SaveMission', Database.SaveMission)
+exports('LoadMission', Database.LoadMission) 

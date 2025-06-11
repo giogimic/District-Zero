@@ -7,46 +7,53 @@ game 'gta5'
 use_experimental_fxv2_oal 'yes'
 lua54 'yes'
 
-author 'GioGimic'
-description 'District Zero - Dynamic Territory Control System'
-version '1.0.1'
+author 'District Zero Development Team'
+description 'District Zero - Advanced Mission and District Management System'
+version '1.0.0'
 
 -- Dependencies
 dependencies {
     'qbx_core',
-    'ox_lib',
-    'oxmysql'
+    'oxmysql',
+    'ox_lib'
 }
 
--- Shared scripts (configs, enums, utils)
+-- Shared Scripts
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/shared/locale.lua',
-    'shared/config.lua',
-    'shared/utils.lua',
-    'locales/*.lua'
+    'shared/*.lua'
 }
 
--- Client-side scripts
+-- Client Scripts
 client_scripts {
     'client/main/*.lua'
 }
 
--- Server-side scripts
+-- Server Scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main/*.lua'
 }
 
-ui_page 'html/index.html'
+-- UI Files
+ui_page 'ui/dist/index.html'
 
 files {
-    'html/**/*'
+    'ui/dist/index.html',
+    'ui/dist/assets/*.js',
+    'ui/dist/assets/*.css',
+    'ui/dist/assets/*.png',
+    'ui/dist/assets/*.svg'
 }
 
--- Resource metadata
+-- Resource Metadata
+lua54 'yes'
+use_experimental_fxv2_oal 'yes'
+
+-- Resource Configuration
 provide 'district_zero'
-provide 'dz'
+provide 'dz_missions'
+provide 'dz_districts'
 
 -- Resource information
 repository 'https://github.com/GioGimic/district-zero'
