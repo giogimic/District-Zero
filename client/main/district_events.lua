@@ -1,5 +1,6 @@
 -- District Events Client Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports['qbx_core']:GetCore()
+local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventBlips = {}
 local eventNPCs = {}
@@ -227,4 +228,74 @@ AddEventHandler('onResourceStop', function(resourceName)
             CleanupEvent(districtId)
         end
     end
+end)
+
+-- Event Handlers
+RegisterNetEvent('dz:district:event:start')
+AddEventHandler('dz:district:event:start', function(districtId, eventType, eventData)
+    -- Handle event start
+    Utils.PrintDebug('Event started: ' .. eventType)
+    
+    -- Update UI
+    SendNUIMessage({
+        type = 'event:start',
+        districtId = districtId,
+        eventType = eventType,
+        eventData = eventData
+    })
+end)
+
+RegisterNetEvent('dz:district:event:end')
+AddEventHandler('dz:district:event:end', function(districtId, success)
+    -- Handle event end
+    Utils.PrintDebug('Event ended: ' .. (success and 'success' or 'failure'))
+    
+    -- Update UI
+    SendNUIMessage({
+        type = 'event:end',
+        districtId = districtId,
+        success = success
+    })
+end)
+
+RegisterNetEvent('dz:district:event:progress')
+AddEventHandler('dz:district:event:progress', function(districtId, progress)
+    -- Handle progress update
+    Utils.PrintDebug('Event progress: ' .. progress)
+    
+    -- Update UI
+    SendNUIMessage({
+        type = 'event:progress',
+        districtId = districtId,
+        progress = progress
+    })
+end)
+
+RegisterNetEvent('dz:district:event:update')
+AddEventHandler('dz:district:event:update', function(districtId, eventData)
+    -- Handle event update
+    Utils.PrintDebug('Event updated')
+    
+    -- Update UI
+    SendNUIMessage({
+        type = 'event:update',
+        districtId = districtId,
+        eventData = eventData
+    })
+end)
+
+-- NUI Callbacks
+RegisterNUICallback('event:join', function(data, cb)
+    Utils.TriggerServerEvent('district:event:join', data.districtId)
+    cb('ok')
+end)
+
+RegisterNUICallback('event:leave', function(data, cb)
+    Utils.TriggerServerEvent('district:event:leave', data.districtId)
+    cb('ok')
+end)
+
+RegisterNUICallback('event:progress:update', function(data, cb)
+    Utils.TriggerServerEvent('district:event:progress:update', data.districtId, data.progress)
+    cb('ok')
 end) 

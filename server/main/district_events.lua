@@ -1,5 +1,6 @@
 -- District Events Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports['qbx_core']:GetCore()
+local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventCooldowns = {}
 
@@ -56,7 +57,7 @@ local function StartEvent(districtId, eventType)
     }
     
     -- Notify all players
-    TriggerClientEvent('district:eventStart', -1, districtId, eventType, activeEvents[districtId])
+    Utils.TriggerClientEvent('district:event:start', -1, districtId, eventType, activeEvents[districtId])
     
     -- Set cooldown
     eventCooldowns[districtId] = os.time() + (event.duration * 2)
@@ -92,7 +93,7 @@ local function EndEvent(districtId, success)
     end
     
     -- Notify all players
-    TriggerClientEvent('district:eventEnd', -1, districtId, success)
+    Utils.TriggerClientEvent('district:event:end', -1, districtId, success)
     
     -- Clear event
     activeEvents[districtId] = nil
@@ -111,14 +112,14 @@ local function UpdateEventProgress(districtId, progress)
     end
     
     -- Notify all players
-    TriggerClientEvent('district:eventProgress', -1, districtId, progress)
+    Utils.TriggerClientEvent('district:event:progress', -1, districtId, progress)
     
     return true
 end
 
 -- Event Handlers
-RegisterNetEvent('district:joinEvent')
-AddEventHandler('district:joinEvent', function(districtId)
+RegisterNetEvent('dz:district:event:join')
+AddEventHandler('dz:district:event:join', function(districtId)
     local source = source
     if not activeEvents[districtId] then return end
     
@@ -129,11 +130,11 @@ AddEventHandler('district:joinEvent', function(districtId)
     activeEvents[districtId].participants[source] = true
     
     -- Notify all players
-    TriggerClientEvent('district:eventUpdate', -1, districtId, activeEvents[districtId])
+    Utils.TriggerClientEvent('district:event:update', -1, districtId, activeEvents[districtId])
 end)
 
-RegisterNetEvent('district:leaveEvent')
-AddEventHandler('district:leaveEvent', function(districtId)
+RegisterNetEvent('dz:district:event:leave')
+AddEventHandler('dz:district:event:leave', function(districtId)
     local source = source
     if not activeEvents[districtId] then return end
     
@@ -141,11 +142,11 @@ AddEventHandler('district:leaveEvent', function(districtId)
     activeEvents[districtId].participants[source] = nil
     
     -- Notify all players
-    TriggerClientEvent('district:eventUpdate', -1, districtId, activeEvents[districtId])
+    Utils.TriggerClientEvent('district:event:update', -1, districtId, activeEvents[districtId])
 end)
 
-RegisterNetEvent('district:updateProgress')
-AddEventHandler('district:updateProgress', function(districtId, progress)
+RegisterNetEvent('dz:district:event:progress:update')
+AddEventHandler('dz:district:event:progress:update', function(districtId, progress)
     local source = source
     if not activeEvents[districtId] then return end
     if not activeEvents[districtId].participants[source] then return end
@@ -154,7 +155,7 @@ AddEventHandler('district:updateProgress', function(districtId, progress)
 end)
 
 -- Commands
-QBX.Commands.Add('startevent', 'Start a district event (Admin Only)', {
+QBX.Commands.Add('dz:event:start', 'Start a district event (Admin Only)', {
     {name = 'districtId', help = 'District ID'},
     {name = 'eventType', help = 'Event Type (capture/defend/resource)'}
 }, true, function(source, args)
@@ -162,13 +163,13 @@ QBX.Commands.Add('startevent', 'Start a district event (Admin Only)', {
     local eventType = args[2]
     
     if StartEvent(districtId, eventType) then
-        TriggerClientEvent('QBCore:Notify', source, 'Event started successfully', 'success')
+        Utils.SendNotification(source, 'success', 'Event started successfully')
     else
-        TriggerClientEvent('QBCore:Notify', source, 'Failed to start event', 'error')
+        Utils.SendNotification(source, 'error', 'Failed to start event')
     end
 end, 'admin')
 
-QBX.Commands.Add('endevent', 'End a district event (Admin Only)', {
+QBX.Commands.Add('dz:event:end', 'End a district event (Admin Only)', {
     {name = 'districtId', help = 'District ID'},
     {name = 'success', help = 'Success (true/false)'}
 }, true, function(source, args)
@@ -176,9 +177,9 @@ QBX.Commands.Add('endevent', 'End a district event (Admin Only)', {
     local success = args[2] == 'true'
     
     if EndEvent(districtId, success) then
-        TriggerClientEvent('QBCore:Notify', source, 'Event ended successfully', 'success')
+        Utils.SendNotification(source, 'success', 'Event ended successfully')
     else
-        TriggerClientEvent('QBCore:Notify', source, 'Failed to end event', 'error')
+        Utils.SendNotification(source, 'error', 'Failed to end event')
     end
 end, 'admin')
 

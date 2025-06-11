@@ -1,5 +1,5 @@
 -- UI Handler
-local QBX = exports.qbx_core:GetCoreObject()
+local QBX = exports['qbx_core']:GetCore()
 local isUIOpen = false
 local currentTab = nil
 

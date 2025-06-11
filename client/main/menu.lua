@@ -1,5 +1,5 @@
 -- District Zero Menu Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports['qbx_core']:GetCore()
 local isMenuOpen = false
 local currentTab = 'districts'
 local menuVisible = false

@@ -1,5 +1,5 @@
 -- Map Handler for District Zero
-local QBX = exports.qbx_core:GetCoreObject()
+local QBX = exports['qbx_core']:GetCore()
 local districtBlips = {}
 local districtMarkers = {}
 local districtZones = {}
