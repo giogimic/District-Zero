@@ -1,242 +1,230 @@
 -- District Events Client Handler
-local QBX = exports['qbx_core']:GetCoreObject()
-local activeNPCs = {}
-local eventObjectives = {}
+local QBX = exports['qbx_core']:GetSharedObject()
+local activeEvents = {}
 local eventBlips = {}
+local eventNPCs = {}
 
--- NPC Configurations
-local npcConfigs = {
-    raid = {
-        count = 8,
-        models = {
-            'g_m_y_salvagoon_01',
-            'g_m_y_salvagoon_02',
-            'g_m_y_salvagoon_03'
-        },
-        weapons = {
-            'WEAPON_PISTOL',
-            'WEAPON_SMG',
-            'WEAPON_CARBINERIFLE'
-        },
-        health = 200,
-        armor = 100
-    },
-    emergency = {
-        count = 4,
-        models = {
-            's_m_m_paramedic_01',
-            's_m_m_doctor_01',
-            's_m_m_fireman_01'
-        },
-        weapons = {
-            'WEAPON_PISTOL',
-            'WEAPON_STUNGUN'
-        },
-        health = 150,
-        armor = 50
-    },
-    turf_war = {
-        count = 12,
-        models = {
-            'g_m_y_salvagoon_01',
-            'g_m_y_salvagoon_02',
-            'g_m_y_salvagoon_03',
-            'g_m_y_mexgoon_01',
-            'g_m_y_mexgoon_02',
-            'g_m_y_mexgoon_03'
-        },
-        weapons = {
-            'WEAPON_PISTOL',
-            'WEAPON_SMG',
-            'WEAPON_CARBINERIFLE',
-            'WEAPON_SHOTGUN'
-        },
-        health = 250,
-        armor = 150
-    },
-    gang_attack = {
-        count = 6,
-        models = {
-            'g_m_y_mexgoon_01',
-            'g_m_y_mexgoon_02',
-            'g_m_y_mexgoon_03',
-            'g_m_y_salvagoon_01',
-            'g_m_y_salvagoon_02',
-            'g_m_y_salvagoon_03'
-        },
-        weapons = {
-            'WEAPON_PISTOL',
-            'WEAPON_SMG',
-            'WEAPON_CARBINERIFLE'
-        },
-        health = 200,
-        armor = 100
-    },
-    patrol = {
-        count = 2,
-        models = {
-            's_m_m_security_01',
-            's_m_y_swat_01',
-            's_m_y_cop_01'
-        },
-        weapons = {
-            'WEAPON_PISTOL',
-            'WEAPON_STUNGUN',
-            'WEAPON_CARBINERIFLE'
-        },
-        health = 150,
-        armor = 100
-    }
-}
-
--- Helper Functions
-local function GetRandomPosition(center, radius)
-    local angle = math.random() * 2 * math.pi
-    local r = radius * math.sqrt(math.random())
-    local x = center.x + r * math.cos(angle)
-    local y = center.y + r * math.sin(angle)
-    local z = center.z
-    
-    -- Get ground Z coordinate
-    local ground, groundZ = GetGroundZFor_3dCoord(x, y, z, false)
-    if ground then
-        return vector3(x, y, groundZ)
+-- Error handling wrapper
+local function SafeCall(fn, ...)
+    local status, result = pcall(fn, ...)
+    if not status then
+        print('[District Zero] Error:', result)
+        return nil
     end
-    return vector3(x, y, z)
+    return result
 end
 
-local function CreateEventBlip(coords, sprite, color, text)
-    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-    SetBlipSprite(blip, sprite)
-    SetBlipColour(blip, color)
-    SetBlipScale(blip, 1.0)
-    SetBlipAsShortRange(blip, true)
-    BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString(text)
-    EndTextCommandSetBlipName(blip)
-    return blip
+-- Event cleanup
+local function CleanupEvent(districtId)
+    if eventBlips[districtId] then
+        RemoveBlip(eventBlips[districtId])
+        eventBlips[districtId] = nil
+    end
+    
+    if eventNPCs[districtId] then
+        for _, npc in pairs(eventNPCs[districtId]) do
+            if DoesEntityExist(npc) then
+                DeleteEntity(npc)
+            end
+        end
+        eventNPCs[districtId] = nil
+    end
 end
 
-local function SpawnNPCs(eventType, district)
-    local config = npcConfigs[eventType]
-    if not config then return end
-    
-    local center = district.center
-    local radius = district.radius
-    
-    for i = 1, config.count do
-        local model = config.models[math.random(#config.models)]
-        local weapon = config.weapons[math.random(#config.weapons)]
-        local position = GetRandomPosition(center, radius)
+-- Event handlers with error handling
+RegisterNetEvent('district:spawnRaidNPCs', function(district)
+    SafeCall(function()
+        if not district or not district.center then
+            print('[District Zero] Error: Invalid district data for raid')
+            return
+        end
+
+        local npcs = {}
+        local numNPCs = math.random(3, 6)
         
-        -- Request and load model
-        local hash = GetHashKey(model)
-        RequestModel(hash)
-        while not HasModelLoaded(hash) do
-            Wait(0)
+        for i = 1, numNPCs do
+            local offset = vector3(
+                math.random(-10.0, 10.0),
+                math.random(-10.0, 10.0),
+                0.0
+            )
+            local coords = district.center + offset
+            
+            local ped = CreatePed(4, Config.NPCModels.gang, coords.x, coords.y, coords.z, 0.0, true, true)
+            if DoesEntityExist(ped) then
+                SetPedArmour(ped, 100)
+                GiveWeaponToPed(ped, GetHashKey('WEAPON_PISTOL'), 999, false, true)
+                SetPedCombatAttributes(ped, 46, true)
+                table.insert(npcs, ped)
+            end
         end
         
-        -- Create NPC
-        local ped = CreatePed(4, hash, position.x, position.y, position.z, 0.0, true, false)
-        SetPedArmour(ped, config.armor)
-        SetEntityHealth(ped, config.health)
-        GiveWeaponToPed(ped, GetHashKey(weapon), 999, false, true)
-        SetPedCombatAttributes(ped, 46, true)
-        SetPedFleeAttributes(ped, 0, false)
-        SetPedAsEnemy(ped, true)
-        SetPedMaxHealth(ped, config.health)
-        SetPedAlertness(ped, 3)
-        SetPedAccuracy(ped, 60)
-        SetPedCombatRange(ped, 2)
-        SetPedCombatMovement(ped, 3)
-        
-        -- Add to active NPCs
-        table.insert(activeNPCs, {
-            ped = ped,
-            eventType = eventType,
-            districtId = district.id
-        })
-        
-        -- Set model as no longer needed
-        SetModelAsNoLongerNeeded(hash)
-    end
-end
-
--- Event Handlers
-RegisterNetEvent('district:spawnRaidNPCs', function(district)
-    SpawnNPCs('raid', district)
-    local blip = CreateEventBlip(district.center, 1, 1, 'Raid Objective')
-    table.insert(eventBlips, blip)
+        eventNPCs[district.id] = npcs
+    end)
 end)
 
 RegisterNetEvent('district:spawnEmergencyNPCs', function(district)
-    SpawnNPCs('emergency', district)
-    local blip = CreateEventBlip(district.center, 1, 2, 'Emergency Response')
-    table.insert(eventBlips, blip)
+    SafeCall(function()
+        if not district or not district.center then
+            print('[District Zero] Error: Invalid district data for emergency')
+            return
+        end
+
+        local npcs = {}
+        local numNPCs = math.random(2, 4)
+        
+        for i = 1, numNPCs do
+            local offset = vector3(
+                math.random(-8.0, 8.0),
+                math.random(-8.0, 8.0),
+                0.0
+            )
+            local coords = district.center + offset
+            
+            local ped = CreatePed(4, Config.NPCModels.police, coords.x, coords.y, coords.z, 0.0, true, true)
+            if DoesEntityExist(ped) then
+                SetPedArmour(ped, 100)
+                GiveWeaponToPed(ped, GetHashKey('WEAPON_PISTOL'), 999, false, true)
+                SetPedCombatAttributes(ped, 46, true)
+                table.insert(npcs, ped)
+            end
+        end
+        
+        eventNPCs[district.id] = npcs
+    end)
 end)
 
 RegisterNetEvent('district:spawnTurfWarNPCs', function(district)
-    SpawnNPCs('turf_war', district)
-    local blip = CreateEventBlip(district.center, 1, 3, 'Turf War')
-    table.insert(eventBlips, blip)
+    SafeCall(function()
+        if not district or not district.center then
+            print('[District Zero] Error: Invalid district data for turf war')
+            return
+        end
+
+        local npcs = {}
+        local numNPCs = math.random(4, 8)
+        
+        for i = 1, numNPCs do
+            local offset = vector3(
+                math.random(-15.0, 15.0),
+                math.random(-15.0, 15.0),
+                0.0
+            )
+            local coords = district.center + offset
+            
+            local ped = CreatePed(4, Config.NPCModels.gang, coords.x, coords.y, coords.z, 0.0, true, true)
+            if DoesEntityExist(ped) then
+                SetPedArmour(ped, 100)
+                GiveWeaponToPed(ped, GetHashKey('WEAPON_PISTOL'), 999, false, true)
+                SetPedCombatAttributes(ped, 46, true)
+                table.insert(npcs, ped)
+            end
+        end
+        
+        eventNPCs[district.id] = npcs
+    end)
 end)
 
 RegisterNetEvent('district:spawnGangAttackNPCs', function(district)
-    SpawnNPCs('gang_attack', district)
-    local blip = CreateEventBlip(district.center, 1, 4, 'Gang Attack')
-    table.insert(eventBlips, blip)
+    SafeCall(function()
+        if not district or not district.center then
+            print('[District Zero] Error: Invalid district data for gang attack')
+            return
+        end
+
+        local npcs = {}
+        local numNPCs = math.random(3, 6)
+        
+        for i = 1, numNPCs do
+            local offset = vector3(
+                math.random(-12.0, 12.0),
+                math.random(-12.0, 12.0),
+                0.0
+            )
+            local coords = district.center + offset
+            
+            local ped = CreatePed(4, Config.NPCModels.gang, coords.x, coords.y, coords.z, 0.0, true, true)
+            if DoesEntityExist(ped) then
+                SetPedArmour(ped, 100)
+                GiveWeaponToPed(ped, GetHashKey('WEAPON_PISTOL'), 999, false, true)
+                SetPedCombatAttributes(ped, 46, true)
+                table.insert(npcs, ped)
+            end
+        end
+        
+        eventNPCs[district.id] = npcs
+    end)
 end)
 
 RegisterNetEvent('district:spawnPatrolNPCs', function(district)
-    SpawnNPCs('patrol', district)
-    local blip = CreateEventBlip(district.center, 1, 5, 'Patrol')
-    table.insert(eventBlips, blip)
+    SafeCall(function()
+        if not district or not district.center then
+            print('[District Zero] Error: Invalid district data for patrol')
+            return
+        end
+
+        local npcs = {}
+        local numNPCs = math.random(2, 4)
+        
+        for i = 1, numNPCs do
+            local offset = vector3(
+                math.random(-10.0, 10.0),
+                math.random(-10.0, 10.0),
+                0.0
+            )
+            local coords = district.center + offset
+            
+            local ped = CreatePed(4, Config.NPCModels.police, coords.x, coords.y, coords.z, 0.0, true, true)
+            if DoesEntityExist(ped) then
+                SetPedArmour(ped, 100)
+                GiveWeaponToPed(ped, GetHashKey('WEAPON_PISTOL'), 999, false, true)
+                SetPedCombatAttributes(ped, 46, true)
+                table.insert(npcs, ped)
+            end
+        end
+        
+        eventNPCs[district.id] = npcs
+    end)
 end)
 
 RegisterNetEvent('district:cleanupEvent', function()
-    -- Remove NPCs
-    for _, npc in ipairs(activeNPCs) do
-        if DoesEntityExist(npc.ped) then
-            DeleteEntity(npc.ped)
+    SafeCall(function()
+        for districtId, _ in pairs(eventNPCs) do
+            CleanupEvent(districtId)
+        end
+    end)
+end)
+
+-- Event completion handlers
+RegisterNetEvent('district:eventComplete', function(districtId, eventType)
+    SafeCall(function()
+        if not districtId or not eventType then
+            print('[District Zero] Error: Invalid event completion data')
+            return
+        end
+
+        CleanupEvent(districtId)
+        QBX.Functions.Notify(Lang:t('success.event_completed'), 'success')
+    end)
+end)
+
+RegisterNetEvent('district:eventFailed', function(districtId, eventType)
+    SafeCall(function()
+        if not districtId or not eventType then
+            print('[District Zero] Error: Invalid event failure data')
+            return
+        end
+
+        CleanupEvent(districtId)
+        QBX.Functions.Notify(Lang:t('error.event_failed'), 'error')
+    end)
+end)
+
+-- Resource cleanup
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() then
+        for districtId, _ in pairs(eventNPCs) do
+            CleanupEvent(districtId)
         end
     end
-    activeNPCs = {}
-    
-    -- Remove blips
-    for _, blip in ipairs(eventBlips) do
-        RemoveBlip(blip)
-    end
-    eventBlips = {}
-    
-    -- Clear objectives
-    eventObjectives = {}
-end)
-
--- Threads
-CreateThread(function()
-    while true do
-        Wait(1000)
-        
-        -- Check for NPC deaths
-        for i = #activeNPCs, 1, -1 do
-            local npc = activeNPCs[i]
-            if not DoesEntityExist(npc.ped) or IsEntityDead(npc.ped) then
-                table.remove(activeNPCs, i)
-                
-                -- If all NPCs are dead, notify server
-                if #activeNPCs == 0 then
-                    TriggerServerEvent('district:eventComplete', npc.districtId, npc.eventType)
-                end
-            end
-        end
-    end
-end)
-
--- Exports
-exports('GetActiveNPCs', function()
-    return activeNPCs
-end)
-
-exports('GetEventObjectives', function()
-    return eventObjectives
 end) 
