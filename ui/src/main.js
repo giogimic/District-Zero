@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import { createI18n } from 'vue-i18n';
-import messages from '../locales/en.json';
+import messages from './locales/en.json';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { 
@@ -14,7 +14,8 @@ import {
   faTimes,
   faPlay,
   faMapMarkerAlt,
-  faClock
+  faClock,
+  faChartLine
 } from '@fortawesome/free-solid-svg-icons';
 
 // Add icons to library
@@ -28,7 +29,8 @@ library.add(
   faTimes,
   faPlay,
   faMapMarkerAlt,
-  faClock
+  faClock,
+  faChartLine
 );
 
 // Create Vue app

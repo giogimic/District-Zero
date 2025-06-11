@@ -22,6 +22,9 @@ export default defineConfig({
       '@': resolve(__dirname, 'src'),
     },
   },
+  json: {
+    stringify: true
+  },
   server: {
     port: 3000,
     strictPort: true,
