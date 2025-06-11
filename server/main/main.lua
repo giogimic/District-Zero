@@ -18,6 +18,11 @@ local State = {
 local function Initialize()
     if State.isInitialized then return end
     
+    -- Wait for database to be ready
+    while not exports['dz']:InitializeDatabase do
+        Wait(100)
+    end
+    
     -- Initialize database
     local success = exports['dz']:InitializeDatabase()
     if not success then
@@ -103,6 +108,13 @@ end
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Wait for QBCore to be ready
+    while not QBX do
+        Wait(100)
+    end
+    
+    -- Initialize server
     Initialize()
 end)
 

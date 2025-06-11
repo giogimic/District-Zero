@@ -80,7 +80,7 @@ local function GetDistrictControl(districtId)
     return result and result[1] or nil
 end
 
--- Register exports
+-- Register exports immediately
 exports('InitializeDatabase', InitializeDatabase)
 exports('InsertDefaultData', InsertDefaultData)
 exports('GetDistricts', GetDistricts)
