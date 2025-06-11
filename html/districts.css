@@ -1,351 +1,388 @@
-/* District UI Styles */
-#districts-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 80%;
-    max-width: 1200px;
-    height: 80%;
-    background-color: rgba(0, 0, 0, 0.9);
+/* District Zero UI Styles */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --text-color: #ecf0f1;
+    --background-color: rgba(44, 62, 80, 0.95);
+    --border-color: #34495e;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --danger-color: #e74c3c;
+    --neutral-color: #95a5a6;
+    
+    --district-residential: #3498db;
+    --district-commercial: #2ecc71;
+    --district-industrial: #e67e22;
+    --district-special: #9b59b6;
+}
+
+/* Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background: transparent;
+    color: var(--text-color);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Container */
+.container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 20px;
+    padding: 20px;
+    height: 100vh;
+}
+
+/* Map Container */
+.map-container {
+    position: relative;
+    background: rgba(0, 0, 0, 0.5);
     border-radius: 10px;
-    color: white;
-    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    height: 100%;
+}
+
+#mapZones {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: center;
+    transition: transform 0.3s ease;
+}
+
+/* District List */
+.district-list {
+    background: var(--background-color);
+    border-radius: 10px;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
-}
-
-.districts-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 20px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.districts-header h2 {
-    margin: 0;
-    font-size: 24px;
-    color: #fff;
-}
-
-.close-button {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 0;
-    width: 30px;
-    height: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.3s;
-}
-
-.close-button:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.districts-content {
-    display: flex;
-    flex: 1;
-    padding: 20px;
-    gap: 20px;
-    overflow: hidden;
-}
-
-/* Districts List */
-.districts-list {
-    width: 300px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
+    gap: 15px;
+    height: 100%;
     overflow-y: auto;
 }
 
-.district-item {
-    padding: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-.district-item:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.district-item.selected {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-.district-info h3 {
-    margin: 0 0 5px 0;
-    font-size: 18px;
-}
-
-.district-info p {
-    margin: 0;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.district-status {
+.district-list-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
-    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.district-list-header h2 {
+    font-size: 1.5em;
+    color: var(--text-color);
+}
+
+/* Search and Filter */
+.search-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+#districtSearch {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.filter-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.filter-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    background: var(--border-color);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-button.active {
+    background: var(--secondary-color);
+}
+
+/* District Items */
+.district-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.district-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.district-item h4 {
+    margin-bottom: 10px;
+    color: var(--text-color);
+}
+
+.district-item-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
 }
 
 /* District Details */
 .district-details {
-    flex: 1;
-    background-color: rgba(0, 0, 0, 0.5);
-    border-radius: 5px;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-.district-details h3 {
-    margin: 0 0 10px 0;
-    font-size: 24px;
-}
-
-.district-details p {
-    margin: 0 0 20px 0;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-/* Control Status */
-.district-control-container {
-    margin-bottom: 20px;
-}
-
-.district-control-container h4 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
-}
-
-.control-status {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.control-progress {
-    flex: 1;
-    height: 10px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-    overflow: hidden;
-}
-
-.control-progress .progress {
-    height: 100%;
-    background-color: #4CAF50;
-    transition: width 0.3s;
-}
-
-/* Players List */
-.district-players-container {
-    margin-bottom: 20px;
-}
-
-.district-players-container h4 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
-}
-
-.district-players {
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    padding: 10px;
-}
-
-.player {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.player:last-child {
-    border-bottom: none;
-}
-
-.no-players {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.5);
-    padding: 20px;
-}
-
-/* Events List */
-.district-events-container {
-    margin-bottom: 20px;
-}
-
-.district-events-container h4 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
-}
-
-.district-events {
-    background-color: rgba(0, 0, 0, 0.3);
-    border-radius: 5px;
-    padding: 10px;
-}
-
-.event {
-    padding: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.event:last-child {
-    border-bottom: none;
-}
-
-.event-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.event-name {
-    font-weight: bold;
-}
-
-.event-time {
-    color: #ff9800;
-}
-
-.event-description {
-    color: rgba(255, 255, 255, 0.7);
-    margin-bottom: 10px;
-}
-
-.event-participants {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-.no-events {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.5);
-    padding: 20px;
-}
-
-/* Event Selection */
-.event-selection {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 80%;
-    max-width: 600px;
-    background-color: rgba(0, 0, 0, 0.95);
+    background: var(--background-color);
     border-radius: 10px;
     padding: 20px;
+    width: 400px;
+    display: none;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
-.event-selection-header {
+.district-details.active {
+    display: block;
+}
+
+.district-details-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.event-selection-header h3 {
-    margin: 0;
-    font-size: 24px;
+.district-details-header h3 {
+    font-size: 1.5em;
+    color: var(--text-color);
 }
 
-.event-types {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 15px;
-}
-
-.event-type {
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 5px;
-    padding: 15px;
+.close-details {
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5em;
     cursor: pointer;
-    transition: background-color 0.3s;
 }
 
-.event-type:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+.district-info {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.event-type h4 {
-    margin: 0 0 10px 0;
-    font-size: 18px;
+.info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 5px;
 }
 
-.event-type p {
-    margin: 0;
-    color: rgba(255, 255, 255, 0.7);
+.info-item h4 {
+    font-size: 0.9em;
+    color: var(--neutral-color);
+    margin-bottom: 5px;
 }
 
-/* Faction Colors */
-.faction-criminal {
-    color: #ff4444;
+.info-item p {
+    font-size: 1.1em;
+    color: var(--text-color);
 }
 
-.faction-police {
-    color: #4444ff;
+/* Action Buttons */
+.action-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
 }
 
-.faction-civilian {
-    color: #44ff44;
+.action-button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
 }
 
-/* Scrollbar styles */
+#actionCapture {
+    background: var(--danger-color);
+}
+
+#actionDefend {
+    background: var(--warning-color);
+}
+
+#actionUpgrade {
+    background: var(--success-color);
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Current District */
+.current-district {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--background-color);
+    border-radius: 10px;
+    padding: 15px;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    z-index: 100;
+}
+
+.current-district-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.current-district-info h4 {
+    font-size: 1.2em;
+    color: var(--text-color);
+}
+
+.current-district-info p {
+    font-size: 0.9em;
+    color: var(--neutral-color);
+}
+
+/* Map Controls */
+.map-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+}
+
+.map-control-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--background-color);
+    border: none;
+    color: var(--text-color);
+    font-size: 1.2em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.map-control-button:hover {
+    background: var(--secondary-color);
+    transform: scale(1.1);
+}
+
+/* District Zones */
+.zone {
+    position: absolute;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.3s ease;
+}
+
+.zone.residential { background: #3498db; }
+.zone.commercial { background: #2ecc71; }
+.zone.industrial { background: #e67e22; }
+.zone.special { background: #9b59b6; }
+
+.zone.captured { border: 2px solid var(--success-color); }
+.zone.contested { border: 2px solid var(--warning-color); }
+.zone.lost { border: 2px solid var(--danger-color); }
+
+/* Progress Bars */
+.progress-bar {
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--secondary-color);
+    transition: width 0.3s ease;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .container {
+        grid-template-columns: 250px 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    
+    .district-list {
+        display: none;
+    }
+    
+    .district-list.active {
+        display: block;
+    }
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--border-color);
     border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* Utility classes */
-.hidden {
-    display: none !important;
-}
-
-/* Responsive Design */
-@media screen and (max-width: 768px) {
-    #districts-container {
-        width: 95%;
-        height: 95%;
-    }
-    
-    .districts-content {
-        flex-direction: column;
-    }
-    
-    .districts-list {
-        width: 100%;
-        max-height: 200px;
-    }
-    
-    .event-types {
-        grid-template-columns: 1fr;
-    }
+    background: var(--secondary-color);
 } 

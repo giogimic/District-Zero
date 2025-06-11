@@ -17,17 +17,82 @@ let isUIOpen = false;
 // Notification System
 const notificationContainer = document.getElementById('notification-container');
 
+// UI State Management
+const state = {
+    currentTab: 'abilities',
+    notifications: [],
+    settings: {
+        notifications: true,
+        blips: true,
+        markers: true,
+        minimap: true,
+        debug: false,
+        uiScale: 1,
+        uiOpacity: 1
+    }
+};
+
+// UI Elements
+const elements = {
+    tabs: document.querySelectorAll('.nav-item'),
+    tabContents: document.querySelectorAll('.tab-content'),
+    helpButton: document.getElementById('helpButton'),
+    helpOverlay: document.getElementById('helpOverlay'),
+    closeHelp: document.querySelector('.close-help'),
+    notifications: document.getElementById('notifications')
+};
+
+// Tab Navigation
+elements.tabs.forEach(tab => {
+    tab.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabId = tab.dataset.tab;
+        switchTab(tabId);
+    });
+});
+
+function switchTab(tabId) {
+    // Update active tab
+    elements.tabs.forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+    });
+
+    // Update active content
+    elements.tabContents.forEach(content => {
+        content.classList.toggle('active', content.id === tabId);
+    });
+
+    state.currentTab = tabId;
+}
+
+// Help System
+elements.helpButton.addEventListener('click', () => {
+    elements.helpOverlay.style.display = 'flex';
+});
+
+elements.closeHelp.addEventListener('click', () => {
+    elements.helpOverlay.style.display = 'none';
+});
+
+// Notification System
 function showNotification(message, type = 'info', duration = 3000) {
+    if (!state.settings.notifications) return;
+
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
-    notification.textContent = message;
-    
-    notificationContainer.appendChild(notification);
-    
-    // Trigger reflow to enable animation
-    notification.offsetHeight;
-    notification.classList.add('show');
-    
+    notification.innerHTML = `
+        <i class="fas ${getNotificationIcon(type)}"></i>
+        <span>${message}</span>
+    `;
+
+    elements.notifications.appendChild(notification);
+
+    // Trigger animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+
+    // Remove notification
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
@@ -36,24 +101,123 @@ function showNotification(message, type = 'info', duration = 3000) {
     }, duration);
 }
 
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'success':
+            return 'fa-check-circle';
+        case 'error':
+            return 'fa-exclamation-circle';
+        case 'warning':
+            return 'fa-exclamation-triangle';
+        default:
+            return 'fa-info-circle';
+    }
+}
+
+// Settings Management
+function updateSettings(newSettings) {
+    state.settings = { ...state.settings, ...newSettings };
+    document.documentElement.style.setProperty('--ui-scale', state.settings.uiScale);
+    document.documentElement.style.setProperty('--ui-opacity', state.settings.uiOpacity);
+}
+
+// Event Listeners
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        if (elements.helpOverlay.style.display === 'flex') {
+            elements.helpOverlay.style.display = 'none';
+        }
+    }
+});
+
 // NUI Message Handler
 window.addEventListener('message', (event) => {
     const data = event.data;
-    
-    switch (data.type) {
-        case 'showUI':
-            showUI(data.component);
+
+    switch (data.action) {
+        case 'toggleUI':
+            document.body.style.display = data.show ? 'block' : 'none';
             break;
-        case 'hideUI':
-            hideUI();
+
+        case 'updateSettings':
+            updateSettings(data.settings);
             break;
-        case 'updateUI':
-            updateUI(data.component, data.data);
+
+        case 'showNotification':
+            showNotification(data.message, data.type, data.duration);
             break;
-        case 'notification':
-            showNotification(data.message, data.notificationType, data.duration);
+
+        case 'updateData':
+            updateUI(data.data);
             break;
     }
+});
+
+// UI Update Functions
+function updateUI(data) {
+    switch (state.currentTab) {
+        case 'abilities':
+            updateAbilities(data.abilities);
+            break;
+        case 'districts':
+            updateDistricts(data.districts);
+            break;
+        case 'missions':
+            updateMissions(data.missions);
+            break;
+        case 'factions':
+            updateFactions(data.factions);
+            break;
+        case 'stats':
+            updateStats(data.stats);
+            break;
+    }
+}
+
+function updateAbilities(abilities) {
+    const container = document.querySelector('.abilities-grid');
+    if (!container) return;
+
+    container.innerHTML = abilities.map(ability => `
+        <div class="ability-card">
+            <div class="ability-icon">
+                <i class="fas ${ability.icon}"></i>
+            </div>
+            <h3>${ability.name}</h3>
+            <p>${ability.description}</p>
+            <div class="ability-info">
+                <span class="cooldown"><i class="fas fa-clock"></i> ${ability.cooldown}</span>
+                <span class="cost"><i class="fas fa-bolt"></i> ${ability.cost}</span>
+            </div>
+            <button class="ability-button" data-ability="${ability.id}">Activate</button>
+        </div>
+    `).join('');
+
+    // Add event listeners to ability buttons
+    container.querySelectorAll('.ability-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const abilityId = button.dataset.ability;
+            fetch(`https://${GetParentResourceName()}/useAbility`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ abilityId })
+            });
+        });
+    });
+}
+
+// Initialize UI
+document.addEventListener('DOMContentLoaded', () => {
+    // Load saved settings
+    const savedSettings = localStorage.getItem('districtZeroSettings');
+    if (savedSettings) {
+        updateSettings(JSON.parse(savedSettings));
+    }
+
+    // Show welcome notification
+    showNotification('Welcome to District Zero! Press F8 for help.', 'info', 5000);
 });
 
 // Mission UI Functions
@@ -121,34 +285,6 @@ function hideUI() {
     isUIOpen = false;
 }
 
-function updateUI(component, data) {
-    const container = document.getElementById(`${component}-container`);
-    if (container) {
-        // Dispatch custom event for component-specific updates
-        const event = new CustomEvent(`${component}:update`, { detail: data });
-        container.dispatchEvent(event);
-    }
-}
-
-// NUI Callbacks
-function sendNUICallback(name, data = {}) {
-    fetch(`https://${GetParentResourceName()}/${name}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
-    });
-}
-
-// Close UI on Escape
-document.addEventListener('keyup', (event) => {
-    if (event.key === 'Escape' && isUIOpen) {
-        hideUI();
-        sendNUICallback('closeUI');
-    }
-});
-
 // Helper Functions
 function getObjectiveIcon(type) {
     const icons = {
@@ -160,16 +296,6 @@ function getObjectiveIcon(type) {
         hack: '💻'
     };
     return icons[type] || '📋';
-}
-
-function getNotificationIcon(type) {
-    const icons = {
-        success: '✅',
-        error: '❌',
-        info: 'ℹ️',
-        warning: '⚠️'
-    };
-    return icons[type] || 'ℹ️';
 }
 
 function formatMoney(amount) {
@@ -199,7 +325,6 @@ function getFactionColor(faction) {
 // Export functions for use in other scripts
 window.UI = {
     showNotification,
-    sendNUICallback,
     formatNumber,
     formatTime,
     getFactionColor

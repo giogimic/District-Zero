@@ -1,212 +1,281 @@
-// District Control UI
-let currentDistricts = [];
-let selectedDistrict = null;
+// Districts UI Handler
+const state = {
+    districts: {},
+    currentDistrict: null,
+    selectedDistrict: null,
+    mapScale: 1,
+    mapOffset: { x: 0, y: 0 },
+    isDragging: false,
+    lastMousePos: { x: 0, y: 0 }
+};
 
-// DOM Elements
-const districtsContainer = document.getElementById('districts-container');
-const districtsList = document.getElementById('districts-list');
-const districtDetails = document.getElementById('district-details');
-const districtName = document.getElementById('district-name');
-const districtDescription = document.getElementById('district-description');
-const districtControl = document.getElementById('district-control');
-const districtPlayers = document.getElementById('district-players');
-const districtEvents = document.getElementById('district-events');
-const startEventButton = document.getElementById('start-event');
-const closeDistrictsButton = document.getElementById('close-districts');
-
-// Event Listeners
-districtsList.addEventListener('click', (event) => {
-    const districtItem = event.target.closest('.district-item');
-    if (districtItem) {
-        const districtId = districtItem.dataset.districtId;
-        selectDistrict(districtId);
+// UI Elements
+const elements = {
+    mapZones: document.getElementById('mapZones'),
+    districtList: document.getElementById('districtList'),
+    districtDetails: document.getElementById('districtDetails'),
+    currentDistrict: document.getElementById('currentDistrict'),
+    searchInput: document.getElementById('districtSearch'),
+    sortSelect: document.getElementById('districtSort'),
+    filterButtons: document.querySelectorAll('.filter-button'),
+    mapControls: {
+        zoomIn: document.getElementById('zoomIn'),
+        zoomOut: document.getElementById('zoomOut'),
+        resetView: document.getElementById('resetView')
+    },
+    detailButtons: {
+        close: document.getElementById('closeDetails'),
+        capture: document.getElementById('actionCapture'),
+        defend: document.getElementById('actionDefend'),
+        upgrade: document.getElementById('actionUpgrade')
     }
-});
-
-startEventButton.addEventListener('click', () => {
-    if (selectedDistrict) {
-        showEventSelection();
-    }
-});
-
-closeDistrictsButton.addEventListener('click', () => {
-    window.UI.sendNUICallback('closeDistricts');
-    hideDistricts();
-});
-
-// Functions
-function selectDistrict(districtId) {
-    selectedDistrict = currentDistricts.find(district => district.id === districtId);
-    if (selectedDistrict) {
-        updateDistrictDetails(selectedDistrict);
-        districtsList.querySelectorAll('.district-item').forEach(item => {
-            item.classList.toggle('selected', item.dataset.districtId === districtId);
-        });
-    }
-}
-
-function updateDistrictDetails(district) {
-    districtName.textContent = district.name;
-    districtDescription.textContent = district.description;
-    
-    // Update control status
-    districtControl.innerHTML = `
-        <div class="control-status">
-            <span class="faction-${district.controllingFaction}">${district.controllingFaction}</span>
-            <div class="control-progress">
-                <div class="progress" style="width: ${district.controlPercentage}%"></div>
-            </div>
-        </div>
-    `;
-    
-    // Update players list
-    districtPlayers.innerHTML = '';
-    if (district.players && district.players.length > 0) {
-        district.players.forEach(player => {
-            const playerElement = document.createElement('div');
-            playerElement.className = 'player';
-            playerElement.innerHTML = `
-                <span class="player-name">${player.name}</span>
-                <span class="faction-${player.faction}">${player.faction}</span>
-            `;
-            districtPlayers.appendChild(playerElement);
-        });
-    } else {
-        districtPlayers.innerHTML = '<div class="no-players">No players in district</div>';
-    }
-    
-    // Update events list
-    districtEvents.innerHTML = '';
-    if (district.activeEvents && district.activeEvents.length > 0) {
-        district.activeEvents.forEach(event => {
-            const eventElement = document.createElement('div');
-            eventElement.className = 'event';
-            eventElement.innerHTML = `
-                <div class="event-header">
-                    <span class="event-name">${event.name}</span>
-                    <span class="event-time">${window.UI.formatTime(event.timeLeft)}</span>
-                </div>
-                <div class="event-description">${event.description}</div>
-                <div class="event-participants">
-                    ${event.participants.length} participants
-                </div>
-            `;
-            districtEvents.appendChild(eventElement);
-        });
-    } else {
-        districtEvents.innerHTML = '<div class="no-events">No active events</div>';
-    }
-    
-    // Update button state
-    startEventButton.disabled = !canStartEvent(district);
-}
-
-function canStartEvent(district) {
-    // Check if player's faction can start events in this district
-    return district.controllingFaction === 'player_faction' || district.controllingFaction === 'neutral';
-}
-
-function showEventSelection() {
-    const eventTypes = [
-        { id: 'raid', name: 'Raid', description: 'Attack enemy territory' },
-        { id: 'emergency', name: 'Emergency', description: 'Respond to district crisis' },
-        { id: 'turf_war', name: 'Turf War', description: 'Fight for district control' },
-        { id: 'gang_attack', name: 'Gang Attack', description: 'Defend against gang attack' },
-        { id: 'patrol', name: 'Patrol', description: 'Maintain district security' }
-    ];
-    
-    const eventSelection = document.createElement('div');
-    eventSelection.className = 'event-selection';
-    eventSelection.innerHTML = `
-        <div class="event-selection-header">
-            <h3>Select Event Type</h3>
-            <button class="close-events">×</button>
-        </div>
-        <div class="event-types">
-            ${eventTypes.map(event => `
-                <div class="event-type" data-event-id="${event.id}">
-                    <h4>${event.name}</h4>
-                    <p>${event.description}</p>
-                </div>
-            `).join('')}
-        </div>
-    `;
-    
-    districtsContainer.appendChild(eventSelection);
-    
-    // Add event listeners
-    eventSelection.querySelector('.close-events').addEventListener('click', () => {
-        eventSelection.remove();
-    });
-    
-    eventSelection.querySelectorAll('.event-type').forEach(element => {
-        element.addEventListener('click', () => {
-            const eventId = element.dataset.eventId;
-            startEvent(eventId);
-            eventSelection.remove();
-        });
-    });
-}
-
-function startEvent(eventId) {
-    if (selectedDistrict) {
-        window.UI.sendNUICallback('startEvent', {
-            districtId: selectedDistrict.id,
-            eventId: eventId
-        });
-    }
-}
-
-function updateDistrictsList(districts) {
-    currentDistricts = districts;
-    districtsList.innerHTML = '';
-    
-    districts.forEach(district => {
-        const districtItem = document.createElement('div');
-        districtItem.className = `district-item faction-${district.controllingFaction}`;
-        districtItem.dataset.districtId = district.id;
-        
-        districtItem.innerHTML = `
-            <div class="district-info">
-                <h3>${district.name}</h3>
-                <p>${district.shortDescription}</p>
-            </div>
-            <div class="district-status">
-                <span class="faction-${district.controllingFaction}">${district.controllingFaction}</span>
-                ${district.activeEvents ? 
-                    `<span class="active-events">${district.activeEvents.length} events</span>` :
-                    ''
-                }
-            </div>
-        `;
-        
-        districtsList.appendChild(districtItem);
-    });
-}
-
-// Handle district updates
-districtsContainer.addEventListener('districts:update', (event) => {
-    const { districts } = event.detail;
-    updateDistrictsList(districts);
-    
-    if (selectedDistrict) {
-        const updatedDistrict = districts.find(d => d.id === selectedDistrict.id);
-        if (updatedDistrict) {
-            updateDistrictDetails(updatedDistrict);
-        }
-    }
-});
-
-// Handle event updates
-districtsContainer.addEventListener('district:event', (event) => {
-    const { districtId, event } = event.detail;
-    if (selectedDistrict && selectedDistrict.id === districtId) {
-        updateDistrictDetails(selectedDistrict);
-    }
-});
+};
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    // Request initial districts data
-    window.UI.sendNUICallback('getDistricts');
-}); 
+function init() {
+    loadDistricts();
+    setupEventListeners();
+    setupMapControls();
+}
+
+// Load districts from server
+function loadDistricts() {
+    fetch(`https://${GetParentResourceName()}/getDistricts`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    }).then(resp => resp.json())
+    .then(districts => {
+        state.districts = districts;
+        renderDistricts();
+        renderMapZones();
+    });
+}
+
+// Render districts list
+function renderDistricts() {
+    const filteredDistricts = filterDistricts();
+    const sortedDistricts = sortDistricts(filteredDistricts);
+    
+    elements.districtList.innerHTML = sortedDistricts.map(district => `
+        <div class="district-item" data-id="${district.id}">
+            <h4>${district.name}</h4>
+            <div class="district-item-info">
+                <span class="district-type">${district.type}</span>
+                <span class="district-control">${district.control}</span>
+            </div>
+        </div>
+    `).join('');
+
+    // Add click handlers
+    document.querySelectorAll('.district-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const districtId = item.dataset.id;
+            showDistrictDetails(districtId);
+        });
+    });
+}
+
+// Render map zones
+function renderMapZones() {
+    elements.mapZones.innerHTML = Object.values(state.districts).map(district => `
+        <div class="zone ${district.control.toLowerCase()}" 
+             style="left: ${district.center.x}px; 
+                    top: ${district.center.y}px; 
+                    width: ${district.radius * 2}px; 
+                    height: ${district.radius * 2}px;"
+             data-id="${district.id}">
+        </div>
+    `).join('');
+
+    // Add click handlers
+    document.querySelectorAll('.zone').forEach(zone => {
+        zone.addEventListener('click', () => {
+            const districtId = zone.dataset.id;
+            showDistrictDetails(districtId);
+        });
+    });
+}
+
+// Filter districts
+function filterDistricts() {
+    const activeFilter = document.querySelector('.filter-button.active').dataset.filter;
+    const searchTerm = elements.searchInput.value.toLowerCase();
+
+    return Object.values(state.districts).filter(district => {
+        const matchesFilter = activeFilter === 'all' || district.control.toLowerCase() === activeFilter;
+        const matchesSearch = district.name.toLowerCase().includes(searchTerm);
+        return matchesFilter && matchesSearch;
+    });
+}
+
+// Sort districts
+function sortDistricts(districts) {
+    const sortBy = elements.sortSelect.value;
+    return districts.sort((a, b) => {
+        if (sortBy === 'name') {
+            return a.name.localeCompare(b.name);
+        }
+        return a[sortBy].localeCompare(b[sortBy]);
+    });
+}
+
+// Show district details
+function showDistrictDetails(districtId) {
+    const district = state.districts[districtId];
+    if (!district) return;
+
+    state.selectedDistrict = districtId;
+    
+    // Update details
+    document.getElementById('detailName').textContent = district.name;
+    document.getElementById('detailType').textContent = district.type;
+    document.getElementById('detailControl').textContent = district.control;
+    document.getElementById('detailPopulation').textContent = district.population || 'N/A';
+    document.getElementById('detailIncome').textContent = district.income || 'N/A';
+    document.getElementById('detailDefense').textContent = district.defense || 'N/A';
+
+    // Show details panel
+    elements.districtDetails.style.display = 'block';
+}
+
+// Update current district
+function updateCurrentDistrict(district) {
+    if (!district) {
+        elements.currentDistrict.querySelector('.district-name').textContent = 'Not in any district';
+        elements.currentDistrict.querySelector('.district-type').textContent = 'Type: None';
+        elements.currentDistrict.querySelector('.district-control').textContent = 'Control: None';
+        return;
+    }
+
+    elements.currentDistrict.querySelector('.district-name').textContent = district.name;
+    elements.currentDistrict.querySelector('.district-type').textContent = `Type: ${district.type}`;
+    elements.currentDistrict.querySelector('.district-control').textContent = `Control: ${district.control}`;
+}
+
+// Map Controls
+function setupMapControls() {
+    // Zoom controls
+    elements.mapControls.zoomIn.addEventListener('click', () => {
+        state.mapScale = Math.min(state.mapScale * 1.2, 3);
+        updateMapTransform();
+    });
+
+    elements.mapControls.zoomOut.addEventListener('click', () => {
+        state.mapScale = Math.max(state.mapScale / 1.2, 0.5);
+        updateMapTransform();
+    });
+
+    elements.mapControls.resetView.addEventListener('click', () => {
+        state.mapScale = 1;
+        state.mapOffset = { x: 0, y: 0 };
+        updateMapTransform();
+    });
+
+    // Pan controls
+    elements.mapZones.addEventListener('mousedown', (e) => {
+        state.isDragging = true;
+        state.lastMousePos = { x: e.clientX, y: e.clientY };
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!state.isDragging) return;
+        
+        const dx = e.clientX - state.lastMousePos.x;
+        const dy = e.clientY - state.lastMousePos.y;
+        
+        state.mapOffset.x += dx;
+        state.mapOffset.y += dy;
+        
+        state.lastMousePos = { x: e.clientX, y: e.clientY };
+        updateMapTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+        state.isDragging = false;
+    });
+}
+
+function updateMapTransform() {
+    elements.mapZones.style.transform = `translate(${state.mapOffset.x}px, ${state.mapOffset.y}px) scale(${state.mapScale})`;
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Filter buttons
+    elements.filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            elements.filterButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            renderDistricts();
+        });
+    });
+
+    // Search input
+    elements.searchInput.addEventListener('input', renderDistricts);
+
+    // Sort select
+    elements.sortSelect.addEventListener('change', renderDistricts);
+
+    // Detail buttons
+    elements.detailButtons.close.addEventListener('click', () => {
+        elements.districtDetails.style.display = 'none';
+        state.selectedDistrict = null;
+    });
+
+    elements.detailButtons.capture.addEventListener('click', () => {
+        if (!state.selectedDistrict) return;
+        fetch(`https://${GetParentResourceName()}/captureDistrict`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ districtId: state.selectedDistrict })
+        });
+    });
+
+    elements.detailButtons.defend.addEventListener('click', () => {
+        if (!state.selectedDistrict) return;
+        fetch(`https://${GetParentResourceName()}/defendDistrict`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ districtId: state.selectedDistrict })
+        });
+    });
+
+    elements.detailButtons.upgrade.addEventListener('click', () => {
+        if (!state.selectedDistrict) return;
+        fetch(`https://${GetParentResourceName()}/upgradeDistrict`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ districtId: state.selectedDistrict })
+        });
+    });
+}
+
+// NUI Message Handler
+window.addEventListener('message', (event) => {
+    const data = event.data;
+
+    switch (data.action) {
+        case 'updateDistricts':
+            state.districts = data.districts;
+            renderDistricts();
+            renderMapZones();
+            break;
+
+        case 'updateCurrentDistrict':
+            state.currentDistrict = data.district;
+            updateCurrentDistrict(data.district);
+            break;
+    }
+});
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', init); 

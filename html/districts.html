@@ -3,52 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>District Control</title>
-    <link rel="stylesheet" href="style.css">
+    <title>District Zero</title>
+    <link rel="stylesheet" href="districts.css">
 </head>
 <body>
-    <div id="districts-container" class="hidden">
-        <div class="districts-header">
-            <h2>District Control</h2>
-            <button id="close-districts" class="close-button">×</button>
-        </div>
-        
-        <div class="districts-content">
-            <div id="districts-list" class="districts-list">
-                <!-- District items will be dynamically added here -->
+    <div class="container">
+        <!-- District List -->
+        <div class="district-list">
+            <div class="district-list-header">
+                <h2>Districts</h2>
             </div>
             
-            <div id="district-details" class="district-details">
-                <h3 id="district-name">Select a district</h3>
-                <p id="district-description">Choose a district from the list to view its details.</p>
-                
-                <div class="district-control-container">
-                    <h4>Control Status</h4>
-                    <div id="district-control" class="district-control">
-                        <!-- Control status will be dynamically added here -->
-                    </div>
+            <div class="search-filter">
+                <input type="text" id="districtSearch" placeholder="Search districts...">
+                <div class="filter-buttons">
+                    <button class="filter-button active" data-filter="all">All</button>
+                    <button class="filter-button" data-filter="residential">Residential</button>
+                    <button class="filter-button" data-filter="commercial">Commercial</button>
+                    <button class="filter-button" data-filter="industrial">Industrial</button>
+                    <button class="filter-button" data-filter="special">Special</button>
                 </div>
-                
-                <div class="district-players-container">
-                    <h4>Players in District</h4>
-                    <div id="district-players" class="district-players">
-                        <!-- Players will be dynamically added here -->
-                    </div>
+                <select id="districtSort">
+                    <option value="name">Sort by Name</option>
+                    <option value="type">Sort by Type</option>
+                    <option value="control">Sort by Control</option>
+                    <option value="population">Sort by Population</option>
+                </select>
+            </div>
+            
+            <div id="districtList">
+                <!-- District items will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="mapZones">
+                <!-- District zones will be dynamically added here -->
+            </div>
+
+            <!-- Current District Info -->
+            <div class="current-district">
+                <div class="current-district-info">
+                    <h4>Current District</h4>
+                    <p>Not in any district</p>
                 </div>
-                
-                <div class="district-events-container">
-                    <h4>Active Events</h4>
-                    <div id="district-events" class="district-events">
-                        <!-- Events will be dynamically added here -->
-                    </div>
-                </div>
-                
-                <button id="start-event" class="btn" disabled>Start Event</button>
+            </div>
+
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="map-control-button" id="zoomIn">+</button>
+                <button class="map-control-button" id="zoomOut">-</button>
+                <button class="map-control-button" id="resetView">↺</button>
             </div>
         </div>
     </div>
-    
-    <script src="script.js"></script>
+
+    <!-- District Details Modal -->
+    <div class="district-details" id="districtDetails">
+        <div class="district-details-header">
+            <h3 id="detailName">District Name</h3>
+            <button class="close-details" id="closeDetails">&times;</button>
+        </div>
+
+        <div class="district-info">
+            <div class="info-item">
+                <h4>Type</h4>
+                <p id="detailType">-</p>
+            </div>
+            <div class="info-item">
+                <h4>Control</h4>
+                <p id="detailControl">-</p>
+            </div>
+            <div class="info-item">
+                <h4>Population</h4>
+                <p id="detailPopulation">-</p>
+            </div>
+            <div class="info-item">
+                <h4>Income</h4>
+                <p id="detailIncome">-</p>
+            </div>
+            <div class="info-item">
+                <h4>Defense</h4>
+                <p id="detailDefense">-</p>
+            </div>
+            <div class="info-item">
+                <h4>Resources</h4>
+                <p id="detailResources">-</p>
+            </div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="action-button" id="actionCapture">Capture</button>
+            <button class="action-button" id="actionDefend">Defend</button>
+            <button class="action-button" id="actionUpgrade">Upgrade</button>
+        </div>
+    </div>
+
     <script src="districts.js"></script>
 </body>
 </html> 

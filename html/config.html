@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>District Zero - Settings</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="config.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <div class="config-container">
+        <h2><i class="fas fa-cog"></i> Settings</h2>
+        
+        <div class="settings-group">
+            <h3>Display Settings</h3>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="notifications" checked>
+                    Enable Notifications
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="blips" checked>
+                    Show District Blips
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="markers" checked>
+                    Show District Markers
+                </label>
+            </div>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="minimap" checked>
+                    Show on Minimap
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>UI Settings</h3>
+            <div class="setting-item">
+                <label>UI Scale</label>
+                <input type="range" id="uiScale" min="0.5" max="1.5" step="0.1" value="1">
+            </div>
+            <div class="setting-item">
+                <label>UI Opacity</label>
+                <input type="range" id="uiOpacity" min="0.5" max="1" step="0.1" value="1">
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Keybinds</h3>
+            <div class="setting-item">
+                <label>Open UI</label>
+                <input type="text" id="openUIKey" value="F6" readonly>
+                <button class="bind-button" data-key="openUIKey">Change</button>
+            </div>
+            <div class="setting-item">
+                <label>Open Settings</label>
+                <input type="text" id="openSettingsKey" value="F7" readonly>
+                <button class="bind-button" data-key="openSettingsKey">Change</button>
+            </div>
+        </div>
+
+        <div class="settings-group">
+            <h3>Debug Settings</h3>
+            <div class="setting-item">
+                <label>
+                    <input type="checkbox" id="debug">
+                    Enable Debug Mode
+                </label>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button id="saveSettings" class="primary-button">Save Settings</button>
+            <button id="resetSettings" class="secondary-button">Reset to Default</button>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+</body>
+</html> 
