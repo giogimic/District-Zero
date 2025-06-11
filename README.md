@@ -1,146 +1,156 @@
 # District Zero
 
-A FiveM resource for managing districts, factions, and events in your server.
+A comprehensive APB-style mission system for FiveM, built on the QBox framework.
 
 ## Features
 
-- **Districts**: Define and manage different areas of your map
-- **Factions**: Create and manage player factions with roles and permissions
-- **Events**: Schedule and run district events with rewards
-- **Modern UI**: Built with Vue.js and Vite for a smooth user experience
-- **Localization**: Support for multiple languages
-- **Database Migrations**: Automatic database schema updates
+### Current Implementation
 
-## Requirements
+- **Framework Integration**
+  - QBox/QBX Core compatibility through bridge system
+  - ox_lib integration for UI components
+  - oxmysql for database operations
 
-- FiveM Server
-- QBCore Framework
-- MySQL Database
-- Node.js 18+ (for development)
+- **Mission System**
+  - Dynamic mission generation and tracking
+  - Multiple objective types (collect, kill, deliver)
+  - Mission progress persistence
+  - Reward system with money and items
+  - Mission history tracking
+
+- **UI/UX**
+  - Clean mission interface
+  - Objective markers and blips
+  - Interactive text UI for objectives
+  - Consistent notification system
+
+- **Database**
+  - Mission definitions and requirements
+  - Progress tracking
+  - Completion history
+  - Flexible JSON storage for complex data
+
+### Roadmap
+
+1. **Mission System Enhancements**
+   - [ ] Mission chains and dependencies
+   - [ ] Dynamic mission generation based on player stats
+   - [ ] Mission cooldowns and time limits
+   - [ ] Mission difficulty scaling
+   - [ ] Mission reputation system
+
+2. **UI Improvements**
+   - [ ] Mission map integration
+   - [ ] Mission statistics and leaderboards
+   - [ ] Mission briefing interface
+   - [ ] Mission rewards preview
+   - [ ] Mission progress visualization
+
+3. **Framework Integration**
+   - [ ] Additional framework support (ESX)
+   - [ ] Better inventory integration
+   - [ ] Job/grade requirements
+   - [ ] Gang/faction integration
+   - [ ] Phone integration
+
+4. **Performance & Security**
+   - [ ] Mission state optimization
+   - [ ] Anti-cheat measures
+   - [ ] Rate limiting
+   - [ ] Mission validation
+   - [ ] Resource usage optimization
+
+5. **Additional Features**
+   - [ ] Mission sharing
+   - [ ] Mission contracts
+   - [ ] Mission events
+   - [ ] Mission achievements
+   - [ ] Mission rewards shop
 
 ## Installation
 
-1. Clone the repository:
+1. Ensure you have the required dependencies:
+   - QBox/QBX Core
+   - ox_lib
+   - oxmysql
 
-   ```bash
-   git clone https://github.com/yourusername/district-zero.git
-   cd district-zero
+2. Import the database schema:
+   ```sql
+   source sql/migrations/001_missions.sql
    ```
 
-2. Install dependencies:
-
-   ```bash
-   npm install
-   ```
-
-3. Build the UI:
-
-   ```bash
-   npm run build
-   ```
-
-4. Copy the resource to your FiveM server's resources directory.
-
-5. Add the following to your server.cfg:
-
+3. Add the resource to your server.cfg:
    ```cfg
    ensure district-zero
    ```
 
-6. Configure the database connection in `config/database.lua`.
+4. Configure the resource in `config.lua`
 
-## Development
+## Configuration
 
-1. Start the development server:
-
-   ```bash
-   npm run dev
-   ```
-
-2. The UI will be available at `http://localhost:3000`.
-
-3. Make changes to the Vue components in `ui/src/`.
-
-4. Build for production:
-   ```bash
-   npm run build
-   ```
-
-## Database
-
-The resource uses MySQL for data storage. The database schema is managed through migrations in `server/database/migrations/`.
-
-To initialize the database:
-
-1. Create a new database named `district_zero`.
-2. The resource will automatically run migrations on startup.
-
-## Commands
-
-- `/dz` - Open the District Zero UI (default keybind: F6)
-
-## API
-
-### Server Exports
+The resource can be configured through `config.lua`:
 
 ```lua
--- Get faction information
-exports['district-zero']:GetFaction(factionId)
+Config = {}
 
--- Get district information
-exports['district-zero']:GetDistrict(districtId)
+-- Framework settings
+Config.Framework = 'qbx' -- or 'qb'
+Config.Debug = false
 
--- Get event information
-exports['district-zero']:GetEvent(eventId)
+-- Mission settings
+Config.MissionTypes = {
+    collect = true,
+    kill = true,
+    deliver = true
+}
 
--- Get district control information
-exports['district-zero']:GetDistrictControl(districtId)
+-- UI settings
+Config.UISystem = {
+    Notify = 'ox',
+    TextUI = 'ox'
+}
+
+-- Blip settings
+Config.Blips = {
+    start = {
+        sprite = 1,
+        color = 5,
+        scale = 0.8
+    },
+    objective = {
+        sprite = 1,
+        color = 5,
+        scale = 0.8
+    }
+}
 ```
+
+## Usage
+
+### Commands
+
+- `/missions` - Open the mission menu
 
 ### Events
 
 #### Client Events
-
-```lua
--- Open UI
-TriggerEvent('district-zero:client:openUI')
-
--- Close UI
-TriggerEvent('district-zero:client:closeUI')
-```
+- `dz:showMission` - Show mission UI
+- `dz:updateMission` - Update mission progress
+- `dz:completeMission` - Complete mission
+- `dz:failMission` - Fail mission
 
 #### Server Events
-
-```lua
--- Create faction
-TriggerServerEvent('district-zero:server:createFaction', data)
-
--- Update faction
-TriggerServerEvent('district-zero:server:updateFaction', data)
-
--- Delete faction
-TriggerServerEvent('district-zero:server:deleteFaction', factionId)
-
--- Create event
-TriggerServerEvent('district-zero:server:createEvent', data)
-
--- Update event
-TriggerServerEvent('district-zero:server:updateEvent', data)
-
--- Delete event
-TriggerServerEvent('district-zero:server:deleteEvent', eventId)
-
--- Start event
-TriggerServerEvent('district-zero:server:startEvent', eventId)
-```
+- `dz:requestMissions` - Request available missions
+- `dz:acceptMission` - Accept a mission
+- `dz:completeObjective` - Complete an objective
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create your feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
@@ -148,6 +158,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- [QBCore Framework](https://github.com/qbcore-framework)
-- [Vue.js](https://vuejs.org/)
-- [Vite](https://vitejs.dev/)
+- QBox Framework
+- ox_lib
+- oxmysql
+- FiveM Community

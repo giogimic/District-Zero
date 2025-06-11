@@ -1,91 +1,161 @@
 -- Client-side main file for District Zero
-local QBCore = exports['qbx_core']:GetCoreObject()
-
--- Mission state
-local activeMission = nil
+local Bridge = require 'bridge/loader'
+local Framework = Bridge.Load()
+local isUIOpen = false
+local currentMission = nil
 local missionBlips = {}
 
--- Create mission blip
-local function CreateMissionBlip(coords, type)
+-- Mission state management
+local function CreateMissionBlip(coords, type, label)
     local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-    SetBlipSprite(blip, type or 1)
-    SetBlipColour(blip, 5)
+    SetBlipSprite(blip, type)
+    SetBlipDisplay(blip, 4)
     SetBlipScale(blip, 0.8)
+    SetBlipColour(blip, 5)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString("Mission Objective")
+    AddTextComponentString(label)
     EndTextCommandSetBlipName(blip)
     return blip
 end
 
--- Clear mission blips
 local function ClearMissionBlips()
     for _, blip in pairs(missionBlips) do
-        RemoveBlip(blip)
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
     end
     missionBlips = {}
 end
 
--- Update mission blips
-local function UpdateMissionBlips(objectives)
+local function UpdateMissionBlips()
     ClearMissionBlips()
-    
-    for _, objective in ipairs(objectives) do
-        if not objective.completed and objective.coords then
-            local blip = CreateMissionBlip(objective.coords, objective.blipType)
-            table.insert(missionBlips, blip)
+    if not currentMission then return end
+
+    -- Add mission start blip
+    if currentMission.startCoords then
+        missionBlips.start = CreateMissionBlip(
+            currentMission.startCoords,
+            currentMission.startBlip or 1,
+            currentMission.startLabel or 'Mission Start'
+        )
+    end
+
+    -- Add objective blips
+    if currentMission.objectives then
+        for i, objective in ipairs(currentMission.objectives) do
+            if objective.coords and not objective.completed then
+                missionBlips['obj_' .. i] = CreateMissionBlip(
+                    objective.coords,
+                    objective.blip or 1,
+                    objective.label or ('Objective ' .. i)
+                )
+            end
         end
     end
 end
 
--- Check objective completion
-local function CheckObjectiveCompletion(objective)
-    if not objective or objective.completed then return false end
-    
-    local playerPed = PlayerPedId()
-    local playerCoords = GetEntityCoords(playerPed)
-    
-    if objective.type == 'location' then
-        local distance = #(playerCoords - vector3(objective.coords.x, objective.coords.y, objective.coords.z))
-        return distance <= objective.radius
-    elseif objective.type == 'kill' then
-        return objective.kills >= objective.required
-    elseif objective.type == 'collect' then
-        return objective.collected >= objective.required
+local function CheckObjectiveCompletion()
+    if not currentMission then return end
+
+    for i, objective in ipairs(currentMission.objectives) do
+        if not objective.completed then
+            local playerCoords = GetEntityCoords(PlayerPedId())
+            local distance = #(playerCoords - vector3(objective.coords.x, objective.coords.y, objective.coords.z))
+            
+            if distance <= objective.radius then
+                if objective.type == 'collect' then
+                    Bridge.ShowTextUI('Press [E] to collect', 'objective')
+                    if IsControlJustPressed(0, 38) then -- E key
+                        TriggerServerEvent('dz:completeObjective', currentMission.id, i)
+                        Bridge.HideTextUI()
+                    end
+                elseif objective.type == 'kill' then
+                    Bridge.ShowTextUI('Eliminate all targets', 'objective')
+                    -- Add kill objective logic here
+                elseif objective.type == 'deliver' then
+                    Bridge.ShowTextUI('Press [E] to deliver', 'objective')
+                    if IsControlJustPressed(0, 38) then -- E key
+                        TriggerServerEvent('dz:completeObjective', currentMission.id, i)
+                        Bridge.HideTextUI()
+                    end
+                end
+            else
+                Bridge.HideTextUI()
+            end
+        end
     end
-    
-    return false
 end
 
 -- Mission loop
 CreateThread(function()
     while true do
-        Wait(1000)
-        
-        if activeMission then
-            for i, objective in ipairs(activeMission.objectives) do
-                if not objective.completed and CheckObjectiveCompletion(objective) then
-                    TriggerServerEvent('district-zero:server:completeObjective', activeMission.id, i)
-                end
-            end
+        Wait(0)
+        if currentMission then
+            CheckObjectiveCompletion()
         end
     end
 end)
 
--- Events
-RegisterNetEvent('district-zero:client:updateMission', function(mission)
-    activeMission = mission
-    UpdateMissionBlips(mission.objectives)
+-- Event handlers
+RegisterNetEvent('dz:showMission', function(mission)
+    currentMission = mission
+    UpdateMissionBlips()
+    Bridge.Notify('New mission started: ' .. mission.title, 'info')
 end)
 
-RegisterNetEvent('district-zero:client:hideUI', function()
-    activeMission = nil
+RegisterNetEvent('dz:updateMission', function(mission)
+    currentMission = mission
+    UpdateMissionBlips()
+end)
+
+RegisterNetEvent('dz:completeMission', function()
     ClearMissionBlips()
+    currentMission = nil
+    Bridge.Notify('Mission completed!', 'success')
 end)
 
--- Cleanup
+RegisterNetEvent('dz:failMission', function()
+    ClearMissionBlips()
+    currentMission = nil
+    Bridge.Notify('Mission failed!', 'error')
+end)
+
+-- Command to open mission menu
+RegisterCommand('missions', function()
+    if not isUIOpen then
+        isUIOpen = true
+        SetNuiFocus(true, true)
+        SendNUIMessage({
+            action = 'show',
+            missions = currentMission
+        })
+    end
+end)
+
+-- NUI Callbacks
+RegisterNUICallback('close', function(_, cb)
+    isUIOpen = false
+    SetNuiFocus(false, false)
+    cb('ok')
+end)
+
+RegisterNUICallback('acceptMission', function(data, cb)
+    TriggerServerEvent('dz:acceptMission', data.missionId)
+    cb('ok')
+end)
+
+RegisterNUICallback('declineMission', function(data, cb)
+    TriggerServerEvent('dz:declineMission', data.missionId)
+    cb('ok')
+end)
+
+-- Cleanup on resource stop
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName == GetCurrentResourceName() then
         ClearMissionBlips()
+        if isUIOpen then
+            SetNuiFocus(false, false)
+        end
     end
 end) 

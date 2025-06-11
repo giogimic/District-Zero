@@ -1,135 +1,203 @@
 -- Server-side main file for District Zero
 local QBCore = exports['qbx_core']:GetCoreObject()
+local Bridge = require 'bridge/loader'
+local Framework = Bridge.Load()
 
 -- Mission state
 local activeMissions = {}
-local missionQueue = {}
 
--- Initialize mission system
+-- Initialize missions from database
 local function InitializeMissions()
-    -- Load missions from database
     local result = MySQL.query.await('SELECT * FROM dz_missions')
     if result then
         for _, mission in ipairs(result) do
-            missionQueue[mission.id] = mission
+            mission.objectives = json.decode(mission.objectives)
+            activeMissions[mission.id] = mission
         end
+        Bridge.Debug('Loaded ' .. #result .. ' missions from database')
     end
 end
 
 -- Get available missions for player
 local function GetAvailableMissions(source)
-    local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return {} end
-    
+    local player = Framework.GetPlayerFromId(source)
+    if not player then return {} end
+
     local availableMissions = {}
-    for id, mission in pairs(missionQueue) do
-        if not activeMissions[id] then
-            table.insert(availableMissions, {
-                id = id,
-                title = mission.title,
-                description = mission.description,
-                difficulty = mission.difficulty,
-                reward = mission.reward
-            })
+    for id, mission in pairs(activeMissions) do
+        -- Check if player meets requirements
+        if mission.requiredLevel and player.PlayerData.level < mission.requiredLevel then
+            goto continue
         end
+
+        -- Check if player has required items
+        if mission.requiredItems then
+            for _, item in ipairs(mission.requiredItems) do
+                local hasItem = Framework.GetInventoryItem(player, item.name)
+                if not hasItem or hasItem.count < item.count then
+                    goto continue
+                end
+            end
+        end
+
+        table.insert(availableMissions, mission)
+        ::continue::
     end
-    
+
     return availableMissions
 end
 
 -- Accept mission
 local function AcceptMission(source, missionId)
-    local Player = QBCore.Functions.GetPlayer(source)
-    if not Player then return false end
-    
-    if activeMissions[missionId] then
-        TriggerClientEvent('QBCore:Notify', source, 'This mission is already active', 'error')
-        return false
-    end
-    
-    local mission = missionQueue[missionId]
+    local player = Framework.GetPlayerFromId(source)
+    if not player then return end
+
+    local mission = activeMissions[missionId]
     if not mission then
-        TriggerClientEvent('QBCore:Notify', source, 'Mission not found', 'error')
-        return false
+        Bridge.Notify(source, 'Mission not found', 'error')
+        return
     end
-    
-    activeMissions[missionId] = {
-        player = source,
-        startTime = os.time(),
-        objectives = mission.objectives
-    }
-    
-    TriggerClientEvent('district-zero:client:updateMission', source, {
-        id = missionId,
+
+    -- Check if player already has an active mission
+    local result = MySQL.query.await('SELECT * FROM dz_mission_progress WHERE citizenid = ? AND status = ?', {
+        player.PlayerData.citizenid,
+        'active'
+    })
+
+    if result and #result > 0 then
+        Bridge.Notify(source, 'You already have an active mission', 'error')
+        return
+    end
+
+    -- Create mission progress record
+    MySQL.insert.await('INSERT INTO dz_mission_progress (mission_id, citizenid, status, started_at) VALUES (?, ?, ?, NOW())', {
+        missionId,
+        player.PlayerData.citizenid,
+        'active'
+    })
+
+    -- Initialize objectives
+    local missionData = {
+        id = mission.id,
         title = mission.title,
         description = mission.description,
-        objectives = mission.objectives
-    })
-    
-    return true
+        objectives = {},
+        startCoords = mission.startCoords,
+        startBlip = mission.startBlip,
+        startLabel = mission.startLabel
+    }
+
+    for i, objective in ipairs(mission.objectives) do
+        missionData.objectives[i] = {
+            type = objective.type,
+            coords = objective.coords,
+            radius = objective.radius,
+            label = objective.label,
+            blip = objective.blip,
+            completed = false
+        }
+    end
+
+    -- Send mission data to client
+    TriggerClientEvent('dz:showMission', source, missionData)
+    Bridge.Notify(source, 'Mission accepted: ' .. mission.title, 'success')
 end
 
--- Complete mission objective
+-- Complete objective
 local function CompleteObjective(source, missionId, objectiveId)
-    local mission = activeMissions[missionId]
-    if not mission or mission.player ~= source then return false end
-    
-    local objective = mission.objectives[objectiveId]
-    if not objective then return false end
-    
-    objective.completed = true
-    
-    -- Check if all objectives are complete
-    local allComplete = true
-    for _, obj in ipairs(mission.objectives) do
-        if not obj.completed then
-            allComplete = false
-            break
-        end
+    local player = Framework.GetPlayerFromId(source)
+    if not player then return end
+
+    -- Get mission progress
+    local result = MySQL.query.await('SELECT * FROM dz_mission_progress WHERE citizenid = ? AND mission_id = ? AND status = ?', {
+        player.PlayerData.citizenid,
+        missionId,
+        'active'
+    })
+
+    if not result or #result == 0 then
+        Bridge.Notify(source, 'No active mission found', 'error')
+        return
     end
-    
-    if allComplete then
+
+    local progress = result[1]
+    local objectives = json.decode(progress.objectives_completed or '[]')
+    table.insert(objectives, objectiveId)
+
+    -- Update progress
+    MySQL.update.await('UPDATE dz_mission_progress SET objectives_completed = ? WHERE id = ?', {
+        json.encode(objectives),
+        progress.id
+    })
+
+    -- Check if all objectives are complete
+    local mission = activeMissions[missionId]
+    if #objectives >= #mission.objectives then
         -- Give rewards
-        local Player = QBCore.Functions.GetPlayer(source)
-        if Player then
-            Player.Functions.AddMoney('cash', mission.reward)
-            TriggerClientEvent('QBCore:Notify', source, 'Mission completed! Reward: $' .. mission.reward, 'success')
+        if mission.reward then
+            if mission.reward.money then
+                player.Functions.AddMoney('cash', mission.reward.money)
+            end
+            if mission.reward.items then
+                for _, item in ipairs(mission.reward.items) do
+                    Framework.AddInventoryItem(player, item.name, item.count)
+                end
+            end
         end
-        
-        -- Clean up mission
-        activeMissions[missionId] = nil
-        TriggerClientEvent('district-zero:client:hideUI', source)
+
+        -- Complete mission
+        MySQL.update.await('UPDATE dz_mission_progress SET status = ?, completed_at = NOW() WHERE id = ?', {
+            'completed',
+            progress.id
+        })
+
+        TriggerClientEvent('dz:completeMission', source)
+        Bridge.Notify(source, 'Mission completed!', 'success')
     else
         -- Update mission progress
-        TriggerClientEvent('district-zero:client:updateMission', source, {
-            id = missionId,
+        local missionData = {
+            id = mission.id,
             title = mission.title,
             description = mission.description,
-            objectives = mission.objectives
-        })
+            objectives = {},
+            startCoords = mission.startCoords,
+            startBlip = mission.startBlip,
+            startLabel = mission.startLabel
+        }
+
+        for i, objective in ipairs(mission.objectives) do
+            missionData.objectives[i] = {
+                type = objective.type,
+                coords = objective.coords,
+                radius = objective.radius,
+                label = objective.label,
+                blip = objective.blip,
+                completed = table.contains(objectives, i)
+            }
+        end
+
+        TriggerClientEvent('dz:updateMission', source, missionData)
     end
-    
-    return true
 end
 
--- Events
-RegisterNetEvent('district-zero:server:requestMissions', function()
+-- Event handlers
+RegisterNetEvent('dz:requestMissions', function()
     local source = source
     local missions = GetAvailableMissions(source)
-    TriggerClientEvent('district-zero:client:showMissions', source, missions)
+    TriggerClientEvent('dz:showMissions', source, missions)
 end)
 
-RegisterNetEvent('district-zero:server:acceptMission', function(missionId)
+RegisterNetEvent('dz:acceptMission', function(missionId)
     local source = source
     AcceptMission(source, missionId)
 end)
 
-RegisterNetEvent('district-zero:server:completeObjective', function(missionId, objectiveId)
+RegisterNetEvent('dz:completeObjective', function(missionId, objectiveId)
     local source = source
     CompleteObjective(source, missionId, objectiveId)
 end)
 
--- Initialize
+-- Initialize on resource start
 CreateThread(function()
     InitializeMissions()
 end) 

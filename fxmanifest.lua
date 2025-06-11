@@ -4,39 +4,39 @@
 
 fx_version 'cerulean'
 game 'gta5'
-use_experimental_fxv2_oal 'yes'
 lua54 'yes'
 
-author 'Your Name'
+name 'district-zero'
+author 'District Zero Team'
 description 'District Zero - APB-style mission system for FiveM'
 version '1.0.0'
 
+use_experimental_fxv2_oal 'yes'
+
 -- Dependencies
 dependencies {
-    'qbx_core',
+    'ox_lib',
     'oxmysql',
-    'ox_lib'
+    'qb-core'
 }
 
 -- Shared Scripts (Load order matters)
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/shared/locale.lua',
-    'config/*.lua',
+    'bridge/loader.lua',
     'shared/*.lua'
 }
 
 -- Client Scripts
 client_scripts {
-    'client/main/*.lua',
-    'client/ui/*.lua'
+    'bridge/client/*.lua',
+    'client/*.lua'
 }
 
 -- Server Scripts
 server_scripts {
-    '@oxmysql/lib/MySQL.lua',
-    'server/database/*.lua',
-    'server/main/*.lua'
+    'bridge/server/*.lua',
+    'server/*.lua'
 }
 
 -- UI Files
@@ -44,7 +44,9 @@ ui_page 'html/index.html'
 
 files {
     'html/index.html',
-    'html/assets/**/*'
+    'html/dist/*.js',
+    'html/dist/*.css',
+    'locales/*.json'
 }
 
 -- Resource Configuration
@@ -53,3 +55,9 @@ provide 'district_zero'
 -- Resource information
 repository 'https://github.com/GioGimic/district-zero'
 issues 'https://github.com/GioGimic/district-zero/issues'
+
+escrow_ignore {
+    'bridge/**/*.lua',
+    'shared/**/*.lua',
+    'locales/**/*.json'
+}

@@ -3,6 +3,7 @@
 Thumbs.db
 
 # Node.js dependencies
+refresources/
 node_modules/
 npm-debug.log*
 yarn-debug.log*
