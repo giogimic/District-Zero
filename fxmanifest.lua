@@ -6,7 +6,7 @@ fx_version 'cerulean'
 game 'gta5'
 
 author 'Your Name'
-description 'FiveM MM - APB Reloaded-like System'
+description 'District Zero - Dynamic Territory Control System'
 version '1.0.0'
 
 -- Shared scripts (configs, enums, utils)
