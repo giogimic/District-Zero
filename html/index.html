@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FiveM MM</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main UI Container -->
+    <div id="main-container">
+        <!-- Faction Abilities UI -->
+        <div id="abilities-container" class="hidden">
+            <!-- Content will be loaded from abilities.html -->
+        </div>
+
+        <!-- District Control UI -->
+        <div id="districts-container" class="hidden">
+            <!-- Content will be loaded from districts.html -->
+        </div>
+
+        <!-- Mission UI -->
+        <div id="mission-container" class="hidden">
+            <!-- Content will be loaded from missions.html -->
+        </div>
+
+        <!-- Notification System -->
+        <div id="notification-container"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="script.js"></script>
+    <script src="abilities.js"></script>
+    <script src="districts.js"></script>
+    <script src="missions.js"></script>
+
+    <script>
+        // Load UI components
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load abilities UI
+            fetch('abilities.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('abilities-container').innerHTML = html;
+                });
+
+            // Load districts UI
+            fetch('districts.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('districts-container').innerHTML = html;
+                });
+
+            // Load mission UI
+            fetch('missions.html')
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('mission-container').innerHTML = html;
+                });
+        });
+    </script>
+</body>
+</html> 

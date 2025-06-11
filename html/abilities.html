@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faction Abilities</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="abilities-container" class="hidden">
+        <div class="abilities-header">
+            <h2>Faction Abilities</h2>
+            <button id="close-abilities" class="close-button">×</button>
+        </div>
+        
+        <div class="abilities-content">
+            <div id="abilities-list" class="abilities-list">
+                <!-- Ability items will be dynamically added here -->
+            </div>
+            
+            <div id="ability-details" class="ability-details">
+                <h3 id="ability-name">Select an ability</h3>
+                <p id="ability-description">Choose an ability from the list to view its details.</p>
+                
+                <div class="ability-stats">
+                    <div class="stat">
+                        <span class="stat-label">Cooldown:</span>
+                        <span id="ability-cooldown">-</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Cost:</span>
+                        <span id="ability-cost">-</span>
+                    </div>
+                </div>
+                
+                <div id="ability-requirements" class="ability-requirements">
+                    <!-- Requirements will be dynamically added here -->
+                </div>
+                
+                <button id="use-ability" class="btn" disabled>Use Ability</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="abilities.js"></script>
+</body>
+</html> 

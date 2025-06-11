@@ -1,0 +1,214 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Mission UI */
+#mission-ui {
+    position: absolute;
+    top: 50%;
+    right: 2%;
+    transform: translateY(-50%);
+    width: 400px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    color: #ffffff;
+    padding: 20px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.mission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.mission-header h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #00aaff;
+}
+
+.mission-timer {
+    background: rgba(0, 170, 255, 0.2);
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.mission-content {
+    margin-bottom: 20px;
+}
+
+.mission-description {
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.mission-objectives {
+    margin-bottom: 20px;
+}
+
+.mission-objectives h3 {
+    color: #00aaff;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+#objectives-list {
+    list-style: none;
+}
+
+.objective-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.objective-item.completed {
+    background: rgba(0, 255, 0, 0.1);
+}
+
+.objective-item .objective-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.objective-item .objective-text {
+    flex-grow: 1;
+}
+
+.objective-item .objective-count {
+    background: rgba(0, 170, 255, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+.mission-rewards {
+    background: rgba(0, 170, 255, 0.1);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.mission-rewards h3 {
+    color: #00aaff;
+    margin-bottom: 10px;
+    font-size: 18px;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.reward-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.mission-footer {
+    text-align: center;
+}
+
+.btn {
+    background: #00aaff;
+    color: #ffffff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.btn:hover {
+    background: #0088cc;
+}
+
+/* Notification System */
+#notification-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 300px;
+}
+
+.notification {
+    background: rgba(0, 0, 0, 0.8);
+    color: #ffffff;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    border-left: 4px solid #00ff00;
+}
+
+.notification.error {
+    border-left: 4px solid #ff0000;
+}
+
+.notification.info {
+    border-left: 4px solid #00aaff;
+}
+
+.notification.warning {
+    border-left: 4px solid #ffaa00;
+}
+
+.notification-icon {
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.notification-message {
+    flex-grow: 1;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+} 

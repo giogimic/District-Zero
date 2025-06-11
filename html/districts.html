@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>District Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="districts-container" class="hidden">
+        <div class="districts-header">
+            <h2>District Control</h2>
+            <button id="close-districts" class="close-button">×</button>
+        </div>
+        
+        <div class="districts-content">
+            <div id="districts-list" class="districts-list">
+                <!-- District items will be dynamically added here -->
+            </div>
+            
+            <div id="district-details" class="district-details">
+                <h3 id="district-name">Select a district</h3>
+                <p id="district-description">Choose a district from the list to view its details.</p>
+                
+                <div class="district-control-container">
+                    <h4>Control Status</h4>
+                    <div id="district-control" class="district-control">
+                        <!-- Control status will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="district-players-container">
+                    <h4>Players in District</h4>
+                    <div id="district-players" class="district-players">
+                        <!-- Players will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <div class="district-events-container">
+                    <h4>Active Events</h4>
+                    <div id="district-events" class="district-events">
+                        <!-- Events will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <button id="start-event" class="btn" disabled>Start Event</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    <script src="districts.js"></script>
+</body>
+</html> 
