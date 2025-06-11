@@ -3,7 +3,10 @@
     <div class="events-header">
       <h1>{{ $t('events.title') }}</h1>
       <div class="events-controls">
-        <button @click="openCreateModal" class="btn-create">{{ $t('events.create') }}</button>
+        <button @click="openCreateModal" class="btn-create">
+          <font-awesome-icon icon="plus" class="btn-icon" />
+          {{ $t('events.create') }}
+        </button>
         <select v-model="selectedDistrict" class="district-select">
           <option value="">{{ $t('events.allDistricts') }}</option>
           <option v-for="district in districts" :key="district.id" :value="district.id">
@@ -19,18 +22,26 @@
           <h2>{{ event.name }}</h2>
           <p>{{ event.description }}</p>
           <div class="event-details">
-            <span class="district">{{ getDistrictName(event.districtId) }}</span>
-            <span class="time"
-              >{{ formatTime(event.startTime) }} - {{ formatTime(event.endTime) }}</span
-            >
-            <span class="status" :class="event.status">{{
-              $t(`events.status.${event.status}`)
-            }}</span>
+            <span class="district">
+              <font-awesome-icon icon="map-marker-alt" class="detail-icon" />
+              {{ getDistrictName(event.districtId) }}
+            </span>
+            <span class="time">
+              <font-awesome-icon icon="clock" class="detail-icon" />
+              {{ formatTime(event.startTime) }} - {{ formatTime(event.endTime) }}
+            </span>
+            <span class="status" :class="event.status">
+              {{ $t(`events.status.${event.status}`) }}
+            </span>
           </div>
         </div>
         <div class="event-actions">
-          <button @click="editEvent(event)" class="btn-edit">{{ $t('common.edit') }}</button>
+          <button @click="editEvent(event)" class="btn-edit">
+            <font-awesome-icon icon="edit" class="btn-icon" />
+            {{ $t('common.edit') }}
+          </button>
           <button @click="deleteEvent(event.id)" class="btn-delete">
+            <font-awesome-icon icon="trash" class="btn-icon" />
             {{ $t('common.delete') }}
           </button>
           <button
@@ -38,6 +49,7 @@
             @click="startEvent(event.id)"
             class="btn-start"
           >
+            <font-awesome-icon icon="play" class="btn-icon" />
             {{ $t('events.start') }}
           </button>
         </div>
@@ -74,8 +86,12 @@
             <input type="datetime-local" v-model="currentEvent.endTime" required />
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-save">{{ $t('common.save') }}</button>
+            <button type="submit" class="btn-save">
+              <font-awesome-icon icon="save" class="btn-icon" />
+              {{ $t('common.save') }}
+            </button>
             <button type="button" @click="closeModal" class="btn-cancel">
+              <font-awesome-icon icon="times" class="btn-icon" />
               {{ $t('common.cancel') }}
             </button>
           </div>
@@ -391,5 +407,14 @@ button {
 .btn-cancel {
   background: #666;
   color: white;
+}
+
+.btn-icon {
+  margin-right: 8px;
+}
+
+.detail-icon {
+  margin-right: 4px;
+  color: #2196f3;
 }
 </style>

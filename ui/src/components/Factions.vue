@@ -2,7 +2,10 @@
   <div class="factions-container">
     <div class="factions-header">
       <h1>{{ $t('factions.title') }}</h1>
-      <button @click="openCreateModal" class="btn-create">{{ $t('factions.create') }}</button>
+      <button @click="openCreateModal" class="btn-create">
+        <font-awesome-icon icon="plus" class="btn-icon" />
+        {{ $t('factions.create') }}
+      </button>
     </div>
 
     <div class="factions-list">
@@ -11,13 +14,23 @@
           <h2>{{ faction.name }}</h2>
           <p>{{ faction.description }}</p>
           <div class="faction-stats">
-            <span>{{ $t('factions.members') }}: {{ faction.memberCount }}</span>
-            <span>{{ $t('factions.level') }}: {{ faction.level }}</span>
+            <span>
+              <font-awesome-icon icon="users" class="stat-icon" />
+              {{ $t('factions.members') }}: {{ faction.memberCount }}
+            </span>
+            <span>
+              <font-awesome-icon icon="chart-line" class="stat-icon" />
+              {{ $t('factions.level') }}: {{ faction.level }}
+            </span>
           </div>
         </div>
         <div class="faction-actions">
-          <button @click="editFaction(faction)" class="btn-edit">{{ $t('common.edit') }}</button>
+          <button @click="editFaction(faction)" class="btn-edit">
+            <font-awesome-icon icon="edit" class="btn-icon" />
+            {{ $t('common.edit') }}
+          </button>
           <button @click="deleteFaction(faction.id)" class="btn-delete">
+            <font-awesome-icon icon="trash" class="btn-icon" />
             {{ $t('common.delete') }}
           </button>
         </div>
@@ -38,8 +51,12 @@
             <textarea v-model="currentFaction.description" required></textarea>
           </div>
           <div class="form-actions">
-            <button type="submit" class="btn-save">{{ $t('common.save') }}</button>
+            <button type="submit" class="btn-save">
+              <font-awesome-icon icon="save" class="btn-icon" />
+              {{ $t('common.save') }}
+            </button>
             <button type="button" @click="closeModal" class="btn-cancel">
+              <font-awesome-icon icon="times" class="btn-icon" />
               {{ $t('common.cancel') }}
             </button>
           </div>
@@ -265,5 +282,14 @@ button {
 .btn-cancel {
   background: #666;
   color: white;
+}
+
+.btn-icon {
+  margin-right: 8px;
+}
+
+.stat-icon {
+  margin-right: 4px;
+  color: #2196f3;
 }
 </style>

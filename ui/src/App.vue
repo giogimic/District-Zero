@@ -7,6 +7,7 @@
         @click="currentPage = page.id"
         :class="{ active: currentPage === page.id }"
       >
+        <font-awesome-icon :icon="page.icon" class="nav-icon" />
         {{ $t(`nav.${page.id}`) }}
       </button>
     </nav>
@@ -31,8 +32,8 @@ export default {
     return {
       currentPage: 'factions',
       pages: [
-        { id: 'factions', component: 'Factions' },
-        { id: 'events', component: 'Events' },
+        { id: 'factions', component: 'Factions', icon: 'users' },
+        { id: 'events', component: 'Events', icon: 'calendar-alt' },
       ],
     };
   },
@@ -128,5 +129,9 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-icon {
+  margin-right: 8px;
 }
 </style>
