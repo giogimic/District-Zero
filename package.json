@@ -2,6 +2,7 @@
   "name": "district-zero",
   "version": "1.0.0",
   "description": "District Zero - A FiveM Resource",
+  "type": "module",
   "packageManager": "pnpm@8.15.4",
   "scripts": {
     "dev": "vite",

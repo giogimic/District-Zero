@@ -1,21 +1,25 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import path from 'path'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 export default defineConfig({
   plugins: [vue()],
-  root: path.resolve(__dirname, 'src'),
+  root: resolve(__dirname, 'src'),
   build: {
-    outDir: '../html',
+    outDir: resolve(__dirname, '../html'),
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
-      input: path.resolve(__dirname, 'src/index.html')
+      input: resolve(__dirname, 'src/index.html')
     }
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': resolve(__dirname, 'src'),
     },
   },
   server: {
