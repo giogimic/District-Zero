@@ -4,21 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>District Zero</title>
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: transparent;
-      }
-      #app {
-        width: 100vw;
-        height: 100vh;
-      }
-    </style>
+    <link rel="stylesheet" href="./styles/main.scss">
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./main.js"></script>
+    <div id="app" class="hidden">
+      <div class="container">
+        <div class="header">
+          <h1>District Zero Missions</h1>
+          <button class="close-btn" id="closeBtn">×</button>
+        </div>
+        
+        <div class="content">
+          <div id="missionList" class="mission-list">
+            <!-- Mission cards will be inserted here -->
+          </div>
+          
+          <div id="missionInfo" class="mission-info hidden">
+            <h2 id="missionTitle"></h2>
+            <p id="missionDescription"></p>
+            <div class="objectives" id="missionObjectives">
+              <!-- Objectives will be inserted here -->
+            </div>
+            <div class="actions">
+              <button id="acceptBtn" class="btn primary">Accept Mission</button>
+              <button id="declineBtn" class="btn secondary">Decline</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="./js/main.js"></script>
   </body>
 </html>
