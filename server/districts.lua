@@ -3,21 +3,29 @@ local activeDistricts = {}
 local districtEvents = {}
 local districtPlayers = {}
 
--- Initialize districts
+-- Districts Server Handler
+local QBX = exports['qbx_core']:GetSharedObject()
+local districts = {}
+
+-- Initialize districts from config
 local function InitializeDistricts()
-    for _, district in pairs(Config.Districts) do
-        activeDistricts[district.id] = {
-            id = district.id,
+    if not Config or not Config.Districts then
+        print('[District Zero] Error: Config.Districts is not defined')
+        return
+    end
+
+    for id, district in pairs(Config.Districts) do
+        districts[id] = {
+            id = id,
             name = district.name,
             center = district.center,
             radius = district.radius,
-            controllingFaction = nil,
-            eventHooks = district.eventHooks,
-            pvpEnabled = district.pvpEnabled,
-            pveEnabled = district.pveEnabled,
-            players = {},
-            lastEvent = nil,
-            eventCooldown = 0
+            control = district.control or 'neutral',
+            influence = district.influence or 0,
+            lastUpdate = os.time(),
+            events = {},
+            missions = {},
+            npcs = {}
         }
     end
     Utils.PrintDebug("Districts initialized")

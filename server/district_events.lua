@@ -1,4 +1,5 @@
-local QBX = exports['qbx_core']:GetCoreObject()
+-- District Events Server Handler
+local QBX = exports['qbx_core']:GetSharedObject()
 local activeEvents = {}
 
 -- Event Configurations
