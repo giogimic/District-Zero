@@ -1,32 +1,17 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import { fileURLToPath } from 'url'
-import { dirname, resolve } from 'path'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [vue()],
-  root: resolve(__dirname, 'src'),
   build: {
-    outDir: resolve(__dirname, '../html'),
+    outDir: '../html',
     emptyOutDir: true,
-    sourcemap: true,
-    rollupOptions: {
-      input: resolve(__dirname, 'src/index.html')
-    }
+    sourcemap: true
   },
   resolve: {
     alias: {
-      '@': resolve(__dirname, 'src'),
-    },
-  },
-  json: {
-    stringify: true
-  },
-  server: {
-    port: 3000,
-    strictPort: true,
-  },
+      '@': resolve(__dirname, 'src')
+    }
+  }
 }) 
