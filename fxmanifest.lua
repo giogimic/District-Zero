@@ -33,10 +33,12 @@ client_scripts {
     'client/*.lua'
 }
 
--- Server Scripts
+-- Server Scripts (Load order matters)
 server_scripts {
     'bridge/server/*.lua',
-    'server/*.lua'
+    'server/database/init.lua',  -- Load database first
+    'server/main/*.lua',         -- Then main scripts
+    'server/*.lua'               -- Then other server scripts
 }
 
 -- UI Files

@@ -108,10 +108,11 @@ AddEventHandler('onResourceStart', function(resourceName)
     while not QBX do
         Wait(100)
     end
-    
-    -- Wait a bit for exports to be registered
-    Wait(1000)
-    
+end)
+
+-- Wait for database to be ready
+RegisterNetEvent('dz:database:ready')
+AddEventHandler('dz:database:ready', function()
     -- Initialize server
     Initialize()
 end)

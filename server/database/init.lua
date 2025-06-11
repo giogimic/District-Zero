@@ -154,6 +154,9 @@ CreateThread(function()
     end)
 end)
 
+-- Signal that database is ready
+TriggerEvent('dz:database:ready')
+
 -- Exports
 exports('GetFactions', function()
     local result = MySQL.query.await('SELECT * FROM dz_factions')
