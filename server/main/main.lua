@@ -7,136 +7,90 @@ local Events = require 'shared/events'
 
 -- Server State
 local State = {
+    isInitialized = false,
     districts = {},
-    factions = {},
     missions = {},
-    players = {},
-    config = {
-        districts = {},
-        factions = {},
-        missions = {}
-    }
+    factions = {},
+    players = {}
 }
 
--- Initialize
+-- Initialize server
 local function Initialize()
-    -- Load districts
-    local districts = Utils.SafeQuery('SELECT * FROM dz_districts', {}, 'Initialize')
-    if districts then
-        for _, district in ipairs(districts) do
-            State.districts[district.id] = district
-        end
+    if State.isInitialized then return end
+    
+    -- Initialize database
+    if not InitializeDatabase() then
+        print('^1[District Zero] Failed to initialize database^7')
+        return
     end
     
-    -- Load factions
-    local factions = Utils.SafeQuery('SELECT * FROM dz_factions', {}, 'Initialize')
-    if factions then
-        for _, faction in ipairs(factions) do
-            State.factions[faction.id] = faction
-        end
+    -- Initialize districts
+    if not InitializeDistricts() then
+        print('^1[District Zero] Failed to initialize districts^7')
+        return
     end
     
-    -- Load missions
-    local missions = Utils.SafeQuery('SELECT * FROM dz_missions', {}, 'Initialize')
-    if missions then
-        for _, mission in ipairs(missions) do
-            State.missions[mission.id] = mission
-        end
+    -- Initialize missions
+    if not InitializeMissions() then
+        print('^1[District Zero] Failed to initialize missions^7')
+        return
     end
+    
+    -- Initialize factions
+    if not InitializeFactions() then
+        print('^1[District Zero] Failed to initialize factions^7')
+        return
+    end
+    
+    State.isInitialized = true
+    print('^2[District Zero] Server initialized successfully^7')
 end
 
+-- Event Handlers
+RegisterNetEvent('dz:server:initialize')
+AddEventHandler('dz:server:initialize', function()
+    Initialize()
+end)
+
+RegisterNetEvent('dz:server:player:join')
+AddEventHandler('dz:server:player:join', function()
+    local source = source
+    AddPlayer(source)
+end)
+
+RegisterNetEvent('dz:server:player:leave')
+AddEventHandler('dz:server:player:leave', function()
+    local source = source
+    RemovePlayer(source)
+end)
+
 -- Player Management
-local function AddPlayer(source)
+function AddPlayer(source)
+    if not source then return end
+    
     local Player = QBX.Functions.GetPlayer(source)
     if not Player then return end
     
     State.players[source] = {
         citizenid = Player.PlayerData.citizenid,
-        job = Player.PlayerData.job,
-        gang = Player.PlayerData.gang,
-        metadata = Player.PlayerData.metadata
+        faction = Player.PlayerData.faction,
+        district = nil,
+        missions = {},
+        abilities = {}
     }
+    
+    -- Send initial data to player
+    TriggerClientEvent('dz:client:initialize', source, {
+        districts = State.districts,
+        missions = State.missions,
+        factions = State.factions
+    })
 end
 
-local function RemovePlayer(source)
+function RemovePlayer(source)
+    if not source then return end
     State.players[source] = nil
 end
-
--- District Management
-local function UpdateDistrict(districtId, data)
-    if not State.districts[districtId] then return false end
-    
-    local success = Utils.SafeQuery('UPDATE dz_districts SET ? WHERE id = ?', 
-        {data, districtId}, 'UpdateDistrict')
-    
-    if success then
-        State.districts[districtId] = data
-        Events.TriggerEvent('dz:client:district:update', 'server', -1, State.districts)
-        return true
-    end
-    return false
-end
-
--- Mission Management
-local function StartMission(source, missionId)
-    if not State.missions[missionId] then return false end
-    
-    local mission = State.missions[missionId]
-    local player = State.players[source]
-    
-    if not player then return false end
-    
-    -- Check requirements
-    if mission.requirements then
-        if mission.requirements.job and player.job.name ~= mission.requirements.job then
-            return false
-        end
-        if mission.requirements.gang and player.gang.name ~= mission.requirements.gang then
-            return false
-        end
-    end
-    
-    -- Start mission
-    Events.TriggerEvent('dz:client:mission:start', 'server', source, mission)
-    return true
-end
-
--- Event Handlers
-Events.RegisterEvent('dz:server:player:loaded', function(source)
-    AddPlayer(source)
-end)
-
-Events.RegisterEvent('dz:server:player:unloaded', function(source)
-    RemovePlayer(source)
-end)
-
-Events.RegisterEvent('dz:server:district:requestUpdate', function(source)
-    Events.TriggerEvent('dz:client:district:update', 'server', source, State.districts)
-end)
-
-Events.RegisterEvent('dz:server:mission:start', function(source, missionId)
-    StartMission(source, missionId)
-end)
-
-Events.RegisterEvent('dz:server:player:saveMetadata', function(source, metadata)
-    local Player = QBX.Functions.GetPlayer(source)
-    if Player then
-        Player.Functions.SetMetaData('metadata', metadata)
-    end
-end)
-
--- QBX Core Event Handlers
-RegisterNetEvent('QBCore:Server:OnPlayerLoaded')
-AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
-    local source = source
-    AddPlayer(source)
-end)
-
-RegisterNetEvent('QBCore:Server:OnPlayerUnload')
-AddEventHandler('QBCore:Server:OnPlayerUnload', function()
-    local source = source
-    RemovePlayer(source)
-end)
 
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
@@ -145,55 +99,36 @@ AddEventHandler('onResourceStart', function(resourceName)
 end)
 
 -- Register cleanup handler
-RegisterCleanup('state', function()
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
     -- Cleanup state
     State = {
+        isInitialized = false,
         districts = {},
-        factions = {},
         missions = {},
-        players = {},
-        config = {
-            districts = {},
-            factions = {},
-            missions = {}
-        }
+        factions = {},
+        players = {}
     }
 end)
 
--- Register database cleanup handler
-RegisterCleanup('database', function()
-    -- Close any open database connections
-    if MySQL then
-        MySQL.close()
-    end
-end)
-
 -- Exports
-exports('GetDistricts', function()
-    return State.districts
+exports('GetState', function()
+    return State
 end)
 
-exports('GetFactions', function()
-    return State.factions
+exports('GetPlayer', function(source)
+    return State.players[source]
 end)
 
-exports('GetMissions', function()
-    return State.missions
+exports('GetDistrict', function(districtId)
+    return State.districts[districtId]
 end)
 
-exports('GetPlayers', function()
-    return State.players
+exports('GetMission', function(missionId)
+    return State.missions[missionId]
 end)
 
--- Register server events
-RegisterNetEvent('dz:server:initialize')
-AddEventHandler('dz:server:initialize', function()
-    local source = source
-    InitializePlayer(source)
-end)
-
-RegisterNetEvent('dz:server:updateDistrict')
-AddEventHandler('dz:server:updateDistrict', function(districtId, data)
-    local source = source
-    UpdateDistrict(source, districtId, data)
+exports('GetFaction', function(factionId)
+    return State.factions[factionId]
 end)

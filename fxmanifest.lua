@@ -24,6 +24,7 @@ dependencies {
 shared_scripts {
     '@ox_lib/init.lua',
     '@qb-core/shared/locale.lua',
+    'config/*.lua',
     'shared/*.lua'
 }
 

@@ -6,6 +6,7 @@ local districtPlayers = {}
 -- Districts Server Handler
 local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
 -- State Management
 local State = {
@@ -13,7 +14,9 @@ local State = {
     owners = {},
     resources = {},
     influence = {},
-    players = {}
+    players = {},
+    activeDistricts = {},
+    districtEvents = {}
 }
 
 -- District State Management
@@ -216,7 +219,9 @@ AddEventHandler('onResourceStop', function(resourceName)
         owners = {},
         resources = {},
         influence = {},
-        players = {}
+        players = {},
+        activeDistricts = {},
+        districtEvents = {}
     }
     
     -- Save district state to database
@@ -386,31 +391,43 @@ end)
 
 exports('UpdateDistrictInfluence', function(districtId, amount)
     return UpdateDistrictInfluence(districtId, amount)
-end) 
+end)
 
 -- Initialize district state
 local function InitializeDistrictState()
-    -- Load districts from database
-    local success, result = pcall(function()
-        return MySQL.query.await('SELECT * FROM dz_districts')
-    end)
-    
-    if not success then
-        Utils.HandleError('Failed to load districts from database', 'DATABASE', 'InitializeDistrictState')
+    if not Config.Districts then
+        print('^1[District Zero] Config.Districts is not defined^7')
         return false
     end
     
-    -- Initialize district state
-    for _, district in ipairs(result) do
-        DistrictState.districts[district.id] = {
-            id = district.id,
+    -- Initialize districts from config
+    for id, district in pairs(Config.Districts) do
+        State.districts[id] = {
+            id = id,
             name = district.name,
-            owner = district.owner,
-            influence = district.influence,
-            lastUpdate = os.time(),
+            label = district.label,
+            description = district.description,
+            coords = district.coords,
+            radius = district.radius,
+            factions = district.factions or {},
+            missions = district.missions or {},
+            abilities = district.abilities or {},
+            status = "active",
             players = {},
-            isActive = false
+            events = {}
         }
+    end
+    
+    -- Load district data from database
+    local success = MySQL.query.await('SELECT * FROM dz_districts')
+    if success then
+        for _, data in ipairs(success) do
+            if State.districts[data.id] then
+                State.districts[data.id].status = data.status
+                State.districts[data.id].lastEvent = data.last_event
+                State.districts[data.id].lastUpdate = data.last_update
+            end
+        end
     end
     
     return true
@@ -476,35 +493,35 @@ local function UpdateDistrictState(districtId, data)
 end
 
 -- Add player to district
-local function AddPlayerToDistrict(player, districtId)
-    local district = DistrictState.districts[districtId]
-    if not district then
-        return false
-    end
+local function AddPlayerToDistrict(source, districtId)
+    if not State.districts[districtId] then return false end
+    
+    local Player = QBX.Functions.GetPlayer(source)
+    if not Player then return false end
     
     -- Add player to district
-    district.players[player] = true
-    DistrictState.players[player] = districtId
+    State.districts[districtId].players[source] = {
+        citizenid = Player.PlayerData.citizenid,
+        name = Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname,
+        faction = Player.PlayerData.faction,
+        joinTime = os.time()
+    }
     
-    -- Notify player
-    TriggerClientEvent('dz:enterDistrict', player, districtId)
+    -- Notify clients
+    TriggerClientEvent('dz:client:district:playerJoin', -1, districtId, source, State.districts[districtId].players[source])
     
     return true
 end
 
 -- Remove player from district
-local function RemovePlayerFromDistrict(player, districtId)
-    local district = DistrictState.districts[districtId]
-    if not district then
-        return false
-    end
+local function RemovePlayerFromDistrict(source, districtId)
+    if not State.districts[districtId] then return false end
     
     -- Remove player from district
-    district.players[player] = nil
-    DistrictState.players[player] = nil
+    State.districts[districtId].players[source] = nil
     
-    -- Notify player
-    TriggerClientEvent('dz:exitDistrict', player, districtId)
+    -- Notify clients
+    TriggerClientEvent('dz:client:district:playerLeave', -1, districtId, source)
     
     return true
 end
@@ -516,4 +533,27 @@ end)
 
 exports('UpdateDistrictState', UpdateDistrictState)
 exports('AddPlayerToDistrict', AddPlayerToDistrict)
-exports('RemovePlayerFromDistrict', RemovePlayerFromDistrict) 
+exports('RemovePlayerFromDistrict', RemovePlayerFromDistrict)
+
+-- Event Handlers
+RegisterNetEvent('dz:server:district:getInfo')
+AddEventHandler('dz:server:district:getInfo', function(districtId)
+    local source = source
+    local info = GetDistrictInfo(districtId)
+    if info then
+        TriggerClientEvent('dz:client:district:info', source, districtId, info)
+    end
+end)
+
+RegisterNetEvent('dz:server:district:update')
+AddEventHandler('dz:server:district:update', function(districtId, data)
+    local source = source
+    if UpdateDistrict(districtId, data) then
+        TriggerClientEvent('dz:client:district:updated', source, districtId)
+    end
+end)
+
+-- Get District Info
+local function GetDistrictInfo(districtId)
+    return State.districts[districtId]
+end 
