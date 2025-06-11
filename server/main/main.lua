@@ -3,14 +3,30 @@
 
 local QBX = exports['qbx_core']:GetCore()
 local Utils = require 'shared/utils'
-local activeMissions = {}
-local playerData = {}
 
--- Initialize database
-CreateThread(function()
+-- State Management
+local State = {
+    menu = {
+        isOpen = false,
+        isVisible = false,
+        currentTab = 'districts'
+    },
+    player = {
+        isLoaded = false,
+        data = nil
+    }
+}
+
+-- Initialize
+local function Initialize()
+    -- Initialize database
     Utils.PrintDebug('Initializing database...')
     -- Database initialization code here
-end)
+    
+    -- Initialize player data
+    Utils.PrintDebug('Initializing player data...')
+    -- Player data initialization code here
+end
 
 -- Player Management
 RegisterNetEvent('QBCore:Server:OnPlayerLoaded')
@@ -23,8 +39,8 @@ AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
     -- Additional player load logic here
 
     -- Initialize player data if not exists
-    if not playerData[source] then
-        playerData[source] = {
+    if not State.player.data[source] then
+        State.player.data[source] = {
             faction = nil,
             xp = 0,
             level = 1,
@@ -47,7 +63,7 @@ AddEventHandler('QBCore:Server:OnPlayerUnload', function()
     Utils.PrintDebug('Player unloaded: ' .. player.PlayerData.citizenid)
     -- Additional player unload logic here
 
-    playerData[source] = nil
+    State.player.data[source] = nil
     Utils.PrintDebug("Player data unloaded for " .. GetPlayerName(source))
 end)
 
@@ -55,7 +71,7 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     Utils.PrintDebug('Resource started: ' .. resourceName)
-    -- Additional resource start logic here
+    Initialize()
 end)
 
 AddEventHandler('onResourceStop', function(resourceName)
@@ -77,7 +93,7 @@ RegisterNetEvent('apb:server:startMission', function(missionType)
     end
 
     -- Get player's faction
-    local playerFaction = playerData[src].faction
+    local playerFaction = State.player.data[src].faction
     if not playerFaction then
         Utils.TriggerClientEvent("notification", src, "error", "You need to join a faction first!")
         return
@@ -117,12 +133,12 @@ RegisterNetEvent('apb:server:completeMission', function(data)
     local missionData = activeMissions[src].data
     local xpReward = Utils.CalculateMissionReward(
         missionData.xpReward,
-        playerData[src].level,
+        State.player.data[src].level,
         Config.Rewards.xpMultiplier
     )
     local cashReward = Utils.CalculateMissionReward(
         missionData.cashReward,
-        playerData[src].level,
+        State.player.data[src].level,
         Config.Rewards.cashMultiplier
     )
 
@@ -131,13 +147,13 @@ RegisterNetEvent('apb:server:completeMission', function(data)
     cashReward = cashReward + (cashReward * (timeBonus / 100))
 
     -- Update player data
-    playerData[src].xp = playerData[src].xp + xpReward
-    playerData[src].missions.completed = playerData[src].missions.completed + 1
+    State.player.data[src].xp = State.player.data[src].xp + xpReward
+    State.player.data[src].missions.completed = State.player.data[src].missions.completed + 1
 
     -- Check for level up
-    local newRank = Utils.GetFactionRank(playerData[src].faction, playerData[src].xp)
-    if newRank and newRank.level > playerData[src].level then
-        playerData[src].level = newRank.level
+    local newRank = Utils.GetFactionRank(State.player.data[src].faction, State.player.data[src].xp)
+    if newRank and newRank.level > State.player.data[src].level then
+        State.player.data[src].level = newRank.level
         -- Give level up bonus
         Player.Functions.AddMoney("cash", Config.Rewards.levelUpBonus.cash)
         for _, item in ipairs(Config.Rewards.levelUpBonus.items) do
@@ -175,7 +191,7 @@ RegisterNetEvent('apb:server:failMission', function(data)
     end
 
     -- Update player data
-    playerData[src].missions.failed = playerData[src].missions.failed + 1
+    State.player.data[src].missions.failed = State.player.data[src].missions.failed + 1
 
     -- Clean up mission
     activeMissions[src] = nil
@@ -199,9 +215,9 @@ RegisterNetEvent('apb:server:joinFaction', function(faction)
     end
 
     -- Update player data
-    playerData[src].faction = faction
-    playerData[src].xp = 0
-    playerData[src].level = 1
+    State.player.data[src].faction = faction
+    State.player.data[src].xp = 0
+    State.player.data[src].level = 1
 
     -- Notify client
     Utils.TriggerClientEvent("notification", src, "success", "Joined faction: " .. Config.Factions[faction].label)
@@ -228,23 +244,23 @@ end
 
 -- Export functions
 exports('GetPlayerFaction', function(playerId)
-    return playerData[playerId] and playerData[playerId].faction or nil
+    return State.player.data[playerId] and State.player.data[playerId].faction or nil
 end)
 
 exports('GetPlayerRank', function(playerId)
-    if not playerData[playerId] then return nil end
+    if not State.player.data[playerId] then return nil end
     return Utils.GetFactionRank(
-        playerData[playerId].faction,
-        playerData[playerId].xp
+        State.player.data[playerId].faction,
+        State.player.data[playerId].xp
     )
 end)
 
 exports('GetPlayerData', function(playerId)
-    return playerData[playerId]
+    return State.player.data[playerId]
 end)
 
 -- Initialize
 CreateThread(function()
     Utils.PrintDebug("Server script loaded")
-    -- Additional initialization code here
+    Initialize()
 end)

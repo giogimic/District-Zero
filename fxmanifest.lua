@@ -18,10 +18,14 @@ dependencies {
     'ox_lib'
 }
 
--- Shared Scripts
+-- Shared Scripts (Load order matters)
 shared_scripts {
     '@ox_lib/init.lua',
-    'shared/*.lua'
+    'shared/config/*.lua',  -- Load config first
+    'shared/utils.lua',     -- Then load utils
+    'shared/error.lua',     -- Then load error handling
+    'shared/events.lua',    -- Then load events
+    'shared/performance.lua' -- Then load performance
 }
 
 -- Client Scripts

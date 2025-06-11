@@ -163,5 +163,8 @@ end
 Utils.PrintDebug('Utils module initialized', 'info')
 Utils.ValidateResource()
 
+-- Make Utils globally available
+_G.Utils = Utils
+
 -- Export the utils
 return Utils
