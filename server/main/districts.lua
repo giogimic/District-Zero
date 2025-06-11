@@ -4,11 +4,12 @@ local districtEvents = {}
 local districtPlayers = {}
 
 -- Districts Server Handler
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetSharedObject()
 local districts = {}
 local districtOwners = {}
 local districtResources = {}
 local districtInfluence = {}
+local Utils = require 'shared/utils'
 
 -- Initialize districts from config
 local function InitializeDistricts()

@@ -1,11 +1,12 @@
 -- shared/utils.lua
 -- Common utility functions for the District Zero system
 
+local QBX = exports['qbx_core']:GetSharedObject()
 local Utils = {}
 
 -- Debug logging
 function Utils.PrintDebug(message)
-    if Config.Debug then
+    if Config and Config.Debug then
         print('[APB Debug] ' .. tostring(message))
     end
 end
@@ -61,16 +62,19 @@ end
 
 -- Validation helpers
 function Utils.IsValidSpeed(speed)
-    return speed >= 0 and speed <= Config.MaxSpeed
+    return speed >= 0 and speed <= (Config and Config.MaxSpeed or 500)
 end
 
 function Utils.IsValidHealth(health)
-    return health >= 0 and health <= Config.MaxHealth
+    return health >= 0 and health <= (Config and Config.MaxHealth or 200)
 end
 
 function Utils.IsValidArmor(armor)
-    return armor >= 0 and armor <= Config.MaxArmor
+    return armor >= 0 and armor <= (Config and Config.MaxArmor or 100)
 end
+
+-- Initialize
+Utils.PrintDebug('Utils module initialized')
 
 -- Export the utils
 return Utils

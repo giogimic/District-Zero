@@ -11,12 +11,19 @@ author 'Your Name'
 description 'District Zero - Dynamic Territory Control System'
 version '1.0.0'
 
+-- Dependencies
+dependencies {
+    'qbx_core',
+    'ox_lib',
+    'oxmysql'
+}
+
 -- Shared scripts (configs, enums, utils)
 shared_scripts {
     '@ox_lib/init.lua',
     '@qbx_core/shared/locale.lua',
-    'shared/utils.lua',
     'shared/config.lua',
+    'shared/utils.lua',
     'locales/*.lua'
 }
 
@@ -35,10 +42,4 @@ ui_page 'html/index.html'
 
 files {
     'html/**/*'
-}
-
-dependencies {
-    'qbx_core',
-    'ox_lib',
-    'oxmysql'
 }
