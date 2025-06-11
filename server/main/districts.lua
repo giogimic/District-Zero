@@ -29,11 +29,44 @@ local DistrictState = {
     retryDelay = 1000
 }
 
+-- Initialize district state
+local function InitializeDistrictState()
+    -- Load districts from database
+    local districts = exports['dz']:GetDistricts()
+    if not districts then
+        Utils.HandleError('Failed to load districts from database', 'DATABASE', 'InitializeDistrictState')
+        return false
+    end
+
+    -- Initialize district state
+    for _, district in ipairs(districts) do
+        DistrictState.districts[district.id] = {
+            id = district.id,
+            name = district.name,
+            label = district.label,
+            description = district.description,
+            center = vector3(district.center_x, district.center_y, district.center_z),
+            radius = district.radius,
+            owner = district.owner or 'neutral',
+            resources = district.resources or {
+                money = 0,
+                materials = 0,
+                influence = 0
+            },
+            influence = district.influence or 0,
+            players = {}
+        }
+    end
+
+    Utils.PrintDebug("District state initialized")
+    return true
+end
+
 -- Initialize districts from config
 local function InitializeDistricts()
     if not Config or not Config.Districts then
         Utils.HandleError('Config.Districts is not defined', 'VALIDATION', 'InitializeDistricts')
-        return
+        return false
     end
 
     -- Load districts from config or database
@@ -52,6 +85,7 @@ local function InitializeDistricts()
     end
     
     Utils.PrintDebug("Districts initialized")
+    return true
 end
 
 -- Get players in district
@@ -192,9 +226,14 @@ end)
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
-    InitializeDistricts()
     
-    -- Initialize district state
+    -- Initialize districts first
+    if not InitializeDistricts() then
+        Utils.HandleError('Failed to initialize districts', 'INIT', 'onResourceStart')
+        return
+    end
+    
+    -- Then initialize district state
     if not InitializeDistrictState() then
         Utils.HandleError('Failed to initialize district state', 'INIT', 'onResourceStart')
         return
@@ -361,6 +400,10 @@ QBX.Commands.Add('updatedistrict', 'Update district data (Admin Only)', {
 end, 'admin')
 
 -- Exports
+exports('GetDistrictState', function()
+    return DistrictState
+end)
+
 exports('GetDistricts', function()
     return State.districts
 end)
@@ -392,39 +435,6 @@ end)
 exports('UpdateDistrictInfluence', function(districtId, amount)
     return UpdateDistrictInfluence(districtId, amount)
 end)
-
--- Initialize district state
-local function InitializeDistrictState()
-    -- Load districts from database
-    local districts = exports['dz']:GetDistricts()
-    if not districts then
-        Utils.HandleError('Failed to load districts from database', 'DATABASE', 'InitializeDistrictState')
-        return false
-    end
-
-    -- Initialize district state
-    for _, district in ipairs(districts) do
-        DistrictState.districts[district.id] = {
-            id = district.id,
-            name = district.name,
-            label = district.label,
-            description = district.description,
-            center = vector3(district.center_x, district.center_y, district.center_z),
-            radius = district.radius,
-            owner = district.owner or 'neutral',
-            resources = district.resources or {
-                money = 0,
-                materials = 0,
-                influence = 0
-            },
-            influence = district.influence or 0,
-            players = {}
-        }
-    end
-
-    Utils.PrintDebug("District state initialized")
-    return true
-end
 
 -- Sync district state
 local function SyncDistrictState()
