@@ -4,6 +4,7 @@
 local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
+local Database = require 'server/database/init'
 
 -- Server State
 local State = {
@@ -19,8 +20,14 @@ local function Initialize()
     if State.isInitialized then return end
     
     -- Initialize database
-    if not InitializeDatabase() then
+    if not Database.InitializeDatabase() then
         print('^1[District Zero] Failed to initialize database^7')
+        return
+    end
+    
+    -- Insert default data
+    if not Database.InsertDefaultData() then
+        print('^1[District Zero] Failed to insert default data^7')
         return
     end
     

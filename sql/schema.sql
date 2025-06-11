@@ -39,16 +39,39 @@ CREATE TABLE IF NOT EXISTS gang_members (
 );
 
 -- Districts
-CREATE TABLE IF NOT EXISTS districts (
-    id SERIAL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS dz_districts (
+    id VARCHAR(32) PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
-    center_x FLOAT,
-    center_y FLOAT,
-    center_z FLOAT,
-    radius FLOAT,
+    label VARCHAR(64) NOT NULL,
+    description TEXT,
+    center_x FLOAT NOT NULL,
+    center_y FLOAT NOT NULL,
+    center_z FLOAT NOT NULL,
+    radius FLOAT NOT NULL,
+    status VARCHAR(16) DEFAULT 'active',
     controlling_faction VARCHAR(32),
     last_event VARCHAR(32),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_update TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- District Events
+CREATE TABLE IF NOT EXISTS dz_district_events (
+    id SERIAL PRIMARY KEY,
+    district_id VARCHAR(32) NOT NULL,
+    type VARCHAR(32) NOT NULL,
+    data JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (district_id) REFERENCES dz_districts(id)
+);
+
+-- District Players
+CREATE TABLE IF NOT EXISTS dz_district_players (
+    id SERIAL PRIMARY KEY,
+    district_id VARCHAR(32) NOT NULL,
+    citizenid VARCHAR(64) NOT NULL,
+    join_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (district_id) REFERENCES dz_districts(id)
 );
 
 -- Missions
