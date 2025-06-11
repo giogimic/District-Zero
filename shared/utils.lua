@@ -50,19 +50,18 @@ end
 
 -- Database helpers with proper error handling
 function Utils.SafeQuery(query, params, context)
-    if not query then
-        Utils.HandleError('Query is required', context or 'SafeQuery')
+    if not query then return nil end
+    
+    local success, result = pcall(function()
+        return MySQL.query.await(query, params)
+    end)
+    
+    if not success then
+        print('^1Query failed in ' .. (context or 'unknown') .. ': ' .. tostring(result))
         return nil
     end
     
-    return Utils.SafeCall(function()
-        local result = MySQL.query.await(query, params)
-        if not result then
-            Utils.HandleError('Query failed', context or 'SafeQuery')
-            return nil
-        end
-        return result
-    end, context or 'SafeQuery')
+    return result
 end
 
 -- Event helpers with rate limiting

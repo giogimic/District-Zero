@@ -1,7 +1,7 @@
 -- server/main/main.lua
 -- District Zero Main Server Handler
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBX = exports.qbx_core:GetCoreObject()
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 

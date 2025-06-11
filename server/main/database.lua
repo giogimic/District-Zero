@@ -5,8 +5,20 @@ local CACHE_TTL = 300 -- 5 minutes cache TTL
 
 -- Initialize database connection
 local function InitializeDatabase()
-    -- oxmysql is already initialized by QBCore
-    Utils.PrintDebug("Database connection initialized")
+    local success, error = pcall(function()
+        MySQL.ready(function()
+            -- Set connection pool size
+            MySQL.query('SET SESSION wait_timeout = ?', {Config.connectionTimeout})
+            MySQL.query('SET SESSION max_connections = ?', {Config.poolSize})
+        end)
+    end)
+    
+    if not success then
+        print('^1Database connection failed: ' .. tostring(error))
+        return false
+    end
+    
+    return true
 end
 
 -- Execute a query with parameters
