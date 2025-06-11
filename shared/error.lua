@@ -1,5 +1,6 @@
 -- District Zero Error Handler
 local Utils = require 'shared/utils'
+local QBX = exports['qb-core']:GetCoreObject()
 
 -- Error Types
 local ErrorTypes = {

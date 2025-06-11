@@ -1,6 +1,7 @@
 -- District Zero Event Handler
 
 local Events = {}
+local Utils = require 'shared/utils'
 
 -- Event Registry
 Events.client = {
