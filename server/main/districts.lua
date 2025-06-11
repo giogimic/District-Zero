@@ -4,7 +4,7 @@ local districtEvents = {}
 local districtPlayers = {}
 
 -- Districts Server Handler
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 
 -- State Management

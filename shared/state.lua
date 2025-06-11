@@ -89,23 +89,24 @@ local function GetState(stateType)
     return State[stateType]
 end
 
+-- District Zero State Handler
+
+local Utils = require 'shared/utils'
+local QBX = exports['qb-core']:GetCoreObject()
+
+-- State Registry
+local StateRegistry = {}
+
 -- Register cleanup handler
-RegisterCleanup('state', function()
-    -- Reset state
-    State = {
-        client = {
-            isOpen = false,
-            currentMenu = nil,
-            currentData = nil,
-            notifications = {}
-        },
-        server = {
-            districts = {},
-            factions = {},
-            missions = {},
-            players = {}
-        }
-    }
+AddEventHandler('onResourceStop', function(resourceName)
+    if resourceName == GetCurrentResourceName() then
+        -- Cleanup all states
+        for _, state in pairs(StateRegistry) do
+            if state.cleanup then
+                state.cleanup()
+            end
+        end
+    end
 end)
 
 -- Exports

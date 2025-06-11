@@ -1,5 +1,5 @@
--- District Events Handler
-local QBX = exports['qbx_core']:GetCore()
+-- District Zero District Events Handler
+local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventCooldowns = {}

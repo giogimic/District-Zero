@@ -1,5 +1,5 @@
--- Factions Server Handler
-local QBX = exports['qbx_core']:GetCore()
+-- District Zero Factions Handler
+local QBX = exports['qb-core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local factions = {}
 local factionMembers = {}

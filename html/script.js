@@ -2,10 +2,12 @@
 let state = {
   currentMenu: null,
   data: null,
+  isLoading: true,
 };
 
 // UI Elements
 const app = document.getElementById('app');
+const loading = document.getElementById('loading');
 const menus = {
   main: document.getElementById('main-menu'),
   districts: document.getElementById('districts-menu'),
@@ -17,6 +19,10 @@ const notifications = document.getElementById('notifications');
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+  // Hide loading state
+  state.isLoading = false;
+  loading.style.display = 'none';
+
   // Menu item clicks
   document.querySelectorAll('.menu-item').forEach((item) => {
     item.addEventListener('click', () => {
@@ -55,8 +61,20 @@ window.addEventListener('message', (event) => {
     case 'removeNotification':
       removeNotification(data.id);
       break;
+    case 'loading':
+      setLoading(data.isLoading);
+      break;
   }
 });
+
+// Loading State
+function setLoading(isLoading) {
+  state.isLoading = isLoading;
+  loading.style.display = isLoading ? 'flex' : 'none';
+  if (!isLoading) {
+    app.classList.remove('hidden');
+  }
+}
 
 // Menu Functions
 function showMenu(menu, data) {

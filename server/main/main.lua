@@ -184,3 +184,16 @@ end)
 exports('GetPlayers', function()
     return State.players
 end)
+
+-- Register server events
+RegisterNetEvent('dz:server:initialize')
+AddEventHandler('dz:server:initialize', function()
+    local source = source
+    InitializePlayer(source)
+end)
+
+RegisterNetEvent('dz:server:updateDistrict')
+AddEventHandler('dz:server:updateDistrict', function(districtId, data)
+    local source = source
+    UpdateDistrict(source, districtId, data)
+end)
