@@ -5,6 +5,11 @@ local isUIOpen = false
 local currentMission = nil
 local missionBlips = {}
 
+-- Client-side main handler
+local QBX = exports['qb-core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
+
 -- Mission state management
 local function CreateMissionBlip(coords, type, label)
     local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
@@ -97,65 +102,74 @@ CreateThread(function()
     end
 end)
 
--- Event handlers
-RegisterNetEvent('dz:showMission', function(mission)
-    currentMission = mission
-    UpdateMissionBlips()
-    Bridge.Notify('New mission started: ' .. mission.title, 'info')
-end)
-
-RegisterNetEvent('dz:updateMission', function(mission)
-    currentMission = mission
-    UpdateMissionBlips()
-end)
-
-RegisterNetEvent('dz:completeMission', function()
-    ClearMissionBlips()
-    currentMission = nil
-    Bridge.Notify('Mission completed!', 'success')
-end)
-
-RegisterNetEvent('dz:failMission', function()
-    ClearMissionBlips()
-    currentMission = nil
-    Bridge.Notify('Mission failed!', 'error')
-end)
-
--- Command to open mission menu
-RegisterCommand('missions', function()
-    if not isUIOpen then
-        isUIOpen = true
-        SetNuiFocus(true, true)
+-- Toggle UI
+local function ToggleUI()
+    isUIOpen = not isUIOpen
+    SetNuiFocus(isUIOpen, isUIOpen)
+    
+    if isUIOpen then
+        -- Get missions and districts data
+        local missions = exports['dz']:GetMissions()
+        local districts = exports['dz']:GetDistricts()
+        
+        -- Send data to UI
         SendNUIMessage({
-            action = 'show',
-            missions = currentMission
+            type = 'showUI',
+            missions = missions,
+            districts = districts
+        })
+    else
+        SendNUIMessage({
+            type = 'hideUI'
         })
     end
-end)
+end
 
 -- NUI Callbacks
-RegisterNUICallback('close', function(_, cb)
+RegisterNUICallback('closeUI', function(data, cb)
     isUIOpen = false
     SetNuiFocus(false, false)
     cb('ok')
 end)
 
 RegisterNUICallback('acceptMission', function(data, cb)
-    TriggerServerEvent('dz:acceptMission', data.missionId)
+    TriggerServerEvent('dz:server:acceptMission', data.missionId)
     cb('ok')
 end)
 
-RegisterNUICallback('declineMission', function(data, cb)
-    TriggerServerEvent('dz:declineMission', data.missionId)
-    cb('ok')
+-- Key mapping
+RegisterCommand('+openMissionMenu', function()
+    ToggleUI()
+end, false)
+
+RegisterKeyMapping('+openMissionMenu', 'Open Mission Menu', 'keyboard', 'F5')
+
+-- Event handlers
+RegisterNetEvent('dz:client:initialize')
+AddEventHandler('dz:client:initialize', function(data)
+    -- Initialize client state
+    Utils.PrintDebug('Client initialized')
+end)
+
+-- Initialize on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Wait for QBCore to be ready
+    while not QBX do
+        Wait(100)
+    end
+    
+    -- Initialize client
+    TriggerEvent('dz:client:initialize')
 end)
 
 -- Cleanup on resource stop
 AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
-        ClearMissionBlips()
-        if isUIOpen then
-            SetNuiFocus(false, false)
-        end
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Close UI if open
+    if isUIOpen then
+        SetNuiFocus(false, false)
     end
 end) 
