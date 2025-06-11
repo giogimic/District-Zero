@@ -1,5 +1,5 @@
 -- District Events Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports['qbx_core']:GetCore()
 local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventCooldowns = {}
@@ -40,13 +40,45 @@ local eventTypes = {
 
 -- Event Management
 local function StartEvent(districtId, eventType)
-    if not Config.Districts[districtId] then return false end
-    if activeEvents[districtId] then return false end
-    if eventCooldowns[districtId] and eventCooldowns[districtId] > os.time() then return false end
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'StartEvent')
+        return false
+    end
     
+    if not eventType then
+        Utils.HandleError('Event type is required', 'StartEvent')
+        return false
+    end
+    
+    -- Check district exists
+    if not Config.Districts[districtId] then
+        Utils.HandleError('District does not exist: ' .. tostring(districtId), 'StartEvent')
+        return false
+    end
+    
+    -- Check event type exists
+    if not eventTypes[eventType] then
+        Utils.HandleError('Invalid event type: ' .. tostring(eventType), 'StartEvent')
+        return false
+    end
+    
+    -- Check if event is already active
+    if activeEvents[districtId] then
+        Utils.HandleError('Event already active for district: ' .. tostring(districtId), 'StartEvent')
+        return false
+    end
+    
+    -- Check cooldown
+    if eventCooldowns[districtId] and eventCooldowns[districtId] > os.time() then
+        Utils.HandleError('Event on cooldown for district: ' .. tostring(districtId), 'StartEvent')
+        return false
+    end
+    
+    -- Get event data
     local event = eventTypes[eventType]
-    if not event then return false end
     
+    -- Create event
     activeEvents[districtId] = {
         type = eventType,
         startTime = os.time(),
@@ -62,11 +94,22 @@ local function StartEvent(districtId, eventType)
     -- Set cooldown
     eventCooldowns[districtId] = os.time() + (event.duration * 2)
     
+    Utils.PrintDebug('Event started: ' .. eventType .. ' in district ' .. districtId, 'info')
     return true
 end
 
 local function EndEvent(districtId, success)
-    if not activeEvents[districtId] then return false end
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'EndEvent')
+        return false
+    end
+    
+    -- Check if event exists
+    if not activeEvents[districtId] then
+        Utils.HandleError('No active event for district: ' .. tostring(districtId), 'EndEvent')
+        return false
+    end
     
     local event = activeEvents[districtId]
     local district = Config.Districts[districtId]
@@ -98,12 +141,29 @@ local function EndEvent(districtId, success)
     -- Clear event
     activeEvents[districtId] = nil
     
+    Utils.PrintDebug('Event ended: ' .. event.type .. ' in district ' .. districtId, 'info')
     return true
 end
 
 local function UpdateEventProgress(districtId, progress)
-    if not activeEvents[districtId] then return false end
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'UpdateEventProgress')
+        return false
+    end
     
+    if not progress then
+        Utils.HandleError('Progress is required', 'UpdateEventProgress')
+        return false
+    end
+    
+    -- Check if event exists
+    if not activeEvents[districtId] then
+        Utils.HandleError('No active event for district: ' .. tostring(districtId), 'UpdateEventProgress')
+        return false
+    end
+    
+    -- Update progress
     activeEvents[districtId].progress = progress
     
     -- Check if event is complete
@@ -114,6 +174,7 @@ local function UpdateEventProgress(districtId, progress)
     -- Notify all players
     Utils.TriggerClientEvent('district:event:progress', -1, districtId, progress)
     
+    Utils.PrintDebug('Event progress updated: ' .. progress .. '% in district ' .. districtId, 'info')
     return true
 end
 
@@ -121,35 +182,91 @@ end
 RegisterNetEvent('dz:district:event:join')
 AddEventHandler('dz:district:event:join', function(districtId)
     local source = source
-    if not activeEvents[districtId] then return end
+    
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'EventJoin')
+        return
+    end
+    
+    -- Check if event exists
+    if not activeEvents[districtId] then
+        Utils.HandleError('No active event for district: ' .. tostring(districtId), 'EventJoin')
+        return
+    end
     
     local player = QBX.Functions.GetPlayer(source)
-    if not player then return end
+    if not player then
+        Utils.HandleError('Player not found: ' .. tostring(source), 'EventJoin')
+        return
+    end
     
     -- Add player to participants
     activeEvents[districtId].participants[source] = true
     
     -- Notify all players
     Utils.TriggerClientEvent('district:event:update', -1, districtId, activeEvents[districtId])
+    
+    Utils.PrintDebug('Player joined event: ' .. player.PlayerData.citizenid, 'info')
 end)
 
 RegisterNetEvent('dz:district:event:leave')
 AddEventHandler('dz:district:event:leave', function(districtId)
     local source = source
-    if not activeEvents[districtId] then return end
+    
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'EventLeave')
+        return
+    end
+    
+    -- Check if event exists
+    if not activeEvents[districtId] then
+        Utils.HandleError('No active event for district: ' .. tostring(districtId), 'EventLeave')
+        return
+    end
+    
+    local player = QBX.Functions.GetPlayer(source)
+    if not player then
+        Utils.HandleError('Player not found: ' .. tostring(source), 'EventLeave')
+        return
+    end
     
     -- Remove player from participants
     activeEvents[districtId].participants[source] = nil
     
     -- Notify all players
     Utils.TriggerClientEvent('district:event:update', -1, districtId, activeEvents[districtId])
+    
+    Utils.PrintDebug('Player left event: ' .. player.PlayerData.citizenid, 'info')
 end)
 
 RegisterNetEvent('dz:district:event:progress:update')
 AddEventHandler('dz:district:event:progress:update', function(districtId, progress)
     local source = source
-    if not activeEvents[districtId] then return end
-    if not activeEvents[districtId].participants[source] then return end
+    
+    -- Validate inputs
+    if not districtId then
+        Utils.HandleError('District ID is required', 'EventProgressUpdate')
+        return
+    end
+    
+    if not progress then
+        Utils.HandleError('Progress is required', 'EventProgressUpdate')
+        return
+    end
+    
+    -- Check if event exists
+    if not activeEvents[districtId] then
+        Utils.HandleError('No active event for district: ' .. tostring(districtId), 'EventProgressUpdate')
+        return
+    end
+    
+    -- Check if player is participant
+    if not activeEvents[districtId].participants[source] then
+        Utils.HandleError('Player is not a participant: ' .. tostring(source), 'EventProgressUpdate')
+        return
+    end
     
     UpdateEventProgress(districtId, progress)
 end)

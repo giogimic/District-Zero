@@ -1,6 +1,6 @@
 -- fxmanifest.lua
--- Resource definition for APB Reloaded system ported to FiveM
--- Framework Compatibility: QBCore/Qbox (Modern Standards Only)
+-- Resource definition for District Zero
+-- Framework Compatibility: Qbox (Modern Standards Only)
 
 fx_version 'cerulean'
 game 'gta5'

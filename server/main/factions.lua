@@ -1,5 +1,5 @@
 -- Factions Server Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports['qbx_core']:GetCore()
 local Utils = require 'shared/utils'
 local factions = {}
 local factionMembers = {}
