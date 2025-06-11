@@ -166,4 +166,20 @@ FOREIGN KEY (ability_id) REFERENCES dz_abilities(id)
 ON DELETE CASCADE,
 ADD CONSTRAINT fk_ability_progress_player
 FOREIGN KEY (player_id) REFERENCES dz_players(id)
-ON DELETE CASCADE; 
+ON DELETE CASCADE;
+
+-- Insert default data
+INSERT INTO dz_districts (name, description, status) VALUES
+('Downtown', 'The heart of the city', 'active'),
+('Industrial', 'Industrial district', 'active'),
+('Residential', 'Residential area', 'active');
+
+INSERT INTO dz_factions (name, description, status) VALUES
+('Police', 'Law enforcement', 'active'),
+('Gang', 'Street gang', 'active'),
+('Corporation', 'Business corporation', 'active');
+
+INSERT INTO dz_missions (name, description, type, status) VALUES
+('Patrol', 'Patrol the district', 'main', 'active'),
+('Delivery', 'Make a delivery', 'side', 'active'),
+('Protection', 'Protect the area', 'daily', 'active'); 
