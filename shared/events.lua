@@ -1,51 +1,47 @@
 -- District Zero Event Handler
-local Utils = require 'shared/utils'
+
+local Events = {}
 
 -- Event Registry
-local Events = {
-    -- Client Events
-    client = {
-        -- Menu Events
-        'dz:client:menu:toggle',
-        'dz:client:menu:close',
-        'dz:client:menu:update',
-        
-        -- District Events
-        'dz:client:district:requestUpdate',
-        'dz:client:district:update',
-        'dz:client:district:capture',
-        'dz:client:district:defend',
-        
-        -- Mission Events
-        'dz:client:mission:start',
-        'dz:client:mission:complete',
-        'dz:client:mission:fail'
-    },
+Events.client = {
+    -- Menu Events
+    'dz:client:menu:toggle',
+    'dz:client:menu:close',
+    'dz:client:menu:update',
     
-    -- Server Events
-    server = {
-        -- Menu Events
-        'dz:server:menu:request',
-        'dz:server:menu:response',
-        
-        -- District Events
-        'dz:server:district:request',
-        'dz:server:district:response',
-        'dz:server:district:capture',
-        'dz:server:district:defend',
-        
-        -- Mission Events
-        'dz:server:mission:start',
-        'dz:server:mission:complete',
-        'dz:server:mission:fail'
-    },
+    -- District Events
+    'dz:client:district:requestUpdate',
+    'dz:client:district:update',
+    'dz:client:district:capture',
+    'dz:client:district:defend',
     
-    -- Shared Events
-    shared = {
-        -- State Events
-        'dz:shared:state:update',
-        'dz:shared:state:request'
-    }
+    -- Mission Events
+    'dz:client:mission:start',
+    'dz:client:mission:complete',
+    'dz:client:mission:fail'
+}
+
+Events.server = {
+    -- Menu Events
+    'dz:server:menu:request',
+    'dz:server:menu:response',
+    
+    -- District Events
+    'dz:server:district:request',
+    'dz:server:district:response',
+    'dz:server:district:capture',
+    'dz:server:district:defend',
+    
+    -- Mission Events
+    'dz:server:mission:start',
+    'dz:server:mission:complete',
+    'dz:server:mission:fail'
+}
+
+Events.shared = {
+    -- State Events
+    'dz:shared:state:update',
+    'dz:shared:state:request'
 }
 
 -- Event rate limiting
@@ -179,4 +175,6 @@ Event System Documentation:
    - eventType: Type of event (client/server/shared)
    - source: Source of the event
    - data: Data associated with the event
-]] 
+]]
+
+return Events 

@@ -9,7 +9,7 @@ lua54 'yes'
 version_manifest '1.0.0'
 
 author 'Your Name'
-description 'District Zero - Advanced District Control System'
+description 'District Zero - A FiveM resource for district-based gameplay'
 version '1.0.0'
 
 -- Dependencies
@@ -50,8 +50,11 @@ ui_page 'html/index.html'
 
 files {
     'html/index.html',
-    'html/styles.css',
-    'html/script.js'
+    'html/style.css',
+    'html/script.js',
+    'html/assets/*.png',
+    'html/assets/*.jpg',
+    'html/assets/*.svg'
 }
 
 -- Resource Configuration
