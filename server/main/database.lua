@@ -207,7 +207,7 @@ exports('GetCharacterBalance', GetCharacterBalance)
 exports('GetCharacterInventory', GetCharacterInventory)
 exports('AddItem', AddItem)
 exports('GetCharacterSkills', GetCharacterSkills)
-exports('UpdateSkill', UpdateSkill)
+exports('UpdateSkill', UpdateSkill) 
 
 -- Database Management
 local Database = {

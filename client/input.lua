@@ -1,6 +1,7 @@
 -- District Zero Input Handler
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
 -- Key Bindings Configuration
 local Config = {
@@ -147,3 +148,107 @@ Usage:
 - Set key binding: exports['district_zero']:SetKeyBinding('menu', 'F5')
 - Get all bindings: exports['district_zero']:GetAllKeyBindings()
 ]] 
+
+-- client/input.lua
+-- District Zero Input Management
+
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
+
+-- Key bindings configuration
+local keyBindings = {
+    menu = {
+        key = 'F5',
+        description = 'Open District Zero Menu',
+        command = 'dz:client:menu:toggle'
+    },
+    district = {
+        key = 'F6',
+        description = 'Toggle District View',
+        command = 'dz:client:district:toggle'
+    },
+    mission = {
+        key = 'F7',
+        description = 'Toggle Mission View',
+        command = 'dz:client:mission:toggle'
+    }
+}
+
+-- Register key bindings
+local function RegisterKeyBindings()
+    for name, binding in pairs(keyBindings) do
+        RegisterCommand(binding.command, function()
+            if not State.isOpen then
+                Events.TriggerEvent('dz:client:menu:open', 'client')
+            end
+        end)
+        
+        RegisterKeyMapping(binding.command, binding.description, 'keyboard', binding.key)
+    end
+end
+
+-- Handle key press
+local function HandleKeyPress(key)
+    if not keyBindings[key] then return end
+    
+    local binding = keyBindings[key]
+    ExecuteCommand(binding.command)
+end
+
+-- Register input handlers
+RegisterCommand('dz:client:menu:toggle', function()
+    if not State.isOpen then
+        Events.TriggerEvent('dz:client:menu:open', 'client')
+    else
+        Events.TriggerEvent('dz:client:menu:close', 'client')
+    end
+end)
+
+RegisterCommand('dz:client:district:toggle', function()
+    Events.TriggerEvent('dz:client:district:toggle', 'client')
+end)
+
+RegisterCommand('dz:client:mission:toggle', function()
+    Events.TriggerEvent('dz:client:mission:toggle', 'client')
+end)
+
+-- Register cleanup handler
+RegisterCleanup('input', function()
+    -- Unregister key bindings
+    for _, binding in pairs(keyBindings) do
+        RegisterCommand(binding.command, function() end)
+    end
+end)
+
+-- Initialize on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    RegisterKeyBindings()
+end)
+
+-- Exports
+exports('GetKeyBindings', function()
+    return keyBindings
+end)
+
+exports('RegisterKeyBinding', function(name, binding)
+    if keyBindings[name] then
+        return false, 'Key binding already exists'
+    end
+    
+    keyBindings[name] = binding
+    RegisterKeyBindings()
+    return true
+end)
+
+exports('UnregisterKeyBinding', function(name)
+    if not keyBindings[name] then
+        return false, 'Key binding does not exist'
+    end
+    
+    local binding = keyBindings[name]
+    RegisterCommand(binding.command, function() end)
+    keyBindings[name] = nil
+    return true
+end) 

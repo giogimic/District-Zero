@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>District Zero</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="app" class="hidden">
+      <!-- Main Menu -->
+      <div id="main-menu" class="menu">
+        <div class="menu-header">
+          <h1>District Zero</h1>
+        </div>
+        <div class="menu-content">
+          <div class="menu-item" data-action="select" data-value="districts">
+            <span class="icon">🗺️</span>
+            <span class="text">Districts</span>
+          </div>
+          <div class="menu-item" data-action="select" data-value="missions">
+            <span class="icon">🎯</span>
+            <span class="text">Missions</span>
+          </div>
+          <div class="menu-item" data-action="select" data-value="factions">
+            <span class="icon">👥</span>
+            <span class="text">Factions</span>
+          </div>
+          <div class="menu-item" data-action="select" data-value="abilities">
+            <span class="icon">⚡</span>
+            <span class="text">Abilities</span>
+          </div>
+        </div>
+        <div class="menu-footer">
+          <button class="btn" data-action="back">Back</button>
+        </div>
+      </div>
+
+      <!-- Districts Menu -->
+      <div id="districts-menu" class="menu hidden">
+        <div class="menu-header">
+          <h2>Districts</h2>
+        </div>
+        <div class="menu-content" id="districts-list">
+          <!-- Districts will be populated here -->
+        </div>
+        <div class="menu-footer">
+          <button class="btn" data-action="back">Back</button>
+        </div>
+      </div>
+
+      <!-- Missions Menu -->
+      <div id="missions-menu" class="menu hidden">
+        <div class="menu-header">
+          <h2>Missions</h2>
+        </div>
+        <div class="menu-content" id="missions-list">
+          <!-- Missions will be populated here -->
+        </div>
+        <div class="menu-footer">
+          <button class="btn" data-action="back">Back</button>
+        </div>
+      </div>
+
+      <!-- Factions Menu -->
+      <div id="factions-menu" class="menu hidden">
+        <div class="menu-header">
+          <h2>Factions</h2>
+        </div>
+        <div class="menu-content" id="factions-list">
+          <!-- Factions will be populated here -->
+        </div>
+        <div class="menu-footer">
+          <button class="btn" data-action="back">Back</button>
+        </div>
+      </div>
+
+      <!-- Abilities Menu -->
+      <div id="abilities-menu" class="menu hidden">
+        <div class="menu-header">
+          <h2>Abilities</h2>
+        </div>
+        <div class="menu-content" id="abilities-list">
+          <!-- Abilities will be populated here -->
+        </div>
+        <div class="menu-footer">
+          <button class="btn" data-action="back">Back</button>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div id="notifications"></div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

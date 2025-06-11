@@ -1,24 +1,20 @@
-local QBX = exports['qbx_core']:GetCore()
-local currentDistrict = nil
-local districtBlips = {}
-local districtMarkers = {}
-local districtEvents = {}
-local isInDistrict = false
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
--- Error handling wrapper
-local function SafeCall(fn, ...)
-    local status, result = pcall(fn, ...)
-    if not status then
-        print('[District Zero] Error:', result)
-        return nil
-    end
-    return result
-end
+-- State Management
+local State = {
+    currentDistrict = nil,
+    districtBlips = {},
+    districtMarkers = {},
+    districtEvents = {},
+    isInDistrict = false
+}
 
 -- Create district blips
 local function CreateDistrictBlip(district)
     if not district or not district.center then
-        print('[District Zero] Error: Invalid district data for blip creation')
+        Utils.HandleError('Invalid district data for blip creation', 'CreateDistrictBlip')
         return nil
     end
 
@@ -40,25 +36,25 @@ end
 
 -- Update district blip colors
 local function UpdateDistrictBlips(districts)
-    SafeCall(function()
+    Utils.SafeCall(function()
         -- Remove existing blips
-        for _, blips in pairs(districtBlips) do
+        for _, blips in pairs(State.districtBlips) do
             RemoveBlip(blips.radius)
             RemoveBlip(blips.center)
         end
-        districtBlips = {}
+        State.districtBlips = {}
         
         -- Create new blips
         for id, district in pairs(districts) do
-            districtBlips[id] = CreateDistrictBlip(district)
+            State.districtBlips[id] = CreateDistrictBlip(district)
         end
-    end)
+    end, 'UpdateDistrictBlips')
 end
 
 -- Create district markers
 local function CreateDistrictMarkers()
     for _, district in pairs(Config.Districts) do
-        districtMarkers[district.id] = {
+        State.districtMarkers[district.id] = {
             center = district.center,
             radius = district.radius,
             color = {r = 255, g = 255, b = 255, a = 100}
@@ -68,7 +64,7 @@ end
 
 -- Update district markers
 local function UpdateDistrictMarkers()
-    for districtId, marker in pairs(districtMarkers) do
+    for districtId, marker in pairs(State.districtMarkers) do
         local controllingFaction = exports['fivem-mm']:GetDistrictControllingFaction(districtId)
         
         if controllingFaction then
@@ -87,7 +83,7 @@ end
 
 -- Draw district markers
 local function DrawDistrictMarkers()
-    for _, marker in pairs(districtMarkers) do
+    for _, marker in pairs(State.districtMarkers) do
         DrawMarker(1, -- Type
             marker.center.x, marker.center.y, marker.center.z - 1.0, -- Position
             0.0, 0.0, 0.0, -- Direction
@@ -107,33 +103,32 @@ end
 
 -- Check player district
 local function CheckDistrictBoundaries()
-    SafeCall(function()
+    Utils.SafeCall(function()
         local playerPed = PlayerPedId()
         local coords = GetEntityCoords(playerPed)
         
         for id, district in pairs(Config.Districts) do
             local distance = #(coords - district.center)
             if distance <= district.radius then
-                if not isInDistrict or currentDistrict ~= id then
-                    currentDistrict = id
-                    isInDistrict = true
-                    TriggerEvent('district:entered', id)
+                if not State.isInDistrict or State.currentDistrict ~= id then
+                    State.currentDistrict = id
+                    State.isInDistrict = true
+                    Events.TriggerEvent('dz:client:district:entered', 'client', id)
                 end
                 return
             end
         end
         
-        if isInDistrict then
-            isInDistrict = false
-            currentDistrict = nil
-            TriggerEvent('district:exited')
+        if State.isInDistrict then
+            State.isInDistrict = false
+            State.currentDistrict = nil
+            Events.TriggerEvent('dz:client:district:exited', 'client')
         end
-    end)
+    end, 'CheckDistrictBoundaries')
 end
 
 -- Handle district events
-RegisterNetEvent('district:eventStarted')
-AddEventHandler('district:eventStarted', function(districtId, eventType)
+Events.RegisterEvent('dz:client:district:eventStarted', function(districtId, eventType)
     if not Config.Districts[districtId] then return end
     
     -- Create event blip
@@ -147,7 +142,7 @@ AddEventHandler('district:eventStarted', function(districtId, eventType)
     AddTextComponentString(Config.Districts[districtId].name .. " - " .. eventType)
     EndTextCommandSetBlipName(eventBlip)
     
-    districtEvents[districtId] = {
+    State.districtEvents[districtId] = {
         type = eventType,
         blip = eventBlip,
         startTime = GetGameTimer()
@@ -160,10 +155,10 @@ end)
 -- Clean up district events
 local function CleanupDistrictEvents()
     local currentTime = GetGameTimer()
-    for districtId, event in pairs(districtEvents) do
+    for districtId, event in pairs(State.districtEvents) do
         if currentTime - event.startTime > 300000 then -- 5 minutes
             RemoveBlip(event.blip)
-            districtEvents[districtId] = nil
+            State.districtEvents[districtId] = nil
         end
     end
 end
@@ -183,19 +178,17 @@ CreateThread(function()
 end)
 
 -- District control changed
-RegisterNetEvent('district:controlChanged')
-AddEventHandler('district:controlChanged', function(districtId, controllingFaction)
+Events.RegisterEvent('dz:client:district:controlChanged', function(districtId, controllingFaction)
     if Config.Districts[districtId] then
         QBX.Functions.Notify(Config.Districts[districtId].name .. " is now controlled by " .. controllingFaction, "primary")
     end
 end)
 
 -- Player entered district
-RegisterNetEvent('district:entered')
-AddEventHandler('district:entered', function(districtId)
-    SafeCall(function()
+Events.RegisterEvent('dz:client:district:entered', function(districtId)
+    Utils.SafeCall(function()
         if not districtId then
-            print('[District Zero] Error: Invalid district ID on enter')
+            Utils.HandleError('Invalid district ID on enter', 'DistrictEntered')
             return
         end
 
@@ -203,35 +196,50 @@ AddEventHandler('district:entered', function(districtId)
         if district then
             QBX.Functions.Notify(Lang:t('info.entered_district', {district = district.name}), 'info')
         end
-    end)
+    end, 'DistrictEntered')
 end)
 
 -- Player left district
-RegisterNetEvent('district:exited')
-AddEventHandler('district:exited', function()
+Events.RegisterEvent('dz:client:district:exited', function()
     QBX.Functions.Notify(Lang:t('info.exited_district'), 'info')
 end)
 
 -- Event handlers
-RegisterNetEvent('district:updateBlips', function(districts)
+Events.RegisterEvent('dz:client:district:updateBlips', function(districts)
     UpdateDistrictBlips(districts)
 end)
 
--- Resource cleanup
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
-        for _, blips in pairs(districtBlips) do
-            RemoveBlip(blips.radius)
-            RemoveBlip(blips.center)
-        end
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        currentDistrict = nil,
+        districtBlips = {},
+        districtMarkers = {},
+        districtEvents = {},
+        isInDistrict = false
+    }
+end)
+
+-- Register NUI cleanup handler
+RegisterCleanup('nui', function()
+    -- Remove all blips
+    for _, blips in pairs(State.districtBlips) do
+        RemoveBlip(blips.radius)
+        RemoveBlip(blips.center)
+    end
+    
+    -- Remove event blips
+    for _, event in pairs(State.districtEvents) do
+        RemoveBlip(event.blip)
     end
 end)
 
 -- Exports
 exports('GetCurrentDistrict', function()
-    return currentDistrict
+    return State.currentDistrict
 end)
 
 exports('IsInDistrict', function()
-    return isInDistrict
+    return State.isInDistrict
 end) 

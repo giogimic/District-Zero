@@ -1,68 +1,67 @@
--- UI Handler
-local QBX = exports['qbx_core']:GetCore()
-local isUIOpen = false
-local currentTab = nil
+-- client/main/ui.lua
+-- District Zero UI Handler
 
--- UI Configuration
-local UIConfig = {
-    tabs = {
-        abilities = {
-            label = "Abilities",
-            icon = "fas fa-magic",
-            content = "abilities.html"
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
+
+-- UI State
+local State = {
+    isUIOpen = false,
+    currentTab = nil,
+    config = {
+        tabs = {
+            abilities = {
+                label = "Abilities",
+                icon = "fas fa-magic",
+                content = "abilities.html"
+            },
+            districts = {
+                label = "Districts",
+                icon = "fas fa-map-marked-alt",
+                content = "districts.html"
+            },
+            missions = {
+                label = "Missions",
+                icon = "fas fa-tasks",
+                content = "missions.html"
+            },
+            config = {
+                label = "Settings",
+                icon = "fas fa-cog",
+                content = "config.html"
+            }
         },
-        districts = {
-            label = "Districts",
-            icon = "fas fa-map-marked-alt",
-            content = "districts.html"
-        },
-        missions = {
-            label = "Missions",
-            icon = "fas fa-tasks",
-            content = "missions.html"
-        },
-        config = {
-            label = "Settings",
-            icon = "fas fa-cog",
-            content = "config.html"
+        settings = {
+            notifications = true,
+            blips = true,
+            markers = true,
+            minimap = true,
+            debug = false
         }
-    },
-    settings = {
-        notifications = true,
-        blips = true,
-        markers = true,
-        minimap = true,
-        debug = false
     }
 }
 
 -- UI Functions
 local function ToggleUI()
-    isUIOpen = not isUIOpen
-    SetNuiFocus(isUIOpen, isUIOpen)
-    SendNUIMessage({
-        action = "toggleUI",
-        show = isUIOpen
-    })
+    State.isUIOpen = not State.isUIOpen
+    SetNuiFocus(State.isUIOpen, State.isUIOpen)
+    Events.TriggerEvent('dz:client:ui:toggle', 'client', State.isUIOpen)
 end
 
 local function OpenTab(tabName)
-    if not UIConfig.tabs[tabName] then return end
+    if not State.config.tabs[tabName] then return end
     
-    currentTab = tabName
-    SendNUIMessage({
-        action = "openTab",
+    State.currentTab = tabName
+    Events.TriggerEvent('dz:client:ui:openTab', 'client', {
         tab = tabName,
-        content = UIConfig.tabs[tabName].content
+        content = State.config.tabs[tabName].content
     })
 end
 
 local function UpdateSettings(settings)
-    UIConfig.settings = settings
-    SendNUIMessage({
-        action = "updateSettings",
-        settings = settings
-    })
+    State.config.settings = settings
+    Events.TriggerEvent('dz:client:ui:updateSettings', 'client', settings)
 end
 
 -- NUI Callbacks
@@ -82,17 +81,17 @@ RegisterNUICallback('updateSettings', function(data, cb)
 end)
 
 RegisterNUICallback('useAbility', function(data, cb)
-    TriggerServerEvent('district:useAbility', data.abilityId)
+    Events.TriggerEvent('dz:client:ability:use', 'client', data.abilityId)
     cb('ok')
 end)
 
 RegisterNUICallback('startMission', function(data, cb)
-    TriggerServerEvent('district:startMission', data.missionId)
+    Events.TriggerEvent('dz:client:mission:start', 'client', data.missionId)
     cb('ok')
 end)
 
 RegisterNUICallback('viewDistrict', function(data, cb)
-    TriggerServerEvent('district:getDistrictInfo', data.districtId)
+    Events.TriggerEvent('dz:client:district:getInfo', 'client', data.districtId)
     cb('ok')
 end)
 
@@ -102,7 +101,7 @@ RegisterCommand('district', function()
 end)
 
 RegisterCommand('districtconfig', function()
-    if isUIOpen then
+    if State.isUIOpen then
         OpenTab('config')
     else
         ToggleUI()
@@ -114,34 +113,73 @@ end)
 RegisterKeyMapping('district', 'Open District Zero UI', 'keyboard', 'F6')
 RegisterKeyMapping('districtconfig', 'Open District Zero Settings', 'keyboard', 'F7')
 
--- Events
-RegisterNetEvent('district:updateUI', function(data)
-    if isUIOpen then
-        SendNUIMessage({
-            action = "updateData",
-            data = data
-        })
+-- Event Handlers
+Events.RegisterEvent('dz:client:ui:update', function(data)
+    if State.isUIOpen then
+        Events.TriggerEvent('dz:client:ui:updateData', 'client', data)
     end
 end)
 
-RegisterNetEvent('district:notify', function(message, type)
-    if UIConfig.settings.notifications then
+Events.RegisterEvent('dz:client:ui:notify', function(message, type)
+    if State.config.settings.notifications then
         QBX.Functions.Notify(message, type)
+    end
+end)
+
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        isUIOpen = false,
+        currentTab = nil,
+        config = {
+            tabs = {
+                abilities = {
+                    label = "Abilities",
+                    icon = "fas fa-magic",
+                    content = "abilities.html"
+                },
+                districts = {
+                    label = "Districts",
+                    icon = "fas fa-map-marked-alt",
+                    content = "districts.html"
+                },
+                missions = {
+                    label = "Missions",
+                    icon = "fas fa-tasks",
+                    content = "missions.html"
+                },
+                config = {
+                    label = "Settings",
+                    icon = "fas fa-cog",
+                    content = "config.html"
+                }
+            },
+            settings = {
+                notifications = true,
+                blips = true,
+                markers = true,
+                minimap = true,
+                debug = false
+            }
+        }
+    }
+end)
+
+-- Register NUI cleanup handler
+RegisterCleanup('nui', function()
+    -- Close UI
+    if State.isUIOpen then
+        SetNuiFocus(false, false)
+        Events.TriggerEvent('dz:client:ui:toggle', 'client', false)
     end
 end)
 
 -- Exports
 exports('GetUIConfig', function()
-    return UIConfig
+    return State.config
 end)
 
 exports('UpdateSettings', function(settings)
     UpdateSettings(settings)
-end)
-
--- Resource cleanup
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName == GetCurrentResourceName() and isUIOpen then
-        SetNuiFocus(false, false)
-    end
 end) 

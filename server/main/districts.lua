@@ -386,7 +386,7 @@ end)
 
 exports('UpdateDistrictInfluence', function(districtId, amount)
     return UpdateDistrictInfluence(districtId, amount)
-end)
+end) 
 
 -- Initialize district state
 local function InitializeDistrictState()

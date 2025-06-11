@@ -1,266 +1,186 @@
 -- server/main/main.lua
--- Main server file for District Zero
+-- District Zero Main Server Handler
 
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
--- State Management
+-- Server State
 local State = {
-    menu = {
-        isOpen = false,
-        isVisible = false,
-        currentTab = 'districts'
-    },
-    player = {
-        isLoaded = false,
-        data = nil
+    districts = {},
+    factions = {},
+    missions = {},
+    players = {},
+    config = {
+        districts = {},
+        factions = {},
+        missions = {}
     }
 }
 
 -- Initialize
 local function Initialize()
-    -- Initialize database
-    Utils.PrintDebug('Initializing database...')
-    -- Database initialization code here
+    -- Load districts
+    local districts = Utils.SafeQuery('SELECT * FROM dz_districts', {}, 'Initialize')
+    if districts then
+        for _, district in ipairs(districts) do
+            State.districts[district.id] = district
+        end
+    end
     
-    -- Initialize player data
-    Utils.PrintDebug('Initializing player data...')
-    -- Player data initialization code here
+    -- Load factions
+    local factions = Utils.SafeQuery('SELECT * FROM dz_factions', {}, 'Initialize')
+    if factions then
+        for _, faction in ipairs(factions) do
+            State.factions[faction.id] = faction
+        end
+    end
+    
+    -- Load missions
+    local missions = Utils.SafeQuery('SELECT * FROM dz_missions', {}, 'Initialize')
+    if missions then
+        for _, mission in ipairs(missions) do
+            State.missions[mission.id] = mission
+        end
+    end
 end
 
 -- Player Management
+local function AddPlayer(source)
+    local Player = QBX.Functions.GetPlayer(source)
+    if not Player then return end
+    
+    State.players[source] = {
+        citizenid = Player.PlayerData.citizenid,
+        job = Player.PlayerData.job,
+        gang = Player.PlayerData.gang,
+        metadata = Player.PlayerData.metadata
+    }
+end
+
+local function RemovePlayer(source)
+    State.players[source] = nil
+end
+
+-- District Management
+local function UpdateDistrict(districtId, data)
+    if not State.districts[districtId] then return false end
+    
+    local success = Utils.SafeQuery('UPDATE dz_districts SET ? WHERE id = ?', 
+        {data, districtId}, 'UpdateDistrict')
+    
+    if success then
+        State.districts[districtId] = data
+        Events.TriggerEvent('dz:client:district:update', 'server', -1, State.districts)
+        return true
+    end
+    return false
+end
+
+-- Mission Management
+local function StartMission(source, missionId)
+    if not State.missions[missionId] then return false end
+    
+    local mission = State.missions[missionId]
+    local player = State.players[source]
+    
+    if not player then return false end
+    
+    -- Check requirements
+    if mission.requirements then
+        if mission.requirements.job and player.job.name ~= mission.requirements.job then
+            return false
+        end
+        if mission.requirements.gang and player.gang.name ~= mission.requirements.gang then
+            return false
+        end
+    end
+    
+    -- Start mission
+    Events.TriggerEvent('dz:client:mission:start', 'server', source, mission)
+    return true
+end
+
+-- Event Handlers
+Events.RegisterEvent('dz:server:player:loaded', function(source)
+    AddPlayer(source)
+end)
+
+Events.RegisterEvent('dz:server:player:unloaded', function(source)
+    RemovePlayer(source)
+end)
+
+Events.RegisterEvent('dz:server:district:requestUpdate', function(source)
+    Events.TriggerEvent('dz:client:district:update', 'server', source, State.districts)
+end)
+
+Events.RegisterEvent('dz:server:mission:start', function(source, missionId)
+    StartMission(source, missionId)
+end)
+
+Events.RegisterEvent('dz:server:player:saveMetadata', function(source, metadata)
+    local Player = QBX.Functions.GetPlayer(source)
+    if Player then
+        Player.Functions.SetMetaData('metadata', metadata)
+    end
+end)
+
+-- QBX Core Event Handlers
 RegisterNetEvent('QBCore:Server:OnPlayerLoaded')
 AddEventHandler('QBCore:Server:OnPlayerLoaded', function()
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
-    if not player then return end
-    
-    Utils.PrintDebug('Player loaded: ' .. player.PlayerData.citizenid)
-    -- Additional player load logic here
-
-    -- Initialize player data if not exists
-    if not State.player.data[source] then
-        State.player.data[source] = {
-            faction = nil,
-            xp = 0,
-            level = 1,
-            missions = {
-                completed = 0,
-                failed = 0
-            }
-        }
-    end
-
-    Utils.PrintDebug("Player data initialized for " .. GetPlayerName(source))
+    AddPlayer(source)
 end)
 
 RegisterNetEvent('QBCore:Server:OnPlayerUnload')
 AddEventHandler('QBCore:Server:OnPlayerUnload', function()
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
-    if not player then return end
-    
-    Utils.PrintDebug('Player unloaded: ' .. player.PlayerData.citizenid)
-    -- Additional player unload logic here
-
-    State.player.data[source] = nil
-    Utils.PrintDebug("Player data unloaded for " .. GetPlayerName(source))
+    RemovePlayer(source)
 end)
 
--- Resource Management
+-- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
-    Utils.PrintDebug('Resource started: ' .. resourceName)
     Initialize()
 end)
 
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    Utils.PrintDebug('Resource stopped: ' .. resourceName)
-    -- Additional resource stop logic here
-end)
-
--- Mission Management
-RegisterNetEvent('apb:server:startMission', function(missionType)
-    local src = source
-    local Player = QBX.Functions.GetPlayer(src)
-    if not Player then return end
-
-    -- Check if player is already in a mission
-    if activeMissions[src] then
-        Utils.TriggerClientEvent("notification", src, "error", "You are already in a mission!")
-        return
-    end
-
-    -- Get player's faction
-    local playerFaction = State.player.data[src].faction
-    if not playerFaction then
-        Utils.TriggerClientEvent("notification", src, "error", "You need to join a faction first!")
-        return
-    end
-
-    -- Get mission data
-    local missionData = GetMissionData(missionType, playerFaction)
-    if not missionData then
-        Utils.TriggerClientEvent("notification", src, "error", "Invalid mission type!")
-        return
-    end
-
-    -- Start mission
-    activeMissions[src] = {
-        type = missionType,
-        startTime = os.time(),
-        data = missionData
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        districts = {},
+        factions = {},
+        missions = {},
+        players = {},
+        config = {
+            districts = {},
+            factions = {},
+            missions = {}
+        }
     }
-
-    -- Send mission data to client
-    Utils.TriggerClientEvent("startMission", src, missionData)
-    Utils.PrintDebug("Mission started for " .. GetPlayerName(src))
 end)
 
-RegisterNetEvent('apb:server:completeMission', function(data)
-    local src = source
-    local Player = QBX.Functions.GetPlayer(src)
-    if not Player then return end
-
-    -- Verify mission exists
-    if not activeMissions[src] then
-        Utils.TriggerClientEvent("notification", src, "error", "No active mission found!")
-        return
+-- Register database cleanup handler
+RegisterCleanup('database', function()
+    -- Close any open database connections
+    if MySQL then
+        MySQL.close()
     end
-
-    -- Calculate rewards
-    local missionData = activeMissions[src].data
-    local xpReward = Utils.CalculateMissionReward(
-        missionData.xpReward,
-        State.player.data[src].level,
-        Config.Rewards.xpMultiplier
-    )
-    local cashReward = Utils.CalculateMissionReward(
-        missionData.cashReward,
-        State.player.data[src].level,
-        Config.Rewards.cashMultiplier
-    )
-
-    -- Add time bonus
-    local timeBonus = data.timeBonus or 0
-    cashReward = cashReward + (cashReward * (timeBonus / 100))
-
-    -- Update player data
-    State.player.data[src].xp = State.player.data[src].xp + xpReward
-    State.player.data[src].missions.completed = State.player.data[src].missions.completed + 1
-
-    -- Check for level up
-    local newRank = Utils.GetFactionRank(State.player.data[src].faction, State.player.data[src].xp)
-    if newRank and newRank.level > State.player.data[src].level then
-        State.player.data[src].level = newRank.level
-        -- Give level up bonus
-        Player.Functions.AddMoney("cash", Config.Rewards.levelUpBonus.cash)
-        for _, item in ipairs(Config.Rewards.levelUpBonus.items) do
-            Player.Functions.AddItem(item.name, item.amount)
-        end
-        Utils.TriggerClientEvent("notification", src, "success", "Level up! You are now " .. newRank.label)
-    end
-
-    -- Add rewards
-    Player.Functions.AddMoney("cash", cashReward)
-
-    -- Clean up mission
-    activeMissions[src] = nil
-
-    -- Notify client
-    Utils.TriggerClientEvent("notification", src, "success", 
-        string.format("Mission completed! Rewards: %s XP, %s", 
-            xpReward, 
-            Utils.FormatMoney(cashReward)
-        )
-    )
-
-    Utils.PrintDebug("Mission completed for " .. GetPlayerName(src))
 end)
 
-RegisterNetEvent('apb:server:failMission', function(data)
-    local src = source
-    local Player = QBX.Functions.GetPlayer(src)
-    if not Player then return end
-
-    -- Verify mission exists
-    if not activeMissions[src] then
-        Utils.TriggerClientEvent("notification", src, "error", "No active mission found!")
-        return
-    end
-
-    -- Update player data
-    State.player.data[src].missions.failed = State.player.data[src].missions.failed + 1
-
-    -- Clean up mission
-    activeMissions[src] = nil
-
-    -- Notify client
-    Utils.TriggerClientEvent("notification", src, "error", "Mission failed: " .. (data.reason or "Unknown reason"))
-
-    Utils.PrintDebug("Mission failed for " .. GetPlayerName(src))
+-- Exports
+exports('GetDistricts', function()
+    return State.districts
 end)
 
--- Faction Management
-RegisterNetEvent('apb:server:joinFaction', function(faction)
-    local src = source
-    local Player = QBCore.Functions.GetPlayer(src)
-    if not Player then return end
-
-    -- Verify faction exists
-    if not Config.Factions[faction] then
-        Utils.TriggerClientEvent("notification", src, "error", "Invalid faction!")
-        return
-    end
-
-    -- Update player data
-    State.player.data[src].faction = faction
-    State.player.data[src].xp = 0
-    State.player.data[src].level = 1
-
-    -- Notify client
-    Utils.TriggerClientEvent("notification", src, "success", "Joined faction: " .. Config.Factions[faction].label)
-    Utils.TriggerClientEvent("updateFaction", src, {
-        faction = faction,
-        rank = Utils.GetFactionRank(faction, 0)
-    })
-
-    Utils.PrintDebug("Player " .. GetPlayerName(src) .. " joined faction: " .. faction)
+exports('GetFactions', function()
+    return State.factions
 end)
 
--- Helper Functions
-function GetMissionData(missionType, faction)
-    local missions = Config.Missions.types[faction]
-    if not missions then return nil end
-
-    for _, mission in ipairs(missions) do
-        if mission.id == missionType then
-            return mission
-        end
-    end
-    return nil
-end
-
--- Export functions
-exports('GetPlayerFaction', function(playerId)
-    return State.player.data[playerId] and State.player.data[playerId].faction or nil
+exports('GetMissions', function()
+    return State.missions
 end)
 
-exports('GetPlayerRank', function(playerId)
-    if not State.player.data[playerId] then return nil end
-    return Utils.GetFactionRank(
-        State.player.data[playerId].faction,
-        State.player.data[playerId].xp
-    )
-end)
-
-exports('GetPlayerData', function(playerId)
-    return State.player.data[playerId]
-end)
-
--- Initialize
-CreateThread(function()
-    Utils.PrintDebug("Server script loaded")
-    Initialize()
+exports('GetPlayers', function()
+    return State.players
 end)

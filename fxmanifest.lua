@@ -6,9 +6,10 @@ fx_version 'cerulean'
 game 'gta5'
 use_experimental_fxv2_oal 'yes'
 lua54 'yes'
+version_manifest '1.0.0'
 
-author 'District Zero Development Team'
-description 'District Zero - Advanced Mission and District Management System'
+author 'Your Name'
+description 'District Zero - Advanced District Control System'
 version '1.0.0'
 
 -- Dependencies
@@ -21,37 +22,37 @@ dependencies {
 -- Shared Scripts (Load order matters)
 shared_scripts {
     '@ox_lib/init.lua',
-    'shared/config/*.lua',  -- Load config first
-    'shared/utils.lua',     -- Then load utils
-    'shared/error.lua',     -- Then load error handling
-    'shared/events.lua',    -- Then load events
-    'shared/performance.lua' -- Then load performance
+    '@qbx_core/shared/locale.lua',
+    'shared/*.lua'
 }
 
 -- Client Scripts
 client_scripts {
-    'client/main/*.lua'
+    'client/main/*.lua',
+    'client/districts/*.lua',
+    'client/missions/*.lua',
+    'client/factions/*.lua',
+    'client/ui/*.lua'
 }
 
 -- Server Scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/main/*.lua'
+    'server/database/*.lua',
+    'server/main/*.lua',
+    'server/districts/*.lua',
+    'server/missions/*.lua',
+    'server/factions/*.lua'
 }
 
 -- UI Files
-ui_page 'ui/dist/index.html'
+ui_page 'html/index.html'
 
 files {
-    'ui/dist/index.html',
-    'ui/dist/assets/*.js',
-    'ui/dist/assets/*.css',
-    'ui/dist/assets/*.svg'
+    'html/index.html',
+    'html/styles.css',
+    'html/script.js'
 }
-
--- Resource Metadata
-lua54 'yes'
-use_experimental_fxv2_oal 'yes'
 
 -- Resource Configuration
 provide 'district_zero'

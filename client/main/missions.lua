@@ -1,6 +1,7 @@
 -- Missions Client Handler
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
 -- Mission State
 local State = {
@@ -29,9 +30,9 @@ local function ValidateEvent(eventName, data)
 end
 
 -- Initialize mission system
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Wait(0)
         if State.activeMission then
             DrawMissionUI()
         end
@@ -39,9 +40,8 @@ Citizen.CreateThread(function()
 end)
 
 -- Handle mission start
-RegisterNetEvent('dz:mission:start')
-AddEventHandler('dz:mission:start', function(missionData)
-    if not ValidateEvent('dz:mission:start', missionData) then return end
+Events.RegisterEvent('dz:client:mission:start', function(missionData)
+    if not ValidateEvent('dz:client:mission:start', missionData) then return end
     
     if State.isInMission then
         Utils.SendNotification("error", "You are already in a mission!")
@@ -61,39 +61,32 @@ AddEventHandler('dz:mission:start', function(missionData)
     StartMissionTimer()
 
     -- Show mission UI
-    SendNUIMessage({
-        type = "showMission",
-        mission = missionData
-    })
-    SetNuiFocus(true, true)
+    Events.TriggerEvent('dz:client:ui:showMission', 'client', missionData)
 
     Utils.SendNotification("success", "Mission started: " .. missionData.label)
 end)
 
 -- Handle mission completion
-RegisterNetEvent('mission:completed')
-AddEventHandler('mission:completed', function(missionId, reward)
+Events.RegisterEvent('dz:client:mission:completed', function(missionId, reward)
     if State.activeMission and State.activeMission.id == missionId then
-        ShowNotification("Mission completed! Reward: $" .. reward.money)
+        Utils.SendNotification("success", "Mission completed! Reward: $" .. reward.money)
         CleanupMission()
     end
 end)
 
 -- Handle mission failure
-RegisterNetEvent('mission:failed')
-AddEventHandler('mission:failed', function(missionId, reason)
+Events.RegisterEvent('dz:client:mission:failed', function(missionId, reason)
     if State.activeMission and State.activeMission.id == missionId then
-        ShowNotification("Mission failed: " .. reason, "error")
+        Utils.SendNotification("error", "Mission failed: " .. reason)
         CleanupMission()
     end
 end)
 
 -- Handle player joining mission
-RegisterNetEvent('mission:playerJoined')
-AddEventHandler('mission:playerJoined', function(missionId, player)
+Events.RegisterEvent('dz:client:mission:playerJoined', function(missionId, player)
     if State.activeMission and State.activeMission.id == missionId then
         local playerName = GetPlayerName(player)
-        ShowNotification(playerName .. " joined the mission")
+        Utils.SendNotification("info", playerName .. " joined the mission")
     end
 end)
 
@@ -137,7 +130,7 @@ function SpawnMissionVehicle(vehicleModel)
     local model = GetHashKey(vehicleModel)
     RequestModel(model)
     while not HasModelLoaded(model) do
-        Citizen.Wait(0)
+        Wait(0)
     end
     
     -- Get player position
@@ -208,21 +201,7 @@ function CleanupMission()
     State.missionStartTime = 0
     
     -- Hide UI
-    SendNUIMessage({
-        type = "hideMission"
-    })
-    SetNuiFocus(false, false)
-end
-
--- Show notification
-function ShowNotification(message, type)
-    type = type or "info"
-    
-    -- Implement based on your notification system
-    -- Example using native notification:
-    BeginTextCommandThefeedPost("STRING")
-    AddTextComponentSubstringPlayerName(message)
-    EndTextCommandThefeedPostTicker(false, true)
+    Events.TriggerEvent('dz:client:ui:hideMission', 'client')
 end
 
 -- Mission Timer
@@ -233,26 +212,44 @@ function StartMissionTimer()
             State.missionTimer = State.missionTimer - 1
             
             if State.missionTimer <= 0 then
-                FailMission("Time's up!")
+                Events.TriggerEvent('dz:client:mission:failed', 'client', State.activeMission.id, "Time's up!")
                 break
             end
             
             -- Update UI
-            SendNUIMessage({
-                type = "updateTimer",
-                time = State.missionTimer
-            })
+            Events.TriggerEvent('dz:client:ui:updateTimer', 'client', State.missionTimer)
         end
     end)
 end
 
--- Resource Stop Handler
-AddEventHandler('onResourceStop', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    
-    if State.isInMission then
-        CleanupMission()
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        activeMission = nil,
+        missionVehicle = nil,
+        missionBlips = {},
+        missionMarkers = {},
+        isInMission = false,
+        missionTimer = 0,
+        missionStartTime = 0
+    }
+end)
+
+-- Register NUI cleanup handler
+RegisterCleanup('nui', function()
+    -- Remove all blips
+    for _, blip in pairs(State.missionBlips) do
+        RemoveBlip(blip)
     end
+    
+    -- Delete mission vehicle
+    if State.missionVehicle and DoesEntityExist(State.missionVehicle) then
+        DeleteEntity(State.missionVehicle)
+    end
+    
+    -- Hide UI
+    Events.TriggerEvent('dz:client:ui:hideMission', 'client')
 end)
 
 -- Exports

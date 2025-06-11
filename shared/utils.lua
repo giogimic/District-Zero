@@ -48,7 +48,7 @@ function Utils.SendNotification(source, type, message)
     end, 'SendNotification')
 end
 
--- Database helpers
+-- Database helpers with proper error handling
 function Utils.SafeQuery(query, params, context)
     if not query then
         Utils.HandleError('Query is required', context or 'SafeQuery')
@@ -56,11 +56,19 @@ function Utils.SafeQuery(query, params, context)
     end
     
     return Utils.SafeCall(function()
-        return MySQL.query.await(query, params)
+        local result = MySQL.query.await(query, params)
+        if not result then
+            Utils.HandleError('Query failed', context or 'SafeQuery')
+            return nil
+        end
+        return result
     end, context or 'SafeQuery')
 end
 
--- Event helpers
+-- Event helpers with rate limiting
+local eventCooldowns = {}
+local COOLDOWN_TIME = 1000 -- 1 second cooldown
+
 function Utils.TriggerClientEvent(eventName, source, ...)
     if not eventName then
         Utils.HandleError('Event name is required', 'TriggerClientEvent')
@@ -71,6 +79,13 @@ function Utils.TriggerClientEvent(eventName, source, ...)
         Utils.HandleError('Source is required', 'TriggerClientEvent')
         return
     end
+    
+    -- Rate limiting
+    local eventKey = eventName .. source
+    if eventCooldowns[eventKey] and GetGameTimer() - eventCooldowns[eventKey] < COOLDOWN_TIME then
+        return
+    end
+    eventCooldowns[eventKey] = GetGameTimer()
     
     local args = {...}
     Utils.SafeCall(function()
@@ -84,13 +99,19 @@ function Utils.TriggerServerEvent(eventName, ...)
         return
     end
     
+    -- Rate limiting
+    if eventCooldowns[eventName] and GetGameTimer() - eventCooldowns[eventName] < COOLDOWN_TIME then
+        return
+    end
+    eventCooldowns[eventName] = GetGameTimer()
+    
     local args = {...}
     Utils.SafeCall(function()
         TriggerServerEvent('dz:' .. eventName, unpack(args))
     end, 'TriggerServerEvent')
 end
 
--- State management
+-- State management with proper replication
 function Utils.SetPlayerState(source, key, value)
     if not source then
         Utils.HandleError('Source is required', 'SetPlayerState')
@@ -103,7 +124,10 @@ function Utils.SetPlayerState(source, key, value)
     end
     
     Utils.SafeCall(function()
-        LocalPlayer.state:set(key, value, true)
+        local player = Player(source)
+        if player then
+            player.state:set(key, value, true) -- true for replication
+        end
     end, 'SetPlayerState')
 end
 
@@ -119,7 +143,11 @@ function Utils.GetPlayerState(source, key)
     end
     
     return Utils.SafeCall(function()
-        return LocalPlayer.state[key]
+        local player = Player(source)
+        if player then
+            return player.state[key]
+        end
+        return nil
     end, 'GetPlayerState')
 end
 
@@ -168,8 +196,5 @@ end
 Utils.PrintDebug('Utils module initialized', 'info')
 Utils.ValidateResource()
 
--- Make Utils globally available
-_G.Utils = Utils
-
--- Export the utils
+-- Export the utils (removed _G usage)
 return Utils

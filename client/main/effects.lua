@@ -1,13 +1,23 @@
-local activeEffects = {}
+-- client/main/effects.lua
+-- District Zero Effects Handler
+
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
+
+-- Effects State
+local State = {
+    activeEffects = {},
+    backupBlips = {}
+}
 
 -- Handle backup requests
-RegisterNetEvent('faction:backupRequest')
-AddEventHandler('faction:backupRequest', function(source, coords)
+Events.RegisterEvent('dz:client:faction:backupRequest', function(source, coords)
     local player = source
     local playerName = GetPlayerName(player)
     
     -- Show notification
-    ShowNotification('Backup requested by ' .. playerName)
+    Utils.SendNotification('Backup requested by ' .. playerName)
     
     -- Add blip
     local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
@@ -19,57 +29,79 @@ AddEventHandler('faction:backupRequest', function(source, coords)
     AddTextComponentString("Backup Request: " .. playerName)
     EndTextCommandSetBlipName(blip)
     
+    -- Store blip for cleanup
+    State.backupBlips[blip] = true
+    
     -- Remove blip after 30 seconds
-    Citizen.SetTimeout(30000, function()
-        RemoveBlip(blip)
+    SetTimeout(30000, function()
+        if State.backupBlips[blip] then
+            RemoveBlip(blip)
+            State.backupBlips[blip] = nil
+        end
     end)
 end)
 
 -- Handle tracking disable
-RegisterNetEvent('faction:trackingDisabled')
-AddEventHandler('faction:trackingDisabled', function()
-    activeEffects.tracking = true
-    ShowNotification('Police tracking disabled for 2 minutes')
+Events.RegisterEvent('dz:client:faction:trackingDisabled', function()
+    State.activeEffects.tracking = true
+    Utils.SendNotification('Police tracking disabled for 2 minutes')
 end)
 
-RegisterNetEvent('faction:trackingEnabled')
-AddEventHandler('faction:trackingEnabled', function()
-    activeEffects.tracking = false
-    ShowNotification('Police tracking enabled')
+Events.RegisterEvent('dz:client:faction:trackingEnabled', function()
+    State.activeEffects.tracking = false
+    Utils.SendNotification('Police tracking enabled')
 end)
 
 -- Handle signal jamming
-RegisterNetEvent('faction:signalJammed')
-AddEventHandler('faction:signalJammed', function()
-    activeEffects.jammed = true
-    ShowNotification('Radio signals jammed')
+Events.RegisterEvent('dz:client:faction:signalJammed', function()
+    State.activeEffects.jammed = true
+    Utils.SendNotification('Radio signals jammed')
     
     -- Disable police radio
-    -- Implement based on your radio system
+    Events.TriggerEvent('dz:client:radio:disable', 'client')
 end)
 
-RegisterNetEvent('faction:signalRestored')
-AddEventHandler('faction:signalRestored', function()
-    activeEffects.jammed = false
-    ShowNotification('Radio signals restored')
+Events.RegisterEvent('dz:client:faction:signalRestored', function()
+    State.activeEffects.jammed = false
+    Utils.SendNotification('Radio signals restored')
     
     -- Enable police radio
-    -- Implement based on your radio system
+    Events.TriggerEvent('dz:client:radio:enable', 'client')
 end)
 
 -- Check if player is affected by any effects
 function IsAffectedByEffect(effectType)
-    return activeEffects[effectType] == true
+    return State.activeEffects[effectType] == true
 end
 
--- Show notification
-function ShowNotification(message)
-    -- Implement based on your notification system
-    -- Example using native notification:
-    BeginTextCommandThefeedPost("STRING")
-    AddTextComponentSubstringPlayerName(message)
-    EndTextCommandThefeedPostTicker(false, true)
-end
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        activeEffects = {},
+        backupBlips = {}
+    }
+end)
 
--- Export functions
-exports('IsAffectedByEffect', IsAffectedByEffect) 
+-- Register NUI cleanup handler
+RegisterCleanup('nui', function()
+    -- Remove all backup blips
+    for blip, _ in pairs(State.backupBlips) do
+        if DoesBlipExist(blip) then
+            RemoveBlip(blip)
+        end
+    end
+    State.backupBlips = {}
+end)
+
+-- Exports
+exports('IsAffectedByEffect', IsAffectedByEffect)
+
+exports('GetActiveEffects', function()
+    return State.activeEffects
+end)
+
+exports('SetActiveEffect', function(effectType, value)
+    State.activeEffects[effectType] = value
+    return true
+end) 

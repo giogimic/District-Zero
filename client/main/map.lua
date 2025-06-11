@@ -1,5 +1,7 @@
 -- Map Handler for District Zero
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 local districtBlips = {}
 local districtMarkers = {}
 local districtZones = {}
@@ -106,15 +108,105 @@ local Config = {
     }
 }
 
+-- Map State
+local State = {
+    districtBlips = {},
+    districtMarkers = {},
+    districtZones = {},
+    currentDistrict = nil,
+    isInDistrict = false,
+    isMapOpen = false,
+    selectedDistrict = nil,
+    activeWaypoint = nil,
+    minimapEnabled = true,
+    navigationEnabled = false,
+    playerData = {},
+    config = {
+        blipSettings = {
+            sprite = 1,
+            color = 2,
+            scale = 0.8,
+            shortRange = true,
+            display = 4,
+            categories = {
+                residential = { sprite = 1, color = 2 },
+                commercial = { sprite = 2, color = 3 },
+                industrial = { sprite = 3, color = 4 },
+                special = { sprite = 4, color = 5 }
+            }
+        },
+        markerSettings = {
+            type = 1,
+            size = {x = 50.0, y = 50.0, z = 50.0},
+            color = {r = 0, g = 255, b = 0, a = 100},
+            bobUpAndDown = false,
+            faceCamera = false,
+            rotate = false,
+            drawDistance = 50.0,
+            pulse = true,
+            pulseSpeed = 1.0
+        },
+        zoneSettings = {
+            types = {
+                capture = { color = {r = 255, g = 0, b = 0, a = 100} },
+                defend = { color = {r = 0, g = 255, b = 0, a = 100} },
+                resource = { color = {r = 0, g = 0, b = 255, a = 100} },
+                event = { color = {r = 255, g = 255, b = 0, a = 100} }
+            }
+        },
+        minimapSettings = {
+            enabled = true,
+            position = {x = 0.0, y = 0.0},
+            size = {width = 0.2, height = 0.2},
+            zoom = 0.5,
+            rotation = true,
+            radar = true
+        },
+        navigationSettings = {
+            enabled = true,
+            routeColor = {r = 255, g = 255, b = 255, a = 200},
+            routeWidth = 3.0,
+            routeStyle = 1,
+            routeBlip = true,
+            routeBlipSprite = 1,
+            routeBlipColor = 5,
+            routeBlipScale = 0.8
+        },
+        uiSettings = {
+            defaultVisible = false,
+            requireAuth = true,
+            keybind = 'F5',
+            closeKey = 'ESCAPE',
+            confirmKey = 'ENTER',
+            backKey = 'BACKSPACE',
+            navigationKeys = {
+                up = 'ARROWUP',
+                down = 'ARROWDOWN',
+                left = 'ARROWLEFT',
+                right = 'ARROWRIGHT'
+            },
+            mapControls = {
+                zoomIn = 'PAGEUP',
+                zoomOut = 'PAGEDOWN',
+                resetView = 'HOME',
+                clearWaypoint = 'DELETE',
+                toggleMinimap = 'INSERT',
+                toggleNavigation = 'END'
+            }
+        }
+    }
+}
+
 -- QBX Core Event Handlers
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
-    PlayerData = QBX.Functions.GetPlayerData()
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
+AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
+    State.playerData = QBX.Functions.GetPlayerData()
     -- Initialize player-specific settings
-    Config.minimapSettings.enabled = PlayerData.metadata.minimapEnabled or true
-    Config.navigationSettings.enabled = PlayerData.metadata.navigationEnabled or true
+    State.config.minimapSettings.enabled = State.playerData.metadata.minimapEnabled or true
+    State.config.navigationSettings.enabled = State.playerData.metadata.navigationEnabled or true
     -- Load saved district preferences
-    if PlayerData.metadata.districtPreferences then
-        for id, pref in pairs(PlayerData.metadata.districtPreferences) do
+    if State.playerData.metadata.districtPreferences then
+        for id, pref in pairs(State.playerData.metadata.districtPreferences) do
             if Config.Districts[id] then
                 Config.Districts[id].preferences = pref
             end
@@ -122,12 +214,12 @@ RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
     end
 end)
 
-RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
-    PlayerData = {}
+RegisterNetEvent('QBCore:Client:OnPlayerUnload')
+AddEventHandler('QBCore:Client:OnPlayerUnload', function()
     -- Save current settings to metadata
-    if PlayerData.metadata then
-        PlayerData.metadata.minimapEnabled = Config.minimapSettings.enabled
-        PlayerData.metadata.navigationEnabled = Config.navigationSettings.enabled
+    if State.playerData.metadata then
+        State.playerData.metadata.minimapEnabled = State.config.minimapSettings.enabled
+        State.playerData.metadata.navigationEnabled = State.config.navigationSettings.enabled
         -- Save district preferences
         local preferences = {}
         for id, district in pairs(Config.Districts) do
@@ -135,45 +227,42 @@ RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
                 preferences[id] = district.preferences
             end
         end
-        PlayerData.metadata.districtPreferences = preferences
+        State.playerData.metadata.districtPreferences = preferences
         -- Trigger server to save metadata
-        TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        Events.TriggerEvent('dz:server:player:saveMetadata', 'server', State.playerData.metadata)
     end
+    State.playerData = {}
 end)
 
-RegisterNetEvent('QBCore:Client:OnJobUpdate', function(JobInfo)
-    PlayerData.job = JobInfo
+RegisterNetEvent('QBCore:Client:OnJobUpdate')
+AddEventHandler('QBCore:Client:OnJobUpdate', function(JobInfo)
+    State.playerData.job = JobInfo
     -- Update district access based on job
-    if isMapOpen then
-        SendNUIMessage({
-            action = 'updateJobAccess',
-            job = JobInfo
-        })
+    if State.isMapOpen then
+        Events.TriggerEvent('dz:client:ui:updateJobAccess', 'client', JobInfo)
     end
 end)
 
-RegisterNetEvent('QBCore:Client:OnGangUpdate', function(GangInfo)
-    PlayerData.gang = GangInfo
+RegisterNetEvent('QBCore:Client:OnGangUpdate')
+AddEventHandler('QBCore:Client:OnGangUpdate', function(GangInfo)
+    State.playerData.gang = GangInfo
     -- Update district access based on gang
-    if isMapOpen then
-        SendNUIMessage({
-            action = 'updateGangAccess',
-            gang = GangInfo
-        })
+    if State.isMapOpen then
+        Events.TriggerEvent('dz:client:ui:updateGangAccess', 'client', GangInfo)
     end
 end)
 
-RegisterNetEvent('QBCore:Client:OnMoneyChange', function(amount, changeType, reason)
+RegisterNetEvent('QBCore:Client:OnMoneyChange')
+AddEventHandler('QBCore:Client:OnMoneyChange', function(amount, changeType, reason)
     -- Update district income if player is in a district
-    if currentDistrict and changeType == 'add' then
-        local district = Config.Districts[currentDistrict]
+    if State.currentDistrict and changeType == 'add' then
+        local district = Config.Districts[State.currentDistrict]
         if district then
             district.income = district.income + amount
             -- Update UI if open
-            if isMapOpen then
-                SendNUIMessage({
-                    action = 'updateDistrictIncome',
-                    districtId = currentDistrict,
+            if State.isMapOpen then
+                Events.TriggerEvent('dz:client:ui:updateDistrictIncome', 'client', {
+                    districtId = State.currentDistrict,
                     income = district.income
                 })
             end
@@ -181,11 +270,10 @@ RegisterNetEvent('QBCore:Client:OnMoneyChange', function(amount, changeType, rea
     end
 end)
 
--- System Connections (only unique to our system)
+-- System Connections
 local function ConnectToSystems()
     -- Connect to district system
-    RegisterNetEvent('district:update')
-    AddEventHandler('district:update', function(districtData)
+    Events.RegisterEvent('dz:client:district:update', function(districtData)
         if districtData then
             -- Update district information
             for id, data in pairs(districtData) do
@@ -194,27 +282,20 @@ local function ConnectToSystems()
                 end
             end
             -- Refresh UI if open
-            if isMapOpen then
-                SendNUIMessage({
-                    action = 'updateDistricts',
-                    districts = Config.Districts
-                })
+            if State.isMapOpen then
+                Events.TriggerEvent('dz:client:ui:updateDistricts', 'client', Config.Districts)
             end
         end
     end)
 
     -- Connect to waypoint system
-    RegisterNetEvent('waypoint:update')
-    AddEventHandler('waypoint:update', function(waypointData)
+    Events.RegisterEvent('dz:client:waypoint:update', function(waypointData)
         if waypointData then
             -- Update waypoint information
-            activeWaypoint = waypointData
+            State.activeWaypoint = waypointData
             -- Refresh UI if open
-            if isMapOpen then
-                SendNUIMessage({
-                    action = 'updateWaypoint',
-                    waypoint = waypointData
-                })
+            if State.isMapOpen then
+                Events.TriggerEvent('dz:client:ui:updateWaypoint', 'client', waypointData)
             end
         end
     end)
@@ -224,17 +305,17 @@ end
 CreateThread(function()
     ConnectToSystems()
     -- Wait for player data to be loaded
-    while not PlayerData.citizenid do
+    while not State.playerData.citizenid do
         Wait(100)
     end
     -- Initialize with player data
-    Config.minimapSettings.enabled = PlayerData.metadata.minimapEnabled or true
-    Config.navigationSettings.enabled = PlayerData.metadata.navigationEnabled or true
+    State.config.minimapSettings.enabled = State.playerData.metadata.minimapEnabled or true
+    State.config.navigationSettings.enabled = State.playerData.metadata.navigationEnabled or true
 end)
 
 -- Keybinding Registration
 RegisterCommand('+openDistrictMap', function()
-    if not isMapOpen and PlayerData.citizenid then
+    if not State.isMapOpen and State.playerData.citizenid then
         ShowUI()
     else
         QBX.Functions.Notify('You must be logged in to access the district map', 'error')
@@ -245,42 +326,42 @@ RegisterCommand('-openDistrictMap', function()
     -- Command released
 end, false)
 
-RegisterKeyMapping('+openDistrictMap', 'Open District Map', 'keyboard', Config.uiSettings.keybind)
+RegisterKeyMapping('+openDistrictMap', 'Open District Map', 'keyboard', State.config.uiSettings.keybind)
 
 -- Register essential keybindings
 RegisterCommand('+toggleMinimap', function()
-    if PlayerData.citizenid then
-        ToggleMinimap(not Config.minimapSettings.enabled)
+    if State.playerData.citizenid then
+        ToggleMinimap(not State.config.minimapSettings.enabled)
         -- Save to metadata
-        if PlayerData.metadata then
-            PlayerData.metadata.minimapEnabled = Config.minimapSettings.enabled
-            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        if State.playerData.metadata then
+            State.playerData.metadata.minimapEnabled = State.config.minimapSettings.enabled
+            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
         end
     end
 end, false)
 
 RegisterCommand('+toggleNavigation', function()
-    if PlayerData.citizenid then
-        Config.navigationSettings.enabled = not Config.navigationSettings.enabled
-        if not Config.navigationSettings.enabled then
+    if State.playerData.citizenid then
+        State.config.navigationSettings.enabled = not State.config.navigationSettings.enabled
+        if not State.config.navigationSettings.enabled then
             ClearWaypoint()
         end
         -- Save to metadata
-        if PlayerData.metadata then
-            PlayerData.metadata.navigationEnabled = Config.navigationSettings.enabled
-            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        if State.playerData.metadata then
+            State.playerData.metadata.navigationEnabled = State.config.navigationSettings.enabled
+            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
         end
     end
 end, false)
 
 RegisterCommand('+clearWaypoint', function()
-    if PlayerData.citizenid then
+    if State.playerData.citizenid then
         ClearWaypoint()
     end
 end, false)
 
 RegisterCommand('+resetView', function()
-    if PlayerData.citizenid then
+    if State.playerData.citizenid then
         state.mapScale = 1
         state.mapOffset = { x = 0, y = 0 }
         updateMapTransform()
@@ -296,7 +377,7 @@ RegisterKeyMapping('+resetView', 'Reset View', 'keyboard', 'HOME')
 local function ToggleMinimap(show)
     if show then
         DisplayRadar(true)
-        SetRadarZoom(Config.minimapSettings.zoom)
+        SetRadarZoom(State.config.minimapSettings.zoom)
         SetRadarAsExteriorThisFrame()
         SetRadarAsInteriorThisFrame('h4_fake_interior_lod', vector3(0.0, 0.0, 0.0), 0, 0)
     else
@@ -305,12 +386,12 @@ local function ToggleMinimap(show)
 end
 
 local function UpdateMinimapPosition()
-    if not Config.minimapSettings.enabled then return end
+    if not State.config.minimapSettings.enabled then return end
     
-    local x = Config.minimapSettings.position.x
-    local y = Config.minimapSettings.position.y
-    local width = Config.minimapSettings.size.width
-    local height = Config.minimapSettings.size.height
+    local x = State.config.minimapSettings.position.x
+    local y = State.config.minimapSettings.position.y
+    local width = State.config.minimapSettings.size.width
+    local height = State.config.minimapSettings.size.height
     
     SetMinimapComponentPosition('minimap', 'L', 'B', x, y, width, height)
     SetMinimapComponentPosition('minimap_mask', 'L', 'B', x, y, width, height)
@@ -325,22 +406,22 @@ local function SetWaypoint(districtId)
     local coords = district.center
     
     -- Clear existing waypoint
-    if activeWaypoint then
+    if State.activeWaypoint then
         DeleteWaypoint()
-        if DoesBlipExist(activeWaypoint) then
-            RemoveBlip(activeWaypoint)
+        if DoesBlipExist(State.activeWaypoint) then
+            RemoveBlip(State.activeWaypoint)
         end
     end
     
     -- Set new waypoint
     SetNewWaypoint(coords.x, coords.y)
-    activeWaypoint = AddBlipForCoord(coords.x, coords.y, coords.z)
+    State.activeWaypoint = AddBlipForCoord(coords.x, coords.y, coords.z)
     
     -- Configure waypoint blip
-    SetBlipSprite(activeWaypoint, Config.navigationSettings.routeBlipSprite)
-    SetBlipColour(activeWaypoint, Config.navigationSettings.routeBlipColor)
-    SetBlipScale(activeWaypoint, Config.navigationSettings.routeBlipScale)
-    SetBlipRoute(activeWaypoint, true)
+    SetBlipSprite(State.activeWaypoint, State.config.navigationSettings.routeBlipSprite)
+    SetBlipColour(State.activeWaypoint, State.config.navigationSettings.routeBlipColor)
+    SetBlipScale(State.activeWaypoint, State.config.navigationSettings.routeBlipScale)
+    SetBlipRoute(State.activeWaypoint, true)
     
     -- Notify UI
     SendNUIMessage({
@@ -353,29 +434,29 @@ local function SetWaypoint(districtId)
     })
 
     -- Save to player's recent waypoints
-    if PlayerData.metadata then
-        if not PlayerData.metadata.recentWaypoints then
-            PlayerData.metadata.recentWaypoints = {}
+    if State.playerData.metadata then
+        if not State.playerData.metadata.recentWaypoints then
+            State.playerData.metadata.recentWaypoints = {}
         end
-        table.insert(PlayerData.metadata.recentWaypoints, 1, {
+        table.insert(State.playerData.metadata.recentWaypoints, 1, {
             districtId = districtId,
             timestamp = os.time()
         })
         -- Keep only last 5 waypoints
-        if #PlayerData.metadata.recentWaypoints > 5 then
-            table.remove(PlayerData.metadata.recentWaypoints)
+        if #State.playerData.metadata.recentWaypoints > 5 then
+            table.remove(State.playerData.metadata.recentWaypoints)
         end
-        TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
     end
 end
 
 local function ClearWaypoint()
-    if activeWaypoint then
+    if State.activeWaypoint then
         DeleteWaypoint()
-        if DoesBlipExist(activeWaypoint) then
-            RemoveBlip(activeWaypoint)
+        if DoesBlipExist(State.activeWaypoint) then
+            RemoveBlip(State.activeWaypoint)
         end
-        activeWaypoint = nil
+        State.activeWaypoint = nil
         
         -- Notify UI
         SendNUIMessage({
@@ -397,27 +478,27 @@ local function UpdateCurrentDistrict()
         end
     end
 
-    if newDistrict ~= currentDistrict then
-        if currentDistrict then
-            TriggerEvent('district:exit', currentDistrict)
+    if newDistrict ~= State.currentDistrict then
+        if State.currentDistrict then
+            TriggerEvent('district:exit', State.currentDistrict)
         end
         if newDistrict then
             TriggerEvent('district:enter', newDistrict)
             -- Update player's visited districts
-            if PlayerData.metadata then
-                if not PlayerData.metadata.visitedDistricts then
-                    PlayerData.metadata.visitedDistricts = {}
+            if State.playerData.metadata then
+                if not State.playerData.metadata.visitedDistricts then
+                    State.playerData.metadata.visitedDistricts = {}
                 end
-                PlayerData.metadata.visitedDistricts[newDistrict] = os.time()
-                TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+                State.playerData.metadata.visitedDistricts[newDistrict] = os.time()
+                TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
             end
         end
-        currentDistrict = newDistrict
+        State.currentDistrict = newDistrict
         
         -- Update navigation if waypoint is set
-        if activeWaypoint and currentDistrict then
-            local district = Config.Districts[currentDistrict]
-            local waypointCoords = GetBlipCoords(activeWaypoint)
+        if State.activeWaypoint and State.currentDistrict then
+            local district = Config.Districts[State.currentDistrict]
+            local waypointCoords = GetBlipCoords(State.activeWaypoint)
             local distance = #(vector3(coords.x, coords.y, coords.z) - vector3(waypointCoords.x, waypointCoords.y, waypointCoords.z))
             
             if distance < 50.0 then
@@ -434,7 +515,7 @@ RegisterNetEvent('district:enter')
 AddEventHandler('district:enter', function(districtId)
     local district = Config.Districts[districtId]
     if district then
-        isInDistrict = true
+        State.isInDistrict = true
         QBX.Functions.Notify('Entered ' .. district.name, 'success')
         
         -- Update UI
@@ -453,13 +534,13 @@ AddEventHandler('district:enter', function(districtId)
         })
 
         -- Check job/gang permissions
-        if PlayerData.job and district.jobAccess then
-            if not district.jobAccess[PlayerData.job.name] then
+        if State.playerData.job and district.jobAccess then
+            if not district.jobAccess[State.playerData.job.name] then
                 QBX.Functions.Notify('You do not have permission to be in this district', 'error')
             end
         end
-        if PlayerData.gang and district.gangAccess then
-            if not district.gangAccess[PlayerData.gang.name] then
+        if State.playerData.gang and district.gangAccess then
+            if not district.gangAccess[State.playerData.gang.name] then
                 QBX.Functions.Notify('Your gang does not have permission to be in this district', 'error')
             end
         end
@@ -470,7 +551,7 @@ RegisterNetEvent('district:exit')
 AddEventHandler('district:exit', function(districtId)
     local district = Config.Districts[districtId]
     if district then
-        isInDistrict = false
+        State.isInDistrict = false
         QBX.Functions.Notify('Left ' .. district.name, 'info')
         
         -- Update UI
@@ -502,13 +583,13 @@ RegisterNUICallback('clearWaypoint', function(data, cb)
 end)
 
 RegisterNUICallback('toggleMinimap', function(data, cb)
-    if PlayerData.citizenid then
-        Config.minimapSettings.enabled = data.enabled
+    if State.playerData.citizenid then
+        State.config.minimapSettings.enabled = data.enabled
         ToggleMinimap(data.enabled)
         -- Save to metadata
-        if PlayerData.metadata then
-            PlayerData.metadata.minimapEnabled = data.enabled
-            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        if State.playerData.metadata then
+            State.playerData.metadata.minimapEnabled = data.enabled
+            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
         end
         cb('ok')
     else
@@ -517,15 +598,15 @@ RegisterNUICallback('toggleMinimap', function(data, cb)
 end)
 
 RegisterNUICallback('toggleNavigation', function(data, cb)
-    if PlayerData.citizenid then
-        Config.navigationSettings.enabled = data.enabled
+    if State.playerData.citizenid then
+        State.config.navigationSettings.enabled = data.enabled
         if not data.enabled then
             ClearWaypoint()
         end
         -- Save to metadata
-        if PlayerData.metadata then
-            PlayerData.metadata.navigationEnabled = data.enabled
-            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', PlayerData.metadata)
+        if State.playerData.metadata then
+            State.playerData.metadata.navigationEnabled = data.enabled
+            TriggerServerEvent('QBCore:Server:SetMetaData', 'metadata', State.playerData.metadata)
         end
         cb('ok')
     else
@@ -546,7 +627,7 @@ CreateThread(function()
     CreateDistrictZones()
 
     -- Initialize minimap
-    ToggleMinimap(Config.minimapSettings.enabled)
+    ToggleMinimap(State.config.minimapSettings.enabled)
     UpdateMinimapPosition()
 
     -- Hide UI by default
@@ -567,19 +648,29 @@ CreateThread(function()
         end
 
         -- Handle key presses
-        if IsControlJustPressed(0, Keys[Config.uiSettings.closeKey]) and isMapOpen then
+        if IsControlJustPressed(0, Keys[State.config.uiSettings.closeKey]) and State.isMapOpen then
             HideUI()
         end
     end
 end)
 
 -- Exports
+exports('GetMapState', function()
+    return State
+end)
+
+exports('SetMapState', function(key, value)
+    if not State[key] then return false end
+    State[key] = value
+    return true
+end)
+
 exports('GetCurrentDistrict', function()
-    return currentDistrict
+    return State.currentDistrict
 end)
 
 exports('IsInDistrict', function()
-    return isInDistrict
+    return State.isInDistrict
 end)
 
 exports('GetDistrictInfo', function(districtId)
@@ -603,7 +694,7 @@ exports('ToggleMinimap', function(show)
 end)
 
 exports('ToggleNavigation', function(enable)
-    Config.navigationSettings.enabled = enable
+    State.config.navigationSettings.enabled = enable
 end)
 
 exports('ShowDistrictMap', function()

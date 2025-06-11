@@ -1,8 +1,9 @@
 -- client/main/main.lua
--- Main client file for District Zero
+-- District Zero Main Client Handler
 
 local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
+local Events = require 'shared/events'
 
 -- State Management
 local State = {
@@ -37,8 +38,8 @@ function ToggleMenu()
     State.menu.isOpen = not State.menu.isOpen
     if State.menu.isOpen then
         -- Refresh data when opening
-        TriggerServerEvent('dz:district:requestUpdate')
-        TriggerServerEvent('dz:faction:requestUpdate')
+        Events.TriggerEvent('dz:client:district:requestUpdate', 'client')
+        Events.TriggerEvent('dz:client:faction:requestUpdate', 'client')
     else
         -- Close all sub-menus
         CloseAllMenus()
@@ -50,7 +51,7 @@ function CloseAllMenus()
     State.menu.isOpen = false
     State.menu.currentTab = 'districts'
     -- Close any open sub-menus
-    TriggerEvent('dz:ui:closeAll')
+    Events.TriggerEvent('dz:client:ui:closeAll', 'client')
 end
 
 -- Player Load Handler
@@ -70,13 +71,55 @@ AddEventHandler('QBCore:Client:OnPlayerUnload', function()
 end)
 
 -- State Update Handler
-RegisterNetEvent('dz:state:update')
-AddEventHandler('dz:state:update', function(data)
-    if not data then return end
+RegisterNetEvent('dz:shared:state:update')
+AddEventHandler('dz:shared:state:update', function(newState)
+    if type(newState) ~= 'table' then return end
     
-    for key, value in pairs(data) do
-        State[key] = value
+    for key, value in pairs(newState) do
+        if State[key] then
+            State[key] = value
+        end
     end
+end)
+
+-- Register cleanup handler
+RegisterCleanup('state', function()
+    -- Cleanup state
+    State = {
+        menu = {
+            isOpen = false,
+            isVisible = false,
+            currentTab = 'districts'
+        },
+        player = {
+            isLoaded = false,
+            data = nil
+        }
+    }
+end)
+
+-- Register NUI cleanup handler
+RegisterCleanup('nui', function()
+    -- Close NUI
+    SetNuiFocus(false, false)
+    SendNUIMessage({
+        type = 'hide'
+    })
+end)
+
+-- Exports
+exports('IsMenuOpen', function()
+    return State.menu.isOpen and State.player.isLoaded
+end)
+
+exports('GetState', function()
+    return State
+end)
+
+exports('SetState', function(key, value)
+    if not State[key] then return false end
+    State[key] = value
+    return true
 end)
 
 -- Initialize

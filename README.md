@@ -1,96 +1,128 @@
 # District Zero
 
-A dynamic territory control system for FiveM servers using Qbox framework.
+Advanced District Control System for FiveM servers using QBX Core framework.
 
 ## Features
 
-- Dynamic district control system
-- Faction management
-- Mission system
-- Event system
-- Territory control mechanics
-- Modern UI framework
-- Database integration
+- District Control System
+- Mission Management
+- Faction System
+- Advanced UI
+- Performance Optimized
+- OneSync Compatible
 
 ## Dependencies
 
 - [qbx_core](https://github.com/qbox-project/qbx_core)
-- [ox_lib](https://github.com/overextended/ox_lib)
 - [oxmysql](https://github.com/overextended/oxmysql)
 
 ## Installation
 
-1. Ensure you have all dependencies installed
-2. Place the `dz` folder in your server's resources directory
-3. Add `ensure dz` to your server.cfg
-4. Import the SQL file from the `sql` directory
-5. Configure the resource in `shared/config.lua`
+1. Ensure you have the required dependencies installed
+2. Place the resource in your server's resources folder
+3. Import the database schema:
+   ```sql
+   source server/database/migrations.sql
+   ```
+4. Add the resource to your server.cfg:
+   ```cfg
+   ensure district_zero
+   ```
 
 ## Configuration
 
-All configuration options are available in `shared/config.lua`:
+The resource can be configured through the following files:
 
-- District settings
-- Faction settings
-- Mission settings
-- Event settings
-- UI settings
-- Debug settings
+- `config/districts.lua` - District settings
+- `config/missions.lua` - Mission settings
+- `config/factions.lua` - Faction settings
 
 ## Usage
 
 ### Commands
 
-- `/dz:event:start [districtId] [eventType]` - Start a district event (Admin)
-- `/dz:event:end [districtId] [success]` - End a district event (Admin)
-- `/dz:district:info` - View district information
-- `/dz:faction:info` - View faction information
+- `/dzmenu` - Open the District Zero menu
+- `/dzhelp` - Show help information
+
+### Key Bindings
+
+- `F5` - Open District Zero menu
+- `F6` - Toggle district view
+- `F7` - Toggle mission view
 
 ### Events
 
-All events are namespaced with `dz:` prefix:
+#### Client Events
 
-- `dz:district:event:start`
-- `dz:district:event:end`
-- `dz:district:event:progress`
-- `dz:district:event:update`
+```lua
+-- Open menu
+TriggerEvent('dz:client:menu:open')
 
-## Development
+-- Close menu
+TriggerEvent('dz:client:menu:close')
 
-### Project Structure
-
-```
-dz/
-├── client/
-│   └── main/
-├── server/
-│   └── main/
-├── shared/
-│   ├── config.lua
-│   └── utils.lua
-├── ui/
-│   └── src/
-├── locales/
-├── sql/
-├── fxmanifest.lua
-├── README.md
-├── CHANGELOG.md
-└── LICENSE
+-- Update district
+TriggerEvent('dz:client:district:update', districtData)
 ```
 
-### Building
+#### Server Events
 
-1. Install dependencies:
+```lua
+-- Start mission
+TriggerEvent('dz:server:mission:start', missionId)
 
-   ```bash
-   cd ui
-   npm install
-   ```
+-- Complete mission
+TriggerEvent('dz:server:mission:complete', missionId)
 
-2. Build UI:
-   ```bash
-   npm run build
-   ```
+-- Update district
+TriggerEvent('dz:server:district:update', districtId, data)
+```
+
+### Exports
+
+#### Client Exports
+
+```lua
+-- Get current district
+exports['district_zero']:GetCurrentDistrict()
+
+-- Get active missions
+exports['district_zero']:GetActiveMissions()
+
+-- Get faction info
+exports['district_zero']:GetFactionInfo()
+```
+
+#### Server Exports
+
+```lua
+-- Get district data
+exports['district_zero']:GetDistrictData(districtId)
+
+-- Get mission data
+exports['district_zero']:GetMissionData(missionId)
+
+-- Get faction data
+exports['district_zero']:GetFactionData(factionId)
+```
+
+## Performance
+
+The resource is optimized for performance with:
+
+- Query caching
+- Event throttling
+- State validation
+- Resource cleanup
+- OneSync compatibility
+
+## Support
+
+For support, please:
+
+1. Check the [documentation](https://docs.fivem.net/docs/scripting-manual/)
+2. Search [existing issues](https://github.com/your-repo/issues)
+3. Create a new issue if needed
 
 ## License
 
@@ -102,8 +134,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 2. Create your feature branch
 3. Commit your changes
 4. Push to the branch
-5. Create a Pull Request
-
-## Support
-
-For support, please open an issue in the GitHub repository.
+5. Create a new Pull Request
