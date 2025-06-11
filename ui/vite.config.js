@@ -10,9 +10,7 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: true,
     rollupOptions: {
-      input: {
-        main: path.resolve(__dirname, 'src/index.html')
-      }
+      input: path.resolve(__dirname, 'src/index.html')
     }
   },
   resolve: {
