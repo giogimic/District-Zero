@@ -19,7 +19,7 @@ local function Initialize()
     if State.isInitialized then return end
     
     -- Wait for database to be ready
-    while not exports['dz']:InitializeDatabase do
+    while not exports['dz'].InitializeDatabase do
         Wait(100)
     end
     
