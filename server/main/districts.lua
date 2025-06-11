@@ -395,41 +395,34 @@ end)
 
 -- Initialize district state
 local function InitializeDistrictState()
-    if not Config.Districts then
-        print('^1[District Zero] Config.Districts is not defined^7')
+    -- Load districts from database
+    local districts = exports['dz']:GetDistricts()
+    if not districts then
+        Utils.HandleError('Failed to load districts from database', 'DATABASE', 'InitializeDistrictState')
         return false
     end
-    
-    -- Initialize districts from config
-    for id, district in pairs(Config.Districts) do
-        State.districts[id] = {
-            id = id,
+
+    -- Initialize district state
+    for _, district in ipairs(districts) do
+        DistrictState.districts[district.id] = {
+            id = district.id,
             name = district.name,
             label = district.label,
             description = district.description,
-            coords = district.coords,
+            center = vector3(district.center_x, district.center_y, district.center_z),
             radius = district.radius,
-            factions = district.factions or {},
-            missions = district.missions or {},
-            abilities = district.abilities or {},
-            status = "active",
-            players = {},
-            events = {}
+            owner = district.owner or 'neutral',
+            resources = district.resources or {
+                money = 0,
+                materials = 0,
+                influence = 0
+            },
+            influence = district.influence or 0,
+            players = {}
         }
     end
-    
-    -- Load district data from database
-    local success = MySQL.query.await('SELECT * FROM dz_districts')
-    if success then
-        for _, data in ipairs(success) do
-            if State.districts[data.id] then
-                State.districts[data.id].status = data.status
-                State.districts[data.id].lastEvent = data.last_event
-                State.districts[data.id].lastUpdate = data.last_update
-            end
-        end
-    end
-    
+
+    Utils.PrintDebug("District state initialized")
     return true
 end
 
