@@ -1,7 +1,7 @@
 -- client/main/main.lua
 -- Main client file for District Zero
 
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
 
 -- State Management

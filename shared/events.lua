@@ -78,7 +78,7 @@ end
 -- Event Registration
 local function RegisterEvent(eventName, eventType, handler)
     if not ValidateEvent(eventName, eventType) then
-        Utils.HandleError('Invalid event: ' .. eventName, 'RegisterEvent')
+        print('[District Zero] Error: Invalid event: ' .. eventName)
         return false
     end
     
@@ -96,7 +96,7 @@ end
 -- Event Triggering
 local function TriggerEvent(eventName, eventType, ...)
     if not ValidateEvent(eventName, eventType) then
-        Utils.HandleError('Invalid event: ' .. eventName, 'TriggerEvent')
+        print('[District Zero] Error: Invalid event: ' .. eventName)
         return false
     end
     
@@ -141,15 +141,15 @@ Server Events:
 - dz:menu:response: Send menu data
 - dz:district:request: Request district data
 - dz:district:response: Send district data
-- dz:district:capture: Handle district capture
-- dz:district:defend: Handle district defense
+- dz:district:capture: Capture a district
+- dz:district:defend: Defend a district
 - dz:faction:request: Request faction data
 - dz:faction:response: Send faction data
-- dz:faction:join: Handle faction join
-- dz:faction:leave: Handle faction leave
-- dz:mission:start: Handle mission start
-- dz:mission:complete: Handle mission completion
-- dz:mission:fail: Handle mission failure
-- dz:state:update: Handle state update
-- dz:state:request: Handle state request
+- dz:faction:join: Join a faction
+- dz:faction:leave: Leave a faction
+- dz:mission:start: Start a mission
+- dz:mission:complete: Complete a mission
+- dz:mission:fail: Fail a mission
+- dz:state:update: Update state
+- dz:state:request: Request state update
 ]] 

@@ -37,41 +37,13 @@ local function HandleError(error, type, context)
 end
 
 -- Validation
-local function ValidateInput(input, rules)
+local function ValidateInput(input, type, context)
     if not input then
-        return HandleError('Input is required', ErrorTypes.VALIDATION, 'ValidateInput')
+        return HandleError('Input is required', ErrorTypes.VALIDATION, context)
     end
     
-    if not rules then
-        return HandleError('Validation rules are required', ErrorTypes.VALIDATION, 'ValidateInput')
-    end
-    
-    local errors = {}
-    
-    for field, rule in pairs(rules) do
-        if rule.required and not input[field] then
-            table.insert(errors, string.format('%s is required', field))
-        end
-        
-        if input[field] and rule.type and type(input[field]) ~= rule.type then
-            table.insert(errors, string.format('%s must be of type %s', field, rule.type))
-        end
-        
-        if input[field] and rule.min and input[field] < rule.min then
-            table.insert(errors, string.format('%s must be at least %s', field, rule.min))
-        end
-        
-        if input[field] and rule.max and input[field] > rule.max then
-            table.insert(errors, string.format('%s must be at most %s', field, rule.max))
-        end
-        
-        if input[field] and rule.pattern and not string.match(input[field], rule.pattern) then
-            table.insert(errors, string.format('%s must match pattern %s', field, rule.pattern))
-        end
-    end
-    
-    if #errors > 0 then
-        return HandleError(table.concat(errors, ', '), ErrorTypes.VALIDATION, 'ValidateInput')
+    if type and type(input) ~= type then
+        return HandleError(string.format('Input must be of type %s', type), ErrorTypes.VALIDATION, context)
     end
     
     return nil
@@ -151,24 +123,8 @@ Error Types:
 - UNKNOWN: Unknown errors
 
 Usage:
-- Handle error: exports['district_zero']:HandleError(error, type, context)
-- Validate input: exports['district_zero']:ValidateInput(input, rules)
-- Check permission: exports['district_zero']:CheckPermission(source, permission)
-- Validate state: exports['district_zero']:ValidateState(state, required)
-
-Examples:
-- Handle error:
-  exports['district_zero']:HandleError('Invalid input', 'VALIDATION', 'ValidateInput')
-
-- Validate input:
-  exports['district_zero']:ValidateInput(input, {
-    name = { required = true, type = 'string' },
-    age = { required = true, type = 'number', min = 0, max = 100 }
-  })
-
-- Check permission:
-  exports['district_zero']:CheckPermission(source, 'admin')
-
-- Validate state:
-  exports['district_zero']:ValidateState(state, { 'player', 'district' })
+- HandleError(error, type, context)
+- ValidateInput(input, type, context)
+- CheckPermission(source, permission)
+- ValidateState(state, required)
 ]] 

@@ -1,7 +1,7 @@
 -- shared/utils.lua
 -- Common utility functions for the District Zero system
 
-local QBX = exports['qbx_core']:GetCore()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = {}
 
 -- Error handling
@@ -13,7 +13,10 @@ function Utils.HandleError(err, context)
 end
 
 function Utils.SafeCall(fn, context, ...)
-    local success, result = pcall(fn, ...)
+    local args = {...}
+    local success, result = pcall(function()
+        return fn(unpack(args))
+    end)
     if not success then
         Utils.HandleError(result, context)
         return nil
@@ -69,8 +72,9 @@ function Utils.TriggerClientEvent(eventName, source, ...)
         return
     end
     
+    local args = {...}
     Utils.SafeCall(function()
-        TriggerClientEvent('dz:' .. eventName, source, ...)
+        TriggerClientEvent('dz:' .. eventName, source, unpack(args))
     end, 'TriggerClientEvent')
 end
 
@@ -80,8 +84,9 @@ function Utils.TriggerServerEvent(eventName, ...)
         return
     end
     
+    local args = {...}
     Utils.SafeCall(function()
-        TriggerServerEvent('dz:' .. eventName, ...)
+        TriggerServerEvent('dz:' .. eventName, unpack(args))
     end, 'TriggerServerEvent')
 end
 
