@@ -30,10 +30,16 @@ CreateThread(function()
         
         -- Get all migration files
         local migrationFiles = {}
-        local files = os.listdir('server/database/migrations')
-        for _, file in ipairs(files) do
-            if file:match('%.sql$') then
-                table.insert(migrationFiles, file)
+        local resourcePath = GetResourcePath(GetCurrentResourceName())
+        local migrationPath = resourcePath .. '/server/database/migrations'
+        
+        -- Use LoadResourceFile to get migration files
+        local files = LoadResourceFile(GetCurrentResourceName(), 'server/database/migrations')
+        if files then
+            for file in files:gmatch("[^\r\n]+") do
+                if file:match('%.sql$') then
+                    table.insert(migrationFiles, file)
+                end
             end
         end
         
@@ -124,6 +130,11 @@ end
 
 -- Insert Default Data
 function InsertDefaultData()
+    if not Config.Districts then
+        print('^1[District Zero] Config.Districts is not defined^7')
+        return false
+    end
+
     -- Insert default districts if they don't exist
     for id, district in pairs(Config.Districts) do
         local success = MySQL.insert.await('INSERT IGNORE INTO dz_districts (id, name, label, description, center_x, center_y, center_z, radius) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', {
