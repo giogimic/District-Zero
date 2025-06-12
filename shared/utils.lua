@@ -1,5 +1,6 @@
 -- shared/utils.lua
 -- Common utility functions for the District Zero system
+-- Version: 1.0.0
 
 local Utils = {}
 local isInitialized = false
@@ -85,7 +86,7 @@ function Utils.TriggerClientEvent(eventName, source, ...)
     
     local args = {...}
     Utils.SafeCall(function()
-        TriggerClientEvent('dz:' .. eventName, source, table.unpack(args))
+        TriggerClientEvent('District-Zero:' .. eventName, source, table.unpack(args))
     end, 'TriggerClientEvent')
 end
 
@@ -103,7 +104,7 @@ function Utils.TriggerServerEvent(eventName, ...)
     
     local args = {...}
     Utils.SafeCall(function()
-        TriggerServerEvent('dz:' .. eventName, table.unpack(args))
+        TriggerServerEvent('District-Zero:' .. eventName, table.unpack(args))
     end, 'TriggerServerEvent')
 end
 
@@ -175,7 +176,7 @@ end
 -- Resource validation
 function Utils.ValidateResource()
     local resourceName = GetCurrentResourceName()
-    if resourceName ~= 'dz' then
+    if resourceName ~= 'District-Zero' then
         Utils.PrintError('Resource name mismatch')
         return false
     end
