@@ -4,86 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>District Zero</title>
-    <!-- DaisyUI + Tailwind -->
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Custom CSS -->
-    <link href="css/style.css" rel="stylesheet">
-    <!-- Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
+    <link href="./styles/main.css" rel="stylesheet" type="text/css" />
 </head>
 <body class="bg-transparent">
-    <!-- Main Container -->
     <div id="app" class="hidden">
-        <!-- District Map -->
-        <div id="district-map" class="fixed inset-0 z-0">
-            <!-- Map will be injected here -->
-        </div>
+        <!-- Mission Menu -->
+        <div class="mission-menu glass-morphism">
+            <div class="menu-header">
+                <h1 class="text-2xl font-bold">District Zero</h1>
+                <p class="text-sm opacity-80">Mission Control</p>
+            </div>
+            
+            <!-- District Info -->
+            <div class="district-info">
+                <h2 class="text-xl font-semibold">Current District</h2>
+                <div class="district-stats">
+                    <div class="stat">
+                        <span class="stat-label">Influence</span>
+                        <span class="stat-value" id="district-influence">0%</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Control Points</span>
+                        <span class="stat-value" id="control-points">0/3</span>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Mission UI -->
-        <div id="mission-ui" class="fixed inset-0 z-10 hidden">
             <!-- Mission List -->
-            <div class="mission-list glass-panel">
-                <h2>Available Missions</h2>
-                <div id="mission-container"></div>
+            <div class="mission-list">
+                <h2 class="text-xl font-semibold">Available Missions</h2>
+                <div id="mission-container" class="mission-container">
+                    <!-- Missions will be dynamically inserted here -->
+                </div>
             </div>
 
-            <!-- Active Mission -->
-            <div class="active-mission glass-panel">
-                <h2>Current Mission</h2>
-                <div id="mission-details"></div>
-                <div id="mission-objectives"></div>
-                <div id="mission-rewards"></div>
-            </div>
-        </div>
-
-        <!-- District Control UI -->
-        <div id="district-ui" class="fixed inset-0 z-10 hidden">
-            <!-- District List -->
-            <div class="district-list glass-panel">
-                <h2>Conflict Districts</h2>
-                <div id="district-container"></div>
-            </div>
-
-            <!-- District Details -->
-            <div class="district-details glass-panel">
-                <h2>District Status</h2>
-                <div id="district-status"></div>
-                <div id="district-influence"></div>
-                <div id="district-missions"></div>
-            </div>
-        </div>
-
-        <!-- Team Selection -->
-        <div id="team-ui" class="fixed inset-0 z-20 hidden">
-            <div class="team-select glass-panel">
-                <h2>Select Team</h2>
-                <div class="team-options">
-                    <button class="team-btn pvp" data-team="pvp">
-                        <i class="ri-sword-line"></i>
-                        PvP Team
-                        <span class="team-desc">Player vs Player combat</span>
-                    </button>
-                    <button class="team-btn pve" data-team="pve">
-                        <i class="ri-robot-line"></i>
-                        PvE Team
-                        <span class="team-desc">Player vs Environment</span>
-                    </button>
+            <!-- Team Selection -->
+            <div class="team-selection">
+                <h2 class="text-xl font-semibold">Select Team</h2>
+                <div class="team-buttons">
+                    <button class="team-btn pvp" data-team="pvp">PvP Team</button>
+                    <button class="team-btn pve" data-team="pve">PvE Team</button>
                 </div>
             </div>
         </div>
 
+        <!-- Active Mission -->
+        <div class="active-mission glass-morphism hidden">
+            <div class="mission-header">
+                <h2 class="text-xl font-bold" id="mission-title">Mission Title</h2>
+                <p class="text-sm opacity-80" id="mission-description">Mission Description</p>
+            </div>
+            
+            <div class="mission-objectives">
+                <h3 class="text-lg font-semibold">Objectives</h3>
+                <div id="objectives-container">
+                    <!-- Objectives will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <div class="mission-timer">
+                <span class="timer-label">Time Remaining</span>
+                <span class="timer-value" id="mission-timer">00:00</span>
+            </div>
+        </div>
+
         <!-- Notifications -->
-        <div id="notifications" class="fixed top-4 right-4 z-30"></div>
+        <div id="notification-container" class="notification-container">
+            <!-- Notifications will be dynamically inserted here -->
+        </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="js/config.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/missions.js"></script>
-    <script src="js/districts.js"></script>
-    <script src="js/teams.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/main.js"></script>
+    <script src="./js/main.js" type="module"></script>
 </body>
 </html> 

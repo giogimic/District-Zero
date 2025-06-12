@@ -8,7 +8,7 @@ lua54 'yes'
 
 name 'district-zero'
 author 'District Zero Team'
-description 'Dynamic mission and district control system for FiveM'
+description 'A dynamic mission and district control system for FiveM'
 version '1.0.0'
 
 use_experimental_fxv2_oal 'yes'
@@ -36,6 +36,7 @@ client_scripts {
     'client/main.lua',
     'client/districts.lua',
     'client/missions.lua',
+    'client/teams.lua',
     'client/factions.lua',
     'client/ui.lua'
 }
@@ -47,8 +48,10 @@ server_scripts {
     'server/database/init.lua',  -- Load database first
     'server/database/migrations/*.sql',
     'server/main.lua',         -- Then main scripts
+    'server/database.lua',
     'server/districts.lua',
     'server/missions.lua',
+    'server/teams.lua',
     'server/factions.lua',
     'server/*.lua'               -- Then other server scripts
 }
@@ -58,9 +61,8 @@ ui_page 'ui/index.html'
 
 files {
     'ui/index.html',
-    'ui/dist/index.html',
-    'ui/dist/assets/*.js',
-    'ui/dist/assets/*.css',
+    'ui/styles/main.css',
+    'ui/js/main.js',
     'locales/*.json'
 }
 
