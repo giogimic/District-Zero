@@ -57,12 +57,12 @@ server_scripts {
 }
 
 -- UI Files
-ui_page 'ui/index.html'
+ui_page 'ui/dist/index.html'
 
 files {
-    'ui/index.html',
-    'ui/styles/main.css',
-    'ui/js/main.js',
+    'ui/dist/index.html',
+    'ui/dist/assets/*.js',
+    'ui/dist/assets/*.css',
     'locales/*.json'
 }
 
