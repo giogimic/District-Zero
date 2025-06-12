@@ -7,6 +7,20 @@ Config = {}
 Config.Debug = true
 Config.Locale = 'en'
 
+-- Team Configuration
+Config.Teams = {
+    pvp = {
+        name = 'PVP Team',
+        description = 'Fight for control of districts against other players',
+        color = '#FF0000'
+    },
+    pve = {
+        name = 'PVE Team',
+        description = 'Complete missions against AI enemies',
+        color = '#0000FF'
+    }
+}
+
 -- District Configuration
 Config.Districts = {
     {
@@ -371,28 +385,6 @@ Config.Missions = {
                 count = 8,
                 timeLimit = 900
             }
-        }
-    }
-}
-
--- Team Configuration
-Config.Teams = {
-    pvp = {
-        name = 'PvP Team',
-        color = '#FF0000',
-        blip = {
-            sprite = 1,
-            color = 1,
-            scale = 0.8
-        }
-    },
-    pve = {
-        name = 'PvE Team',
-        color = '#0000FF',
-        blip = {
-            sprite = 1,
-            color = 2,
-            scale = 0.8
         }
     }
 }

@@ -218,12 +218,13 @@ end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     isInitialized = false
+    ClearDistrictBlips()
+    ClearMissionBlips()
 end)
 
 RegisterNetEvent('dz:client:initialize')
 AddEventHandler('dz:client:initialize', function(data)
-    CreateDistrictBlips()
-    Utils.PrintDebug('Client initialized')
+    Initialize()
 end)
 
 RegisterNetEvent('dz:client:missionStarted')
@@ -282,36 +283,45 @@ local function Initialize()
     if isInitialized then return end
     
     -- Validate config
-    if not Config or not Config.Districts then
-        print('[APB Error] VALIDATION: Config.Districts is not defined')
+    if not Config then
+        Utils.PrintError('VALIDATION: Config is not defined')
         return false
     end
-
-    -- Initialize modules
+    
+    if not Config.Districts then
+        Utils.PrintError('VALIDATION: Config.Districts is not defined')
+        return false
+    end
+    
+    if not Config.Missions then
+        Utils.PrintError('VALIDATION: Config.Missions is not defined')
+        return false
+    end
+    
+    -- Initialize districts
     if not InitializeDistricts() then
-        print('[APB Error] INIT: Failed to initialize districts')
+        Utils.PrintError('INIT: Failed to initialize districts')
         return false
     end
-
-    if not InitializeMissions() then
-        print('[APB Error] INIT: Failed to initialize missions')
-        return false
-    end
-
-    if not InitializeTeams() then
-        print('[APB Error] INIT: Failed to initialize teams')
-        return false
-    end
-
-    -- Register commands
-    RegisterCommand('dz', function()
-        ToggleUI()
-    end, false)
-
-    -- Register keybind
-    RegisterKeyMapping('dz', 'Open District Zero Menu', 'keyboard', 'F5')
-
+    
+    -- Create district blips
+    CreateDistrictBlips()
+    
     isInitialized = true
-    print('[APB Debug][INFO] District Zero initialized successfully')
+    Utils.PrintDebug('Client initialized')
+    return true
+end
+
+-- Initialize districts
+local function InitializeDistricts()
+    if not Config.Districts then return false end
+    
+    for _, district in pairs(Config.Districts) do
+        if not district.id or not district.name or not district.zones then
+            Utils.PrintError('INIT: Invalid district configuration: ' .. (district.id or 'unknown'))
+            return false
+        end
+    end
+    
     return true
 end 
