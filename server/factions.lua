@@ -1,7 +1,6 @@
 -- Factions Server Handler
 -- Version: 1.0.0
 
-local PlayerData = require 'qbx_core.server.modules.playerdata'
 local Utils = require 'shared/utils'
 
 local factions = {}
@@ -54,7 +53,7 @@ end
 local function AddFactionMember(factionId, playerId)
     if not factions[factionId] then return false end
     
-    local player = PlayerData.GetPlayer(playerId)
+    local player = exports.qbx_core:GetPlayer(playerId)
     if not player then return false end
     
     -- Add player to faction
@@ -78,7 +77,7 @@ local function RemoveFactionMember(factionId, playerId)
     if not factions[factionId] then return false end
     if not factionMembers[factionId][playerId] then return false end
     
-    local player = PlayerData.GetPlayer(playerId)
+    local player = exports.qbx_core:GetPlayer(playerId)
     if player then
         -- Remove faction from player metadata
         player.Functions.SetMetaData('faction', nil)
@@ -128,7 +127,7 @@ end)
 RegisterNetEvent('District-Zero:faction:joinRequest')
 AddEventHandler('District-Zero:faction:joinRequest', function(factionId)
     local source = source
-    local player = PlayerData.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return end
     
     -- Check if player is already in a faction
@@ -157,7 +156,7 @@ end)
 RegisterNetEvent('District-Zero:faction:leaveRequest')
 AddEventHandler('District-Zero:faction:leaveRequest', function()
     local source = source
-    local player = PlayerData.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return end
     
     local factionId = player.PlayerData.metadata.faction

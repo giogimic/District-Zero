@@ -1,7 +1,6 @@
 -- District Zero Missions Server Module
 -- Version: 1.0.0
 
-local PlayerData = require 'qbx_core.server.modules.playerdata'
 local Utils = require 'shared/utils'
 
 -- State
