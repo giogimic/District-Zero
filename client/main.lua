@@ -283,18 +283,7 @@ local function Initialize()
     if isInitialized then return end
     
     -- Validate config
-    if not Config then
-        Utils.PrintError('VALIDATION: Config is not defined')
-        return false
-    end
-    
-    if not Config.Districts then
-        Utils.PrintError('VALIDATION: Config.Districts is not defined')
-        return false
-    end
-    
-    if not Config.Missions then
-        Utils.PrintError('VALIDATION: Config.Missions is not defined')
+    if not Utils.ValidateConfig() then
         return false
     end
     

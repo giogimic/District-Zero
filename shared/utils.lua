@@ -5,9 +5,17 @@ local Utils = {}
 
 -- Error handling
 function Utils.HandleError(err, context)
-    if Config and Config.Debug then
-        print(string.format('[APB Error] %s: %s', context, tostring(err)))
-    end
+    print(string.format('[APB Error] %s: %s', context, tostring(err)))
+end
+
+function Utils.PrintError(message)
+    print(string.format('[APB Error] %s', tostring(message)))
+end
+
+function Utils.PrintDebug(message, level)
+    level = level or 'info'
+    local prefix = string.format('[APB Debug][%s]', level:upper())
+    print(string.format('%s %s', prefix, tostring(message)))
 end
 
 function Utils.SafeCall(fn, context, ...)
@@ -20,16 +28,6 @@ function Utils.SafeCall(fn, context, ...)
         return nil
     end
     return result
-end
-
--- Debug logging
-function Utils.PrintDebug(message, level)
-    if not Config then return end
-    if not Config.Debug then return end
-    
-    level = level or 'info'
-    local prefix = string.format('[APB Debug][%s]', level:upper())
-    print(string.format('%s %s', prefix, tostring(message)))
 end
 
 -- Notification system
@@ -55,7 +53,7 @@ function Utils.SafeQuery(query, params, context)
     end)
     
     if not success then
-        print('^1Query failed in ' .. (context or 'unknown') .. ': ' .. tostring(result))
+        Utils.PrintError('Query failed in ' .. (context or 'unknown') .. ': ' .. tostring(result))
         return nil
     end
     
@@ -68,12 +66,12 @@ local COOLDOWN_TIME = 1000 -- 1 second cooldown
 
 function Utils.TriggerClientEvent(eventName, source, ...)
     if not eventName then
-        Utils.HandleError('Event name is required', 'TriggerClientEvent')
+        Utils.PrintError('Event name is required')
         return
     end
     
     if not source then
-        Utils.HandleError('Source is required', 'TriggerClientEvent')
+        Utils.PrintError('Source is required')
         return
     end
     
@@ -92,7 +90,7 @@ end
 
 function Utils.TriggerServerEvent(eventName, ...)
     if not eventName then
-        Utils.HandleError('Event name is required', 'TriggerServerEvent')
+        Utils.PrintError('Event name is required')
         return
     end
     
@@ -111,12 +109,12 @@ end
 -- State management with proper replication
 function Utils.SetPlayerState(source, key, value)
     if not source then
-        Utils.HandleError('Source is required', 'SetPlayerState')
+        Utils.PrintError('Source is required')
         return
     end
     
     if not key then
-        Utils.HandleError('Key is required', 'SetPlayerState')
+        Utils.PrintError('Key is required')
         return
     end
     
@@ -130,12 +128,12 @@ end
 
 function Utils.GetPlayerState(source, key)
     if not source then
-        Utils.HandleError('Source is required', 'GetPlayerState')
+        Utils.PrintError('Source is required')
         return nil
     end
     
     if not key then
-        Utils.HandleError('Key is required', 'GetPlayerState')
+        Utils.PrintError('Key is required')
         return nil
     end
     
@@ -149,41 +147,35 @@ function Utils.GetPlayerState(source, key)
 end
 
 -- Validation helpers
-function Utils.IsValidSpeed(speed)
-    if type(speed) ~= 'number' then
-        Utils.HandleError('Speed must be a number', 'IsValidSpeed')
+function Utils.ValidateConfig()
+    if not Config then
+        Utils.PrintError('Config is not defined')
         return false
     end
     
-    local maxSpeed = Config and Config.MaxSpeed or 500
-    return speed >= 0 and speed <= maxSpeed
-end
-
-function Utils.IsValidHealth(health)
-    if type(health) ~= 'number' then
-        Utils.HandleError('Health must be a number', 'IsValidHealth')
+    if not Config.Districts then
+        Utils.PrintError('Config.Districts is not defined')
         return false
     end
     
-    local maxHealth = Config and Config.MaxHealth or 200
-    return health >= 0 and health <= maxHealth
-end
-
-function Utils.IsValidArmor(armor)
-    if type(armor) ~= 'number' then
-        Utils.HandleError('Armor must be a number', 'IsValidArmor')
+    if not Config.Missions then
+        Utils.PrintError('Config.Missions is not defined')
         return false
     end
     
-    local maxArmor = Config and Config.MaxArmor or 100
-    return armor >= 0 and armor <= maxArmor
+    if not Config.Teams then
+        Utils.PrintError('Config.Teams is not defined')
+        return false
+    end
+    
+    return true
 end
 
 -- Resource validation
 function Utils.ValidateResource()
     local resourceName = GetCurrentResourceName()
     if resourceName ~= 'dz' then
-        Utils.HandleError('Resource name mismatch', 'ValidateResource')
+        Utils.PrintError('Resource name mismatch')
         return false
     end
     return true

@@ -24,10 +24,11 @@ dependencies {
 shared_scripts {
     '@ox_lib/init.lua',
     '@qbx_core/shared/locale.lua',
-    'shared/types.lua',
-    'config/config.lua',
-    'bridge/loader.lua',
-    'shared/*.lua'
+    'config/config.lua',  -- Load config first
+    'shared/types.lua',   -- Then types
+    'shared/utils.lua',   -- Then utils
+    'shared/events.lua',  -- Then events
+    'bridge/loader.lua'   -- Then bridge
 }
 
 -- Client Scripts
