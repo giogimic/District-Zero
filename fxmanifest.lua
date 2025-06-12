@@ -24,13 +24,14 @@ dependencies {
 shared_scripts {
     '@ox_lib/init.lua',
     '@qbx_core/shared/locale.lua',
-    'config/config.lua',  -- Load config first
-    'shared/types.lua',   -- Then types
-    'shared/utils.lua',   -- Then utils
-    'shared/events.lua',  -- Then events
-    'shared/cleanup.lua', -- Then cleanup
-    'shared/state.lua',   -- Then state
-    'shared/error.lua',   -- Then error handling
+    'config/config.lua',     -- Load base config first
+    'config/districts.lua',  -- Then districts config
+    'shared/types.lua',      -- Then types
+    'shared/utils.lua',      -- Then utils
+    'shared/events.lua',     -- Then events
+    'shared/cleanup.lua',    -- Then cleanup
+    'shared/state.lua',      -- Then state
+    'shared/error.lua',      -- Then error handling
     'shared/performance.lua' -- Then performance
 }
 
