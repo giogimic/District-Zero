@@ -1,7 +1,10 @@
--- Client-side main file for District Zero
-local QBX = exports['qb-core']:GetCoreObject()
+-- District Zero Client
+-- Version: 1.0.0
+
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
+local isInitialized = false
 
 -- State management
 local isUIOpen = false
@@ -202,13 +205,21 @@ RegisterNUICallback('acceptMission', function(data, cb)
 end)
 
 -- Key mapping
-RegisterCommand('+openMissionMenu', function()
+RegisterCommand('dz', function()
     ToggleUI()
 end, false)
 
-RegisterKeyMapping('+openMissionMenu', 'Open Mission Menu', 'keyboard', 'F5')
+RegisterKeyMapping('dz', 'Open District Zero Menu', 'keyboard', 'F5')
 
 -- Event handlers
+RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+    Initialize()
+end)
+
+RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+    isInitialized = false
+end)
+
 RegisterNetEvent('dz:client:initialize')
 AddEventHandler('dz:client:initialize', function(data)
     CreateDistrictBlips()
@@ -249,14 +260,9 @@ AddEventHandler('dz:client:districtUpdated', function(district)
 end)
 
 -- Initialize on resource start
-AddEventHandler('onResourceStart', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    
-    while not QBX do
-        Wait(100)
-    end
-    
-    TriggerEvent('dz:client:initialize')
+CreateThread(function()
+    Wait(1000) -- Wait for QBX to be ready
+    Initialize()
 end)
 
 -- Cleanup on resource stop
@@ -269,4 +275,43 @@ AddEventHandler('onResourceStop', function(resourceName)
     
     ClearMissionBlips()
     ClearDistrictBlips()
-end) 
+end)
+
+-- Initialize the system
+local function Initialize()
+    if isInitialized then return end
+    
+    -- Validate config
+    if not Config or not Config.Districts then
+        print('[APB Error] VALIDATION: Config.Districts is not defined')
+        return false
+    end
+
+    -- Initialize modules
+    if not InitializeDistricts() then
+        print('[APB Error] INIT: Failed to initialize districts')
+        return false
+    end
+
+    if not InitializeMissions() then
+        print('[APB Error] INIT: Failed to initialize missions')
+        return false
+    end
+
+    if not InitializeTeams() then
+        print('[APB Error] INIT: Failed to initialize teams')
+        return false
+    end
+
+    -- Register commands
+    RegisterCommand('dz', function()
+        ToggleUI()
+    end, false)
+
+    -- Register keybind
+    RegisterKeyMapping('dz', 'Open District Zero Menu', 'keyboard', 'F5')
+
+    isInitialized = true
+    print('[APB Debug][INFO] District Zero initialized successfully')
+    return true
+end 
