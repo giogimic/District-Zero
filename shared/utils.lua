@@ -2,6 +2,7 @@
 -- Common utility functions for the District Zero system
 
 local Utils = {}
+local isInitialized = false
 
 -- Error handling
 function Utils.HandleError(err, context)
@@ -181,8 +182,11 @@ function Utils.ValidateResource()
     return true
 end
 
--- Initialize
-Utils.PrintDebug('Utils module initialized', 'info')
-Utils.ValidateResource()
+-- Initialize only once
+if not isInitialized then
+    Utils.PrintDebug('Utils module initialized', 'info')
+    Utils.ValidateResource()
+    isInitialized = true
+end
 
 return Utils

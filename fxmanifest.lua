@@ -28,33 +28,31 @@ shared_scripts {
     'shared/types.lua',   -- Then types
     'shared/utils.lua',   -- Then utils
     'shared/events.lua',  -- Then events
-    'bridge/loader.lua'   -- Then bridge
+    'shared/cleanup.lua', -- Then cleanup
+    'shared/state.lua',   -- Then state
+    'shared/error.lua',   -- Then error handling
+    'shared/performance.lua' -- Then performance
 }
 
 -- Client Scripts
 client_scripts {
-    'bridge/client/*.lua',
     'client/main.lua',
     'client/districts.lua',
     'client/missions.lua',
     'client/teams.lua',
-    'client/factions.lua',
     'client/ui.lua'
 }
 
 -- Server Scripts (Load order matters)
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'bridge/server/*.lua',
     'server/database/init.lua',  -- Load database first
     'server/database/migrations/*.sql',
     'server/main.lua',         -- Then main scripts
     'server/database.lua',
     'server/districts.lua',
     'server/missions.lua',
-    'server/teams.lua',
-    'server/factions.lua',
-    'server/*.lua'               -- Then other server scripts
+    'server/teams.lua'
 }
 
 -- UI Files
