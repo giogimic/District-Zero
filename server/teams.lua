@@ -1,7 +1,7 @@
 -- District Zero Teams Server Module
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCore()
+local PlayerData = require 'qbx_core.server.modules.playerdata'
 local Utils = require 'shared/utils'
 
 -- State
@@ -25,19 +25,19 @@ local function SetPlayerTeam(playerId, team)
     playerTeams[playerId] = team
     
     -- Notify client
-    TriggerClientEvent('dz:client:teamUpdated', playerId, team)
+    TriggerClientEvent('District-Zero:client:teamUpdated', playerId, team)
     return true
 end
 
 -- Event handlers
-RegisterNetEvent('dz:server:getTeam')
-AddEventHandler('dz:server:getTeam', function(cb)
+RegisterNetEvent('District-Zero:server:getTeam')
+AddEventHandler('District-Zero:server:getTeam', function(cb)
     local playerId = source
     cb(GetPlayerTeam(playerId))
 end)
 
-RegisterNetEvent('dz:server:selectTeam')
-AddEventHandler('dz:server:selectTeam', function(team)
+RegisterNetEvent('District-Zero:server:selectTeam')
+AddEventHandler('District-Zero:server:selectTeam', function(team)
     local playerId = source
     if SetPlayerTeam(playerId, team) then
         Utils.PrintDebug(string.format('Player %s joined team %s', playerId, team))

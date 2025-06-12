@@ -1,7 +1,9 @@
 -- Factions Server Handler
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCore()
+local PlayerData = require 'qbx_core.server.modules.playerdata'
+local Utils = require 'shared/utils'
+
 local factions = {}
 local factionMembers = {}
 local factionResources = {}
@@ -44,7 +46,7 @@ local function UpdateFaction(id, data)
     end
     
     -- Notify all clients
-    TriggerClientEvent('faction:update', -1, id, factions[id])
+    TriggerClientEvent('District-Zero:faction:update', -1, id, factions[id])
     
     return true
 end
@@ -52,7 +54,7 @@ end
 local function AddFactionMember(factionId, playerId)
     if not factions[factionId] then return false end
     
-    local player = QBX.Functions.GetPlayer(playerId)
+    local player = PlayerData.GetPlayer(playerId)
     if not player then return false end
     
     -- Add player to faction
@@ -67,7 +69,7 @@ local function AddFactionMember(factionId, playerId)
     player.Functions.SetMetaData('faction', factionId)
     
     -- Notify all clients
-    TriggerClientEvent('faction:memberUpdate', -1, factionId, factionMembers[factionId])
+    TriggerClientEvent('District-Zero:faction:memberUpdate', -1, factionId, factionMembers[factionId])
     
     return true
 end
@@ -76,7 +78,7 @@ local function RemoveFactionMember(factionId, playerId)
     if not factions[factionId] then return false end
     if not factionMembers[factionId][playerId] then return false end
     
-    local player = QBX.Functions.GetPlayer(playerId)
+    local player = PlayerData.GetPlayer(playerId)
     if player then
         -- Remove faction from player metadata
         player.Functions.SetMetaData('faction', nil)
@@ -86,7 +88,7 @@ local function RemoveFactionMember(factionId, playerId)
     factionMembers[factionId][playerId] = nil
     
     -- Notify all clients
-    TriggerClientEvent('faction:memberUpdate', -1, factionId, factionMembers[factionId])
+    TriggerClientEvent('District-Zero:faction:memberUpdate', -1, factionId, factionMembers[factionId])
     
     return true
 end
@@ -99,7 +101,7 @@ local function UpdateFactionResources(factionId, resourceType, amount)
     factions[factionId].resources = factionResources[factionId]
     
     -- Notify all clients
-    TriggerClientEvent('faction:resourceUpdate', -1, factionId, resourceType, factionResources[factionId][resourceType])
+    TriggerClientEvent('District-Zero:faction:resourceUpdate', -1, factionId, resourceType, factionResources[factionId][resourceType])
     
     return true
 end
@@ -111,55 +113,73 @@ local function UpdateFactionInfluence(factionId, amount)
     factions[factionId].influence = factionInfluence[factionId]
     
     -- Notify all clients
-    TriggerClientEvent('faction:influenceUpdate', -1, factionId, factionInfluence[factionId])
+    TriggerClientEvent('District-Zero:faction:influenceUpdate', -1, factionId, factionInfluence[factionId])
     
     return true
 end
 
 -- Event Handlers
-RegisterNetEvent('faction:requestUpdate')
-AddEventHandler('faction:requestUpdate', function()
+RegisterNetEvent('District-Zero:faction:requestUpdate')
+AddEventHandler('District-Zero:faction:requestUpdate', function()
     local source = source
-    TriggerClientEvent('faction:update', source, factions)
+    TriggerClientEvent('District-Zero:faction:update', source, factions)
 end)
 
-RegisterNetEvent('faction:joinRequest')
-AddEventHandler('faction:joinRequest', function(factionId)
+RegisterNetEvent('District-Zero:faction:joinRequest')
+AddEventHandler('District-Zero:faction:joinRequest', function(factionId)
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
+    local player = PlayerData.GetPlayer(source)
     if not player then return end
     
     -- Check if player is already in a faction
     if player.PlayerData.metadata.faction then
-        TriggerClientEvent('QBCore:Notify', source, 'You are already in a faction', 'error')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'error',
+            description = 'You are already in a faction'
+        })
         return
     end
     
     -- Add player to faction
     if AddFactionMember(factionId, source) then
-        TriggerClientEvent('QBCore:Notify', source, 'Joined faction successfully', 'success')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'success',
+            description = 'Joined faction successfully'
+        })
     else
-        TriggerClientEvent('QBCore:Notify', source, 'Failed to join faction', 'error')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'error',
+            description = 'Failed to join faction'
+        })
     end
 end)
 
-RegisterNetEvent('faction:leaveRequest')
-AddEventHandler('faction:leaveRequest', function()
+RegisterNetEvent('District-Zero:faction:leaveRequest')
+AddEventHandler('District-Zero:faction:leaveRequest', function()
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
+    local player = PlayerData.GetPlayer(source)
     if not player then return end
     
     local factionId = player.PlayerData.metadata.faction
     if not factionId then
-        TriggerClientEvent('QBCore:Notify', source, 'You are not in a faction', 'error')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'error',
+            description = 'You are not in a faction'
+        })
         return
     end
     
     -- Remove player from faction
     if RemoveFactionMember(factionId, source) then
-        TriggerClientEvent('QBCore:Notify', source, 'Left faction successfully', 'success')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'success',
+            description = 'Left faction successfully'
+        })
     else
-        TriggerClientEvent('QBCore:Notify', source, 'Failed to leave faction', 'error')
+        TriggerClientEvent('ox_lib:notify', source, {
+            type = 'error',
+            description = 'Failed to leave faction'
+        })
     end
 end)
 

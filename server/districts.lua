@@ -1,7 +1,7 @@
 -- District Zero Districts Server Module
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCore()
+local PlayerData = require 'qbx_core.server.modules.playerdata'
 local Utils = require 'shared/utils'
 
 -- State
@@ -33,12 +33,12 @@ local function UpdateDistrictInfluence(districtId, team, amount)
     exports['District-Zero']:UpdateDistrictInfluence(districtId, team, amount)
     
     -- Notify clients
-    TriggerClientEvent('dz:client:districtUpdated', -1, districtId, districtInfluence[districtId])
+    TriggerClientEvent('District-Zero:client:districtUpdated', -1, districtId, districtInfluence[districtId])
 end
 
 -- Event handlers
-RegisterNetEvent('dz:server:getDistrictData')
-AddEventHandler('dz:server:getDistrictData', function(districtId, cb)
+RegisterNetEvent('District-Zero:server:getDistrictData')
+AddEventHandler('District-Zero:server:getDistrictData', function(districtId, cb)
     cb(GetDistrictData(districtId))
 end)
 

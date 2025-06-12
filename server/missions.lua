@@ -1,7 +1,7 @@
 -- District Zero Missions Server Module
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCore()
+local PlayerData = require 'qbx_core.server.modules.playerdata'
 local Utils = require 'shared/utils'
 
 -- State
@@ -36,7 +36,7 @@ local function AssignMission(playerId, missionId)
     }
     
     -- Notify client
-    TriggerClientEvent('dz:client:missionAssigned', playerId, Config.Missions[missionId])
+    TriggerClientEvent('District-Zero:client:missionAssigned', playerId, Config.Missions[missionId])
     return true
 end
 
@@ -56,25 +56,25 @@ local function CompleteMission(playerId, success)
     playerMissions[playerId] = nil
     
     -- Notify client
-    TriggerClientEvent('dz:client:missionCompleted', playerId, success)
+    TriggerClientEvent('District-Zero:client:missionCompleted', playerId, success)
 end
 
 -- Event handlers
-RegisterNetEvent('dz:server:requestMissions')
-AddEventHandler('dz:server:requestMissions', function(districtId, cb)
+RegisterNetEvent('District-Zero:server:requestMissions')
+AddEventHandler('District-Zero:server:requestMissions', function(districtId, cb)
     cb(GetAvailableMissions(districtId))
 end)
 
-RegisterNetEvent('dz:server:acceptMission')
-AddEventHandler('dz:server:acceptMission', function(missionId)
+RegisterNetEvent('District-Zero:server:acceptMission')
+AddEventHandler('District-Zero:server:acceptMission', function(missionId)
     local playerId = source
     if AssignMission(playerId, missionId) then
         Utils.PrintDebug(string.format('Mission %s assigned to player %s', missionId, playerId))
     end
 end)
 
-RegisterNetEvent('dz:server:completeMission')
-AddEventHandler('dz:server:completeMission', function(success)
+RegisterNetEvent('District-Zero:server:completeMission')
+AddEventHandler('District-Zero:server:completeMission', function(success)
     local playerId = source
     CompleteMission(playerId, success)
 end)
