@@ -1,287 +1,89 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
-  <head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
-    <link rel="icon" href="/favicon.ico">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>District Zero</title>
+    <!-- DaisyUI + Tailwind -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: transparent !important;
-            user-select: none;
-        }
-        #app {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 90%;
-            max-width: 1400px;
-            height: 80vh;
-            overflow: hidden;
-        }
-        .glass-effect {
-            background: rgba(17, 25, 40, 0.75);
-            backdrop-filter: blur(16px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.125);
-        }
-        .card-hover {
-            transition: all 0.3s ease;
-        }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        }
-        .progress-bar {
-            transition: width 0.5s ease-in-out;
-        }
-        .tab-content {
-            height: calc(80vh - 180px);
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-        }
-        .tab-content::-webkit-scrollbar {
-            width: 6px;
-        }
-        .tab-content::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .tab-content::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 3px;
-        }
-    </style>
-  </head>
-  <body>
-    <div id="app" class="glass-effect rounded-xl shadow-2xl">
-        <div class="flex flex-col h-full">
-            <!-- Header -->
-            <div class="flex justify-between items-center p-6 border-b border-gray-700">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
-                        District Zero
-                    </h1>
-                    <div class="badge badge-primary">v1.0.0</div>
-                </div>
-                <button onclick="closeUI()" class="btn btn-circle btn-ghost hover:bg-red-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+</head>
+<body class="bg-transparent">
+    <!-- Main Container -->
+    <div id="app" class="hidden">
+        <!-- District Map -->
+        <div id="district-map" class="fixed inset-0 z-0">
+            <!-- Map will be injected here -->
+        </div>
+
+        <!-- Mission UI -->
+        <div id="mission-ui" class="fixed inset-0 z-10 hidden">
+            <!-- Mission List -->
+            <div class="mission-list glass-panel">
+                <h2>Available Missions</h2>
+                <div id="mission-container"></div>
             </div>
 
-            <!-- Tabs -->
-            <div class="tabs tabs-boxed justify-center p-4 gap-2">
-                <a class="tab tab-active gap-2" onclick="switchTab('missions')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Missions
-                </a>
-                <a class="tab gap-2" onclick="switchTab('districts')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                    </svg>
-                    Districts
-                </a>
-                <a class="tab gap-2" onclick="switchTab('factions')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    Factions
-                </a>
+            <!-- Active Mission -->
+            <div class="active-mission glass-panel">
+                <h2>Current Mission</h2>
+                <div id="mission-details"></div>
+                <div id="mission-objectives"></div>
+                <div id="mission-rewards"></div>
+            </div>
+        </div>
+
+        <!-- District Control UI -->
+        <div id="district-ui" class="fixed inset-0 z-10 hidden">
+            <!-- District List -->
+            <div class="district-list glass-panel">
+                <h2>Conflict Districts</h2>
+                <div id="district-container"></div>
             </div>
 
-            <!-- Content -->
-            <div class="flex-1 p-6 overflow-hidden">
-                <div id="missions" class="tab-content">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="missionList">
-                        <!-- Missions will be inserted here -->
-                    </div>
-                </div>
+            <!-- District Details -->
+            <div class="district-details glass-panel">
+                <h2>District Status</h2>
+                <div id="district-status"></div>
+                <div id="district-influence"></div>
+                <div id="district-missions"></div>
+            </div>
+        </div>
 
-                <div id="districts" class="tab-content hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="districtList">
-                        <!-- Districts will be inserted here -->
-                    </div>
-                </div>
-
-                <div id="factions" class="tab-content hidden">
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="factionList">
-                        <!-- Factions will be inserted here -->
-                    </div>
+        <!-- Team Selection -->
+        <div id="team-ui" class="fixed inset-0 z-20 hidden">
+            <div class="team-select glass-panel">
+                <h2>Select Team</h2>
+                <div class="team-options">
+                    <button class="team-btn pvp" data-team="pvp">
+                        <i class="ri-sword-line"></i>
+                        PvP Team
+                        <span class="team-desc">Player vs Player combat</span>
+                    </button>
+                    <button class="team-btn pve" data-team="pve">
+                        <i class="ri-robot-line"></i>
+                        PvE Team
+                        <span class="team-desc">Player vs Environment</span>
+                    </button>
                 </div>
             </div>
         </div>
+
+        <!-- Notifications -->
+        <div id="notifications" class="fixed top-4 right-4 z-30"></div>
     </div>
 
-    <script>
-        let currentTab = 'missions';
-        let missions = [];
-        let districts = [];
-        let factions = [];
-
-        function showUI() {
-            document.getElementById('app').style.display = 'block';
-        }
-
-        function closeUI() {
-            document.getElementById('app').style.display = 'none';
-            fetch(`https://${GetParentResourceName()}/closeUI`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({})
-            });
-        }
-
-        function switchTab(tab) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.getElementById(tab).classList.remove('hidden');
-            document.querySelectorAll('.tab').forEach(el => el.classList.remove('tab-active'));
-            document.querySelector(`.tab[onclick="switchTab('${tab}')"]`).classList.add('tab-active');
-            currentTab = tab;
-        }
-
-        function acceptMission(missionId) {
-            fetch(`https://${GetParentResourceName()}/acceptMission`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ missionId })
-            });
-        }
-
-        function renderMissions() {
-            const container = document.getElementById('missionList');
-            container.innerHTML = missions.map(mission => `
-                <div class="card bg-base-200/50 card-hover">
-                    <div class="card-body">
-                        <div class="flex justify-between items-start">
-                            <h2 class="card-title text-xl font-bold">${mission.title}</h2>
-                            <div class="badge badge-${getDifficultyColor(mission.difficulty)}">${mission.difficulty}</div>
-                        </div>
-                        <p class="text-gray-300">${mission.description}</p>
-                        <div class="flex justify-between items-center mt-4">
-                            <div class="flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span class="font-semibold">$${mission.reward.toLocaleString()}</span>
-                            </div>
-                            <button onclick="acceptMission('${mission.id}')" class="btn btn-primary btn-sm">
-                                Accept Mission
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderDistricts() {
-            const container = document.getElementById('districtList');
-            container.innerHTML = districts.map(district => `
-                <div class="card bg-base-200/50 card-hover">
-                    <div class="card-body">
-                        <h2 class="card-title text-xl font-bold">${district.name}</h2>
-                        <p class="text-gray-300">${district.description}</p>
-                        <div class="mt-4 space-y-2">
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-400">Control</span>
-                                <span class="badge badge-${getFactionColor(district.owner)}">${district.owner}</span>
-                            </div>
-                            <div class="space-y-1">
-                                <div class="flex justify-between text-sm">
-                                    <span class="text-gray-400">Influence</span>
-                                    <span>${district.influence}%</span>
-                                </div>
-                                <progress class="progress progress-${getFactionColor(district.owner)} w-full" value="${district.influence}" max="100"></progress>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderFactions() {
-            const container = document.getElementById('factionList');
-            container.innerHTML = factions.map(faction => `
-                <div class="card bg-base-200/50 card-hover">
-                    <div class="card-body">
-                        <div class="flex items-center gap-3">
-                            <div class="w-3 h-3 rounded-full" style="background-color: ${faction.color}"></div>
-                            <h2 class="card-title text-xl font-bold">${faction.name}</h2>
-                        </div>
-                        <p class="text-gray-300">${faction.description}</p>
-                        <div class="divider"></div>
-                        <div class="space-y-2">
-                            ${faction.ranks.map(rank => `
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm">${rank.name}</span>
-                                    <div class="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span class="text-sm font-medium">$${rank.salary.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function getDifficultyColor(difficulty) {
-            const colors = {
-                easy: 'success',
-                medium: 'warning',
-                hard: 'error'
-            };
-            return colors[difficulty.toLowerCase()] || 'neutral';
-        }
-
-        function getFactionColor(faction) {
-            const colors = {
-                police: 'primary',
-                ambulance: 'error',
-                neutral: 'neutral'
-            };
-            return colors[faction.toLowerCase()] || 'neutral';
-        }
-
-        window.addEventListener('message', (event) => {
-            const data = event.data;
-            
-            if (data.type === 'showUI') {
-                missions = data.missions || [];
-                districts = data.districts || [];
-                factions = data.factions || [];
-                
-                renderMissions();
-                renderDistricts();
-                renderFactions();
-                
-                showUI();
-            } else if (data.type === 'hideUI') {
-                document.getElementById('app').style.display = 'none';
-            }
-        });
-
-        // Close on Escape key
-        window.addEventListener('keyup', (event) => {
-            if (event.key === 'Escape') {
-                closeUI();
-            }
-        });
-    </script>
-  </body>
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/missions.js"></script>
+    <script src="js/districts.js"></script>
+    <script src="js/teams.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
 </html> 
