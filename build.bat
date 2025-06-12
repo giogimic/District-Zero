@@ -2,7 +2,10 @@
 echo Building District Zero UI...
 
 cd ui
-call npm install
+if not exist node_modules (
+    echo Installing dependencies...
+    call npm install --no-package-lock
+)
 call npm run build
 cd ..
 
