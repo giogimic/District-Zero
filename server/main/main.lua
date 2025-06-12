@@ -100,6 +100,73 @@ function RemovePlayer(source)
     State.players[source] = nil
 end
 
+-- Mission Management
+RegisterNetEvent('dz:server:acceptMission')
+AddEventHandler('dz:server:acceptMission', function(missionId)
+    local source = source
+    local Player = QBX.Functions.GetPlayer(source)
+    if not Player then return end
+    
+    local mission = State.missions[missionId]
+    if not mission then return end
+    
+    -- Check requirements
+    if not CheckMissionRequirements(Player, mission) then
+        TriggerClientEvent('QBCore:Notify', source, 'You do not meet the requirements for this mission', 'error')
+        return
+    end
+    
+    -- Add mission to player
+    State.players[source].missions[missionId] = {
+        startTime = os.time(),
+        objectives = mission.objectives,
+        completed = false
+    }
+    
+    -- Notify player
+    TriggerClientEvent('dz:client:missionStarted', source, mission)
+end)
+
+function CheckMissionRequirements(Player, mission)
+    if not mission.requirements then return true end
+    
+    -- Check level
+    if mission.requirements.level and Player.PlayerData.level < mission.requirements.level then
+        return false
+    end
+    
+    -- Check items
+    if mission.requirements.items then
+        for _, item in ipairs(mission.requirements.items) do
+            if not Player.Functions.GetItemByName(item.name) then
+                return false
+            end
+        end
+    end
+    
+    return true
+end
+
+-- UI Data Callback
+QBX.Functions.CreateCallback('dz:server:getUIData', function(source, cb)
+    local Player = QBX.Functions.GetPlayer(source)
+    if not Player then return cb(nil) end
+    
+    -- Get available missions for player
+    local availableMissions = {}
+    for id, mission in pairs(State.missions) do
+        if CheckMissionRequirements(Player, mission) then
+            availableMissions[id] = mission
+        end
+    end
+    
+    cb({
+        missions = availableMissions,
+        districts = State.districts,
+        factions = State.factions
+    })
+end)
+
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end

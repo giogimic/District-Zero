@@ -4,6 +4,58 @@
 
 District Zero is a dynamic territory control system for FiveM servers. This document outlines the available API endpoints, events, and exports.
 
+## Client Exports
+
+### Get Player Data
+```lua
+local playerData = exports['dz']:GetPlayerData()
+```
+Returns the current player's data including missions, faction, and district information.
+
+### Get Available Missions
+```lua
+local missions = exports['dz']:GetMissions()
+```
+Returns a table of available missions for the player.
+
+### Get Districts
+```lua
+local districts = exports['dz']:GetDistricts()
+```
+Returns a table of all districts and their current state.
+
+### Get Factions
+```lua
+local factions = exports['dz']:GetFactions()
+```
+Returns a table of all factions and their ranks.
+
+## Server Exports
+
+### Get Player
+```lua
+local player = exports['dz']:GetPlayer(source)
+```
+Returns a player's data by their server ID.
+
+### Get District
+```lua
+local district = exports['dz']:GetDistrict(districtId)
+```
+Returns a district's data by its ID.
+
+### Get Mission
+```lua
+local mission = exports['dz']:GetMission(missionId)
+```
+Returns a mission's data by its ID.
+
+### Get Faction
+```lua
+local faction = exports['dz']:GetFaction(factionId)
+```
+Returns a faction's data by its ID.
+
 ## Events
 
 ### Client Events
@@ -137,87 +189,36 @@ District Zero is a dynamic territory control system for FiveM servers. This docu
   - Parameters: `data` (table)
   - Returns: None
 
-## Exports
+## Callbacks
 
-### Client Exports
+### Client Callbacks
 
-#### Menu Exports
+#### Get UI Data
+```lua
+QBX.Functions.TriggerCallback('dz:server:getUIData', function(data)
+    -- Handle UI data
+end)
+```
+Returns all data needed for the UI including missions, districts, and factions.
 
-- `ShowNUI(menu)`
+### Server Callbacks
 
-  - Shows NUI menu
-  - Parameters: `menu` (string)
-  - Returns: `boolean`
+#### Check Mission Requirements
+```lua
+QBX.Functions.CreateCallback('dz:server:checkMissionRequirements', function(source, cb, missionId)
+    -- Check if player meets mission requirements
+    cb(meetsRequirements)
+end)
+```
+Returns whether the player meets the requirements for a mission.
 
-- `HideNUI()`
+## Configuration
 
-  - Hides NUI
-  - Parameters: None
-  - Returns: `boolean`
+All configuration is done through `config/config.lua`. See the configuration file for available options.
 
-- `ToggleNUI(menu)`
-  - Toggles NUI menu
-  - Parameters: `menu` (string)
-  - Returns: `boolean`
+## Types
 
-#### Key Binding Exports
-
-- `GetKeyBinding(action)`
-
-  - Gets key binding
-  - Parameters: `action` (string)
-  - Returns: `string`
-
-- `SetKeyBinding(action, key)`
-
-  - Sets key binding
-  - Parameters: `action` (string), `key` (string)
-  - Returns: `boolean`
-
-- `GetAllKeyBindings()`
-  - Gets all key bindings
-  - Parameters: None
-  - Returns: `table`
-
-#### Performance Exports
-
-- `ThrottleEvent(eventName, callback, time)`
-
-  - Throttles event execution
-  - Parameters: `eventName` (string), `callback` (function), `time` (number)
-  - Returns: `boolean`
-
-- `SetCache(key, value, ttl)`
-
-  - Sets cache value
-  - Parameters: `key` (string), `value` (any), `ttl` (number)
-  - Returns: None
-
-- `GetCache(key)`
-
-  - Gets cache value
-  - Parameters: `key` (string)
-  - Returns: `any`
-
-- `OptimizeLoop(callback, interval)`
-  - Optimizes loop execution
-  - Parameters: `callback` (function), `interval` (number)
-  - Returns: `function`
-
-### Server Exports
-
-#### Database Exports
-
-- `Query(query, params)`
-
-  - Executes database query
-  - Parameters: `query` (string), `params` (table)
-  - Returns: `table`
-
-- `Transaction(queries)`
-  - Executes database transaction
-  - Parameters: `queries` (table)
-  - Returns: `boolean`
+Shared types are defined in `shared/types.lua`. These types are used throughout the resource for type safety and consistency.
 
 ## Error Handling
 

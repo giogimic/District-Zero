@@ -11,53 +11,36 @@ local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
 -- Mission state management
-local function CreateMissionBlip(coords, type, label)
-    local blip = AddBlipForCoord(coords.x, coords.y, coords.z)
-    SetBlipSprite(blip, type)
+local function CreateMissionBlip(mission)
+    if missionBlips[mission.id] then
+        RemoveMissionBlip(mission.id)
+    end
+
+    local blip = AddBlipForCoord(mission.coords.x, mission.coords.y, mission.coords.z)
+    SetBlipSprite(blip, mission.blip.sprite or 1)
     SetBlipDisplay(blip, 4)
-    SetBlipScale(blip, 0.8)
-    SetBlipColour(blip, 5)
+    SetBlipScale(blip, mission.blip.scale or 0.8)
+    SetBlipColour(blip, mission.blip.color or 0)
     SetBlipAsShortRange(blip, true)
     BeginTextCommandSetBlipName("STRING")
-    AddTextComponentString(label)
+    AddTextComponentString(mission.title)
     EndTextCommandSetBlipName(blip)
-    return blip
+
+    missionBlips[mission.id] = blip
+end
+
+local function RemoveMissionBlip(missionId)
+    if missionBlips[missionId] then
+        RemoveBlip(missionBlips[missionId])
+        missionBlips[missionId] = nil
+    end
 end
 
 local function ClearMissionBlips()
     for _, blip in pairs(missionBlips) do
-        if DoesBlipExist(blip) then
-            RemoveBlip(blip)
-        end
+        RemoveBlip(blip)
     end
     missionBlips = {}
-end
-
-local function UpdateMissionBlips()
-    ClearMissionBlips()
-    if not currentMission then return end
-
-    -- Add mission start blip
-    if currentMission.startCoords then
-        missionBlips.start = CreateMissionBlip(
-            currentMission.startCoords,
-            currentMission.startBlip or 1,
-            currentMission.startLabel or 'Mission Start'
-        )
-    end
-
-    -- Add objective blips
-    if currentMission.objectives then
-        for i, objective in ipairs(currentMission.objectives) do
-            if objective.coords and not objective.completed then
-                missionBlips['obj_' .. i] = CreateMissionBlip(
-                    objective.coords,
-                    objective.blip or 1,
-                    objective.label or ('Objective ' .. i)
-                )
-            end
-        end
-    end
 end
 
 local function CheckObjectiveCompletion()
@@ -104,24 +87,27 @@ end)
 
 -- Toggle UI
 local function ToggleUI()
-    isUIOpen = not isUIOpen
-    SetNuiFocus(isUIOpen, isUIOpen)
-    
-    if isUIOpen then
-        -- Get missions and districts data
-        local missions = exports['dz']:GetMissions()
-        local districts = exports['dz']:GetDistricts()
-        
-        -- Send data to UI
-        SendNUIMessage({
-            type = 'showUI',
-            missions = missions,
-            districts = districts
-        })
+    if not isUIOpen then
+        -- Get data from server
+        QBX.Functions.TriggerCallback('dz:server:getUIData', function(data)
+            if data then
+                -- Send data to UI
+                SendNUIMessage({
+                    type = 'showUI',
+                    missions = data.missions,
+                    districts = data.districts,
+                    factions = data.factions
+                })
+                SetNuiFocus(true, true)
+                isUIOpen = true
+            end
+        end)
     else
         SendNUIMessage({
             type = 'hideUI'
         })
+        SetNuiFocus(false, false)
+        isUIOpen = false
     end
 end
 
@@ -147,8 +133,34 @@ RegisterKeyMapping('+openMissionMenu', 'Open Mission Menu', 'keyboard', 'F5')
 -- Event handlers
 RegisterNetEvent('dz:client:initialize')
 AddEventHandler('dz:client:initialize', function(data)
-    -- Initialize client state
     Utils.PrintDebug('Client initialized')
+end)
+
+RegisterNetEvent('dz:client:missionStarted')
+AddEventHandler('dz:client:missionStarted', function(mission)
+    currentMission = mission
+    CreateMissionBlip(mission)
+    QBX.Functions.Notify('New mission started: ' .. mission.title, 'primary')
+end)
+
+RegisterNetEvent('dz:client:missionUpdated')
+AddEventHandler('dz:client:missionUpdated', function(mission)
+    currentMission = mission
+    CreateMissionBlip(mission)
+end)
+
+RegisterNetEvent('dz:client:missionCompleted')
+AddEventHandler('dz:client:missionCompleted', function()
+    ClearMissionBlips()
+    currentMission = nil
+    QBX.Functions.Notify('Mission completed!', 'success')
+end)
+
+RegisterNetEvent('dz:client:missionFailed')
+AddEventHandler('dz:client:missionFailed', function()
+    ClearMissionBlips()
+    currentMission = nil
+    QBX.Functions.Notify('Mission failed!', 'error')
 end)
 
 -- Initialize on resource start
@@ -172,4 +184,7 @@ AddEventHandler('onResourceStop', function(resourceName)
     if isUIOpen then
         SetNuiFocus(false, false)
     end
+    
+    -- Clear blips
+    ClearMissionBlips()
 end) 

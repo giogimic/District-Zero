@@ -1,164 +1,91 @@
 # District Zero
 
-A comprehensive APB-style mission system for FiveM, built on the QBox framework.
+A dynamic mission and district control system for FiveM, built on QBX Core.
 
 ## Features
 
-### Current Implementation
+- Dynamic mission system with difficulty levels and rewards
+- District control system with influence tracking
+- Faction-based gameplay with ranks and salaries
+- Modern UI using DaisyUI and TailwindCSS
+- Full QBX Core integration
+- Database-driven with migrations
+- Type-safe with shared type definitions
 
-- **Framework Integration**
-  - QBox/QBX Core compatibility through bridge system
-  - ox_lib integration for UI components
-  - oxmysql for database operations
+## Project Structure
 
-- **Mission System**
-  - Dynamic mission generation and tracking
-  - Multiple objective types (collect, kill, deliver)
-  - Mission progress persistence
-  - Reward system with money and items
-  - Mission history tracking
-
-- **UI/UX**
-  - Clean mission interface
-  - Objective markers and blips
-  - Interactive text UI for objectives
-  - Consistent notification system
-
-- **Database**
-  - Mission definitions and requirements
-  - Progress tracking
-  - Completion history
-  - Flexible JSON storage for complex data
-
-### Roadmap
-
-1. **Mission System Enhancements**
-   - [ ] Mission chains and dependencies
-   - [ ] Dynamic mission generation based on player stats
-   - [ ] Mission cooldowns and time limits
-   - [ ] Mission difficulty scaling
-   - [ ] Mission reputation system
-
-2. **UI Improvements**
-   - [ ] Mission map integration
-   - [ ] Mission statistics and leaderboards
-   - [ ] Mission briefing interface
-   - [ ] Mission rewards preview
-   - [ ] Mission progress visualization
-
-3. **Framework Integration**
-   - [ ] Additional framework support (ESX)
-   - [ ] Better inventory integration
-   - [ ] Job/grade requirements
-   - [ ] Gang/faction integration
-   - [ ] Phone integration
-
-4. **Performance & Security**
-   - [ ] Mission state optimization
-   - [ ] Anti-cheat measures
-   - [ ] Rate limiting
-   - [ ] Mission validation
-   - [ ] Resource usage optimization
-
-5. **Additional Features**
-   - [ ] Mission sharing
-   - [ ] Mission contracts
-   - [ ] Mission events
-   - [ ] Mission achievements
-   - [ ] Mission rewards shop
+```
+district-zero/
+├── client/             # Client-side scripts
+├── config/            # Configuration files
+├── docs/              # Documentation and references
+├── server/            # Server-side scripts
+│   ├── database/      # Database initialization and migrations
+│   └── main/          # Main server logic
+├── shared/            # Shared code and types
+├── ui/                # UI files (DaisyUI + TailwindCSS)
+└── fxmanifest.lua     # Resource manifest
+```
 
 ## Installation
 
-1. Ensure you have the required dependencies:
-   - QBox/QBX Core
-   - ox_lib
-   - oxmysql
-
-2. Import the database schema:
-   ```sql
-   source sql/migrations/001_missions.sql
-   ```
-
-3. Add the resource to your server.cfg:
-   ```cfg
-   ensure district-zero
-   ```
-
-4. Configure the resource in `config.lua`
+1. Ensure you have QBX Core installed and configured
+2. Clone this repository into your resources folder
+3. Import the SQL files from `server/database/migrations`
+4. Add `ensure district-zero` to your server.cfg
+5. Restart your server
 
 ## Configuration
 
-The resource can be configured through `config.lua`:
+All configuration is done through `config/config.lua`:
 
-```lua
-Config = {}
-
--- Framework settings
-Config.Framework = 'qbx' -- or 'qb'
-Config.Debug = false
-
--- Mission settings
-Config.MissionTypes = {
-    collect = true,
-    kill = true,
-    deliver = true
-}
-
--- UI settings
-Config.UISystem = {
-    Notify = 'ox',
-    TextUI = 'ox'
-}
-
--- Blip settings
-Config.Blips = {
-    start = {
-        sprite = 1,
-        color = 5,
-        scale = 0.8
-    },
-    objective = {
-        sprite = 1,
-        color = 5,
-        scale = 0.8
-    }
-}
-```
+- Districts: Define control zones and influence areas
+- Missions: Configure available missions and rewards
+- Factions: Set up faction ranks and salaries
+- UI: Customize UI appearance and keybinds
 
 ## Usage
 
-### Commands
+- Press F5 to open the mission menu
+- Accept missions from the available list
+- Complete objectives to earn rewards
+- Gain influence in districts for your faction
+- Progress through faction ranks
 
-- `/missions` - Open the mission menu
+## Development
 
-### Events
+### Prerequisites
 
-#### Client Events
-- `dz:showMission` - Show mission UI
-- `dz:updateMission` - Update mission progress
-- `dz:completeMission` - Complete mission
-- `dz:failMission` - Fail mission
+- FiveM Server
+- QBX Core
+- MySQL/MariaDB
 
-#### Server Events
-- `dz:requestMissions` - Request available missions
-- `dz:acceptMission` - Accept a mission
-- `dz:completeObjective` - Complete an objective
+### Building
+
+No build step required - the UI uses CDN-hosted DaisyUI and TailwindCSS.
+
+### Testing
+
+1. Start your FiveM server
+2. Join the server
+3. Use the mission menu (F5)
+4. Test mission acceptance and completion
+5. Verify district influence changes
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 3. Commit your changes
 4. Push to the branch
 5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Acknowledgments
 
-- QBox Framework
-- ox_lib
-- oxmysql
-- FiveM Community
+- QBX Core team for the framework
+- DaisyUI for the UI components
+- TailwindCSS for the styling

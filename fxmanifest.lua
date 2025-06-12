@@ -8,7 +8,7 @@ lua54 'yes'
 
 name 'district-zero'
 author 'District Zero Team'
-description 'District Zero - APB-style mission system for FiveM'
+description 'Dynamic mission and district control system for FiveM'
 version '1.0.0'
 
 use_experimental_fxv2_oal 'yes'
@@ -17,12 +17,15 @@ use_experimental_fxv2_oal 'yes'
 dependencies {
     'ox_lib',
     'oxmysql',
-    'qb-core'
+    'qbx_core'
 }
 
 -- Shared Scripts (Load order matters)
 shared_scripts {
     '@ox_lib/init.lua',
+    '@qbx_core/shared/locale.lua',
+    'shared/types.lua',
+    'config/config.lua',
     'bridge/loader.lua',
     'shared/*.lua'
 }
@@ -30,21 +33,31 @@ shared_scripts {
 -- Client Scripts
 client_scripts {
     'bridge/client/*.lua',
-    'client/*.lua'
+    'client/main.lua',
+    'client/districts.lua',
+    'client/missions.lua',
+    'client/factions.lua',
+    'client/ui.lua'
 }
 
 -- Server Scripts (Load order matters)
 server_scripts {
+    '@oxmysql/lib/MySQL.lua',
     'bridge/server/*.lua',
     'server/database/init.lua',  -- Load database first
-    'server/main/*.lua',         -- Then main scripts
+    'server/database/migrations/*.sql',
+    'server/main.lua',         -- Then main scripts
+    'server/districts.lua',
+    'server/missions.lua',
+    'server/factions.lua',
     'server/*.lua'               -- Then other server scripts
 }
 
 -- UI Files
-ui_page 'ui/dist/index.html'
+ui_page 'ui/index.html'
 
 files {
+    'ui/index.html',
     'ui/dist/index.html',
     'ui/dist/assets/*.js',
     'ui/dist/assets/*.css',
