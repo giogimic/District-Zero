@@ -1,119 +1,45 @@
--- District Zero Database Handler
-local QBX = exports['qbx_core']:GetCore()
+-- District Zero Database
+-- Version: 1.0.0
+
+local QBX = exports['qbx_core']:GetSharedObject()
 local Utils = require 'shared/utils'
 
--- Database Configuration
-local Config = {
-    poolSize = 5,
-    timeout = 5000,
-    retries = 3
-}
-
--- Connection Pool
-local pool = {}
-
--- Initialize Pool
-local function InitializePool()
-    for i = 1, Config.poolSize do
-        pool[i] = {
-            inUse = false,
-            lastUsed = 0
-        }
-    end
+-- Initialize database
+local function InitializeDatabase()
+    Utils.PrintDebug('Initializing database...')
+    
+    -- Create tables if they don't exist
+    MySQL.query([[
+        CREATE TABLE IF NOT EXISTS dz_districts (
+            id VARCHAR(50) PRIMARY KEY,
+            name VARCHAR(100) NOT NULL,
+            influence_pvp INT DEFAULT 0,
+            influence_pve INT DEFAULT 0,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ]])
+    
+    Utils.PrintDebug('Database initialized successfully')
 end
 
--- Get Connection
-local function GetConnection()
-    for i = 1, Config.poolSize do
-        if not pool[i].inUse then
-            pool[i].inUse = true
-            pool[i].lastUsed = os.time()
-            return i
-        end
-    end
-    return nil
+-- Get district data
+local function GetDistrictData(districtId)
+    local result = MySQL.query.await('SELECT * FROM dz_districts WHERE id = ?', {districtId})
+    return result[1]
 end
 
--- Release Connection
-local function ReleaseConnection(id)
-    if pool[id] then
-        pool[id].inUse = false
-    end
+-- Update district influence
+local function UpdateDistrictInfluence(districtId, team, amount)
+    local column = team == 'pvp' and 'influence_pvp' or 'influence_pve'
+    MySQL.update('UPDATE dz_districts SET ' .. column .. ' = ' .. column .. ' + ?, last_updated = CURRENT_TIMESTAMP WHERE id = ?', {amount, districtId})
 end
 
--- Execute Query with Retry
-local function ExecuteQuery(query, params, retries)
-    retries = retries or Config.retries
-    local connId = GetConnection()
-    
-    if not connId then
-        Utils.HandleError('No available database connections', 'ExecuteQuery')
-        return nil
-    end
-    
-    local success, result = pcall(function()
-        return MySQL.query.await(query, params)
-    end)
-    
-    ReleaseConnection(connId)
-    
-    if not success then
-        if retries > 0 then
-            Wait(1000)
-            return ExecuteQuery(query, params, retries - 1)
-        end
-        Utils.HandleError('Database query failed: ' .. tostring(result), 'ExecuteQuery')
-        return nil
-    end
-    
-    return result
-end
-
--- Execute Transaction
-local function ExecuteTransaction(queries)
-    local connId = GetConnection()
-    
-    if not connId then
-        Utils.HandleError('No available database connections', 'ExecuteTransaction')
-        return false
-    end
-    
-    local success = pcall(function()
-        MySQL.transaction.await(queries)
-    end)
-    
-    ReleaseConnection(connId)
-    
-    if not success then
-        Utils.HandleError('Transaction failed', 'ExecuteTransaction')
-        return false
-    end
-    
-    return true
-end
-
--- Initialize
-CreateThread(function()
-    InitializePool()
+-- Initialize on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    InitializeDatabase()
 end)
 
--- Exports
-exports('Query', ExecuteQuery)
-exports('Transaction', ExecuteTransaction)
-
--- Event Handlers
-RegisterNetEvent('dz:database:query')
-AddEventHandler('dz:database:query', function(query, params, cb)
-    if not query then return end
-    
-    local result = ExecuteQuery(query, params)
-    if cb then cb(result) end
-end)
-
-RegisterNetEvent('dz:database:transaction')
-AddEventHandler('dz:database:transaction', function(queries, cb)
-    if not queries then return end
-    
-    local success = ExecuteTransaction(queries)
-    if cb then cb(success) end
-end) 
+-- Export functions
+exports('GetDistrictData', GetDistrictData)
+exports('UpdateDistrictInfluence', UpdateDistrictInfluence) 
