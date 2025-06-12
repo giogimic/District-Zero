@@ -8,12 +8,31 @@ local districtInfluence = {}
 
 -- Initialize districts
 local function InitializeDistricts()
-    for _, district in pairs(Config.Districts) do
-        districtInfluence[district.id] = {
-            pvp = 0,
-            pve = 0
+    Utils.PrintDebug('Initializing districts...')
+    
+    -- Ensure Config.Districts exists
+    if not Config or not Config.Districts then
+        Utils.PrintDebug('Warning: Config.Districts not found, using defaults')
+        Config = Config or {}
+        Config.Districts = {
+            downtown = {
+                id = 'downtown',
+                name = 'Downtown',
+                influence_pvp = 0,
+                influence_pve = 0
+            }
         }
     end
+    
+    -- Initialize district data
+    for id, district in pairs(Config.Districts) do
+        districtInfluence[id] = {
+            pvp = district.influence_pvp or 0,
+            pve = district.influence_pve or 0
+        }
+    end
+    
+    Utils.PrintDebug('Districts initialized successfully')
 end
 
 -- Get district data
@@ -49,4 +68,5 @@ end)
 
 -- Export functions
 exports('GetDistrictData', GetDistrictData)
-exports('UpdateDistrictInfluence', UpdateDistrictInfluence) 
+exports('UpdateDistrictInfluence', UpdateDistrictInfluence)
+exports('InitializeDistricts', InitializeDistricts) 

@@ -1,9 +1,7 @@
 -- Server-side main file for District Zero
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCore()
 local Utils = require 'shared/utils'
-local Events = require 'shared/events'
 
 -- State management
 local activeMissions = {}
@@ -27,7 +25,7 @@ end
 
 -- Get available missions for player
 local function GetAvailableMissions(source, districtId)
-    local player = QBX.Functions.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return {} end
 
     local availableMissions = {}
@@ -50,7 +48,7 @@ end
 
 -- Accept mission
 local function AcceptMission(source, missionId)
-    local player = QBX.Functions.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return end
 
     if not Config or not Config.Missions then
@@ -67,7 +65,7 @@ local function AcceptMission(source, missionId)
     end
 
     if not mission then
-        QBX.Functions.Notify(source, 'Mission not found', 'error')
+        exports.qbx_core:Notify(source, 'Mission not found', 'error')
         return
     end
 
@@ -94,13 +92,13 @@ local function AcceptMission(source, missionId)
     end
 
     if not inDistrict then
-        QBX.Functions.Notify(source, 'You must be in the mission district to accept this mission', 'error')
+        exports.qbx_core:Notify(source, 'You must be in the mission district to accept this mission', 'error')
         return
     end
 
     -- Check if player already has an active mission
     if activeMissions[source] then
-        QBX.Functions.Notify(source, 'You already have an active mission', 'error')
+        exports.qbx_core:Notify(source, 'You already have an active mission', 'error')
         return
     end
 
@@ -116,23 +114,23 @@ local function AcceptMission(source, missionId)
 
     -- Send mission data to client
     TriggerClientEvent('dz:client:missionStarted', source, activeMissions[source])
-    QBX.Functions.Notify(source, 'Mission accepted: ' .. mission.title, 'success')
+    exports.qbx_core:Notify(source, 'Mission accepted: ' .. mission.title, 'success')
 end
 
 -- Complete objective
 local function CompleteObjective(source, missionId, objectiveId)
-    local player = QBX.Functions.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return end
 
     local mission = activeMissions[source]
     if not mission or mission.id ~= missionId then
-        QBX.Functions.Notify(source, 'No active mission found', 'error')
+        exports.qbx_core:Notify(source, 'No active mission found', 'error')
         return
     end
 
     local objective = mission.objectives[objectiveId]
     if not objective then
-        QBX.Functions.Notify(source, 'Invalid objective', 'error')
+        exports.qbx_core:Notify(source, 'Invalid objective', 'error')
         return
     end
 
@@ -163,7 +161,7 @@ local function CompleteObjective(source, missionId, objectiveId)
         -- Complete mission
         activeMissions[source] = nil
         TriggerClientEvent('dz:client:missionCompleted', source)
-        QBX.Functions.Notify(source, 'Mission completed!', 'success')
+        exports.qbx_core:Notify(source, 'Mission completed!', 'success')
     else
         -- Update mission progress
         TriggerClientEvent('dz:client:missionUpdated', source, mission)
@@ -173,18 +171,18 @@ end
 -- Team selection
 local function SelectTeam(source, team)
     if team ~= 'pvp' and team ~= 'pve' then
-        QBX.Functions.Notify(source, 'Invalid team selection', 'error')
+        exports.qbx_core:Notify(source, 'Invalid team selection', 'error')
         return
     end
 
     playerTeams[source] = team
-    QBX.Functions.Notify(source, 'Joined ' .. Config.Teams[team].name, 'success')
+    exports.qbx_core:Notify(source, 'Joined ' .. Config.Teams[team].name, 'success')
 end
 
 -- Event handlers
 RegisterNetEvent('dz:server:getUIData', function()
     local source = source
-    local player = QBX.Functions.GetPlayer(source)
+    local player = exports.qbx_core:GetPlayer(source)
     if not player then return end
 
     local playerCoords = GetEntityCoords(GetPlayerPed(source))
@@ -243,4 +241,40 @@ end)
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
     InitializeDistricts()
+end)
+
+-- Initialize resource
+local function Initialize()
+    Utils.PrintDebug('Initializing District Zero...')
+    
+    -- Initialize submodules
+    exports['District-Zero']:InitializeDistricts()
+    exports['District-Zero']:InitializeMissions()
+    exports['District-Zero']:InitializeTeams()
+    exports['District-Zero']:InitializeFactions()
+    
+    Utils.PrintDebug('District Zero initialized successfully')
+end
+
+-- Event handlers
+RegisterNetEvent('District-Zero:server:requestData')
+AddEventHandler('District-Zero:server:requestData', function(cb)
+    local source = source
+    local player = exports.qbx_core:GetPlayer(source)
+    if not player then return end
+    
+    local data = {
+        districts = exports['District-Zero']:GetAllDistricts(),
+        missions = exports['District-Zero']:GetAvailableMissions(),
+        team = exports['District-Zero']:GetPlayerTeam(source),
+        faction = player.PlayerData.metadata.faction
+    }
+    
+    cb(data)
+end)
+
+-- Initialize on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    Initialize()
 end) 
