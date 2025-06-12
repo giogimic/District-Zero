@@ -1,7 +1,7 @@
 -- District Zero Missions Server Module
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports.qbx_core:GetCoreObject()
 local Utils = require 'shared/utils'
 
 -- State
@@ -49,7 +49,7 @@ local function CompleteMission(playerId, success)
     
     -- Award influence
     if success then
-        exports['dz']:UpdateDistrictInfluence(mission.district, 'pve', mission.reward)
+        exports['District-Zero']:UpdateDistrictInfluence(mission.district, 'pve', mission.reward)
     end
     
     -- Clear mission

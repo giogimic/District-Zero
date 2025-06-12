@@ -1,7 +1,7 @@
 -- District Zero Database
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetSharedObject()
+local QBX = exports.qbx_core:GetCoreObject()
 local Utils = require 'shared/utils'
 
 -- Initialize database
