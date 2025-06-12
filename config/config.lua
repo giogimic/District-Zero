@@ -1,76 +1,204 @@
+-- District Zero Configuration
+-- Version: 1.0.0
+
 Config = {}
 
 -- Core Settings
 Config.Debug = true
 Config.Locale = 'en'
 
--- Districts Configuration
+-- District Configuration
 Config.Districts = {
     {
         id = 'downtown',
-        name = 'Downtown',
-        description = 'The heart of the city',
-        owner = 'neutral',
-        influence = 0,
+        name = 'Downtown Los Santos',
+        description = 'The heart of Los Santos, featuring the Maze Bank Tower and surrounding financial district',
         blip = {
             sprite = 1,
             color = 0,
             scale = 0.8,
-            coords = vector3(-200.0, -800.0, 30.0)
+            coords = vector3(-75.0, -818.0, 243.0) -- Maze Bank Tower
         },
         zones = {
             {
-                name = 'Downtown Core',
-                coords = vector3(-200.0, -800.0, 30.0),
-                radius = 200.0,
+                name = 'Financial District',
+                coords = vector3(-75.0, -818.0, 243.0),
+                radius = 300.0,
                 isSafeZone = false
             }
         },
         controlPoints = {
             {
-                name = 'City Hall',
-                coords = vector3(-200.0, -800.0, 30.0),
+                name = 'Maze Bank Tower',
+                coords = vector3(-75.0, -818.0, 243.0),
                 radius = 50.0,
                 influence = 25
             },
             {
-                name = 'Financial District',
-                coords = vector3(-150.0, -750.0, 30.0),
+                name = 'Lombank Building',
+                coords = vector3(-158.0, -565.0, 34.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Arcadius Center',
+                coords = vector3(-141.0, -620.0, 168.0),
                 radius = 50.0,
                 influence = 25
             }
         }
     },
     {
-        id = 'industrial',
-        name = 'Industrial Zone',
-        description = 'The industrial heartland',
-        owner = 'neutral',
-        influence = 0,
+        id = 'vinewood',
+        name = 'Vinewood',
+        description = 'The entertainment capital of Los Santos, home to the rich and famous',
         blip = {
             sprite = 1,
             color = 0,
             scale = 0.8,
-            coords = vector3(800.0, -1200.0, 30.0)
+            coords = vector3(-300.0, 100.0, 66.0) -- Vinewood Sign
         },
         zones = {
             {
-                name = 'Industrial Core',
-                coords = vector3(800.0, -1200.0, 30.0),
-                radius = 200.0,
+                name = 'Vinewood Hills',
+                coords = vector3(-300.0, 100.0, 66.0),
+                radius = 400.0,
                 isSafeZone = false
             }
         },
         controlPoints = {
             {
-                name = 'Factory',
-                coords = vector3(800.0, -1200.0, 30.0),
+                name = 'Vinewood Sign',
+                coords = vector3(-300.0, 100.0, 66.0),
                 radius = 50.0,
                 influence = 25
             },
             {
-                name = 'Warehouse',
-                coords = vector3(850.0, -1150.0, 30.0),
+                name = 'Galileo Observatory',
+                coords = vector3(-420.0, 1070.0, 325.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Vinewood Bowl',
+                coords = vector3(-1600.0, -300.0, 48.0),
+                radius = 50.0,
+                influence = 25
+            }
+        }
+    },
+    {
+        id = 'port',
+        name = 'Los Santos Port',
+        description = 'The industrial heart of Los Santos, featuring the massive shipping port',
+        blip = {
+            sprite = 1,
+            color = 0,
+            scale = 0.8,
+            coords = vector3(1000.0, -3000.0, 5.0) -- Port Center
+        },
+        zones = {
+            {
+                name = 'Port Area',
+                coords = vector3(1000.0, -3000.0, 5.0),
+                radius = 500.0,
+                isSafeZone = false
+            }
+        },
+        controlPoints = {
+            {
+                name = 'Container Yard',
+                coords = vector3(1000.0, -3000.0, 5.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Crane Control',
+                coords = vector3(1200.0, -3100.0, 5.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Shipping Office',
+                coords = vector3(900.0, -2900.0, 5.0),
+                radius = 50.0,
+                influence = 25
+            }
+        }
+    },
+    {
+        id = 'airport',
+        name = 'Los Santos International',
+        description = 'The main airport of Los Santos, a hub of activity and commerce',
+        blip = {
+            sprite = 1,
+            color = 0,
+            scale = 0.8,
+            coords = vector3(-1000.0, -3000.0, 13.0) -- Airport Center
+        },
+        zones = {
+            {
+                name = 'Airport Zone',
+                coords = vector3(-1000.0, -3000.0, 13.0),
+                radius = 400.0,
+                isSafeZone = false
+            }
+        },
+        controlPoints = {
+            {
+                name = 'Main Terminal',
+                coords = vector3(-1000.0, -3000.0, 13.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Control Tower',
+                coords = vector3(-1100.0, -2900.0, 13.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Hangar Complex',
+                coords = vector3(-900.0, -3100.0, 13.0),
+                radius = 50.0,
+                influence = 25
+            }
+        }
+    },
+    {
+        id = 'sandy',
+        name = 'Sandy Shores',
+        description = 'A desert town with a mix of industrial and residential areas',
+        blip = {
+            sprite = 1,
+            color = 0,
+            scale = 0.8,
+            coords = vector3(2000.0, 3700.0, 32.0) -- Sandy Shores Center
+        },
+        zones = {
+            {
+                name = 'Sandy Shores',
+                coords = vector3(2000.0, 3700.0, 32.0),
+                radius = 300.0,
+                isSafeZone = false
+            }
+        },
+        controlPoints = {
+            {
+                name = 'Trevor\'s Airfield',
+                coords = vector3(2000.0, 3700.0, 32.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Sandy Shores Medical',
+                coords = vector3(1850.0, 3650.0, 32.0),
+                radius = 50.0,
+                influence = 25
+            },
+            {
+                name = 'Gas Station',
+                coords = vector3(1950.0, 3750.0, 32.0),
                 radius = 50.0,
                 influence = 25
             }
@@ -78,39 +206,170 @@ Config.Districts = {
     }
 }
 
--- Missions Configuration
+-- Mission Configuration
 Config.Missions = {
-    -- PvP Missions
+    -- Downtown Missions
     {
-        id = 'pvp_1',
-        title = 'Territory Control',
-        description = 'Capture and hold control points',
+        id = 'downtown_pvp_1',
+        title = 'Financial District Control',
+        description = 'Capture and hold key financial buildings',
         type = 'pvp',
-        reward = 2000,
+        reward = 2500,
         district = 'downtown',
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
-                count = 1,
-                timeLimit = 300
+                count = 2,
+                timeLimit = 600
             }
         }
     },
-    -- PvE Missions
     {
-        id = 'pve_1',
-        title = 'Clear the Area',
-        description = 'Eliminate hostile NPCs',
+        id = 'downtown_pve_1',
+        title = 'Corporate Espionage',
+        description = 'Eliminate corporate security forces',
         type = 'pve',
-        reward = 1500,
-        district = 'industrial',
+        reward = 2000,
+        district = 'downtown',
+        objectives = {
+            {
+                type = 'eliminate',
+                target = 'npc',
+                count = 8,
+                timeLimit = 900
+            }
+        }
+    },
+    -- Vinewood Missions
+    {
+        id = 'vinewood_pvp_1',
+        title = 'Vinewood Showdown',
+        description = 'Control key entertainment venues',
+        type = 'pvp',
+        reward = 3000,
+        district = 'vinewood',
+        objectives = {
+            {
+                type = 'capture',
+                target = 'control_point',
+                count = 2,
+                timeLimit = 600
+            }
+        }
+    },
+    {
+        id = 'vinewood_pve_1',
+        title = 'Celebrity Protection',
+        description = 'Defend VIPs from paparazzi',
+        type = 'pve',
+        reward = 2500,
+        district = 'vinewood',
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 10,
+                timeLimit = 900
+            }
+        }
+    },
+    -- Port Missions
+    {
+        id = 'port_pvp_1',
+        title = 'Port Authority',
+        description = 'Control shipping operations',
+        type = 'pvp',
+        reward = 2000,
+        district = 'port',
+        objectives = {
+            {
+                type = 'capture',
+                target = 'control_point',
+                count = 2,
                 timeLimit = 600
+            }
+        }
+    },
+    {
+        id = 'port_pve_1',
+        title = 'Smuggler\'s Den',
+        description = 'Clear out smuggling operations',
+        type = 'pve',
+        reward = 2000,
+        district = 'port',
+        objectives = {
+            {
+                type = 'eliminate',
+                target = 'npc',
+                count = 8,
+                timeLimit = 900
+            }
+        }
+    },
+    -- Airport Missions
+    {
+        id = 'airport_pvp_1',
+        title = 'Airport Control',
+        description = 'Secure key airport facilities',
+        type = 'pvp',
+        reward = 2500,
+        district = 'airport',
+        objectives = {
+            {
+                type = 'capture',
+                target = 'control_point',
+                count = 2,
+                timeLimit = 600
+            }
+        }
+    },
+    {
+        id = 'airport_pve_1',
+        title = 'Runway Security',
+        description = 'Protect airport operations',
+        type = 'pve',
+        reward = 2000,
+        district = 'airport',
+        objectives = {
+            {
+                type = 'eliminate',
+                target = 'npc',
+                count = 8,
+                timeLimit = 900
+            }
+        }
+    },
+    -- Sandy Shores Missions
+    {
+        id = 'sandy_pvp_1',
+        title = 'Desert Control',
+        description = 'Control key desert locations',
+        type = 'pvp',
+        reward = 2000,
+        district = 'sandy',
+        objectives = {
+            {
+                type = 'capture',
+                target = 'control_point',
+                count = 2,
+                timeLimit = 600
+            }
+        }
+    },
+    {
+        id = 'sandy_pve_1',
+        title = 'Desert Raiders',
+        description = 'Clear out desert bandits',
+        type = 'pve',
+        reward = 2000,
+        district = 'sandy',
+        objectives = {
+            {
+                type = 'eliminate',
+                target = 'npc',
+                count = 8,
+                timeLimit = 900
             }
         }
     }
@@ -140,22 +399,49 @@ Config.Teams = {
 
 -- UI Configuration
 Config.UI = {
-    keybind = 'F5',
-    scale = 1.0,
-    theme = 'dark',
-    notifications = {
-        duration = 5000,
-        position = 'top-right'
-    }
+    defaultKey = 'F5',
+    menuTitle = 'District Zero',
+    menuSubtitle = 'Mission Control',
+    menuPosition = 'right',
+    menuWidth = '400px'
+}
+
+-- Reward Configuration
+Config.Rewards = {
+    baseMissionReward = 1000,
+    controlPointBonus = 500,
+    districtControlBonus = 2000,
+    teamBonus = 1.5 -- Multiplier for team-based rewards
+}
+
+-- Time Configuration
+Config.Times = {
+    missionTimeout = 1800, -- 30 minutes
+    controlPointCaptureTime = 60, -- 1 minute
+    districtUpdateInterval = 300 -- 5 minutes
+}
+
+-- Debug Configuration
+Config.Debug = {
+    enabled = true,
+    logLevel = 'info', -- 'debug', 'info', 'warn', 'error'
+    showBlips = true,
+    showZones = true
 }
 
 -- Database Configuration
 Config.Database = {
-    tablePrefix = 'dz_',
-    migrations = {
-        enabled = true,
-        path = 'server/database/migrations'
-    }
+    updateInterval = 60, -- seconds
+    saveOnMissionComplete = true,
+    saveOnDistrictUpdate = true
+}
+
+-- Validation Configuration
+Config.Validation = {
+    validateDistricts = true,
+    validateMissions = true,
+    validateTeams = true,
+    strictMode = true
 }
 
 return Config 
