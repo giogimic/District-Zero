@@ -1,4 +1,6 @@
 -- Factions Server Handler
+-- Version: 1.0.0
+
 local QBX = exports['qbx_core']:GetCore()
 local factions = {}
 local factionMembers = {}
@@ -202,9 +204,8 @@ end, 'admin')
 
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
-    if resourceName == GetCurrentResourceName() then
-        InitializeFactions()
-    end
+    if GetCurrentResourceName() ~= resourceName then return end
+    InitializeFactions()
 end)
 
 -- Exports

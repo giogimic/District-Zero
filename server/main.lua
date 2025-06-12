@@ -1,5 +1,7 @@
 -- Server-side main file for District Zero
-local QBX = exports['qb-core']:GetCoreObject()
+-- Version: 1.0.0
+
+local QBX = exports['qbx_core']:GetCore()
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -10,6 +12,11 @@ local districtInfluence = {}
 
 -- Initialize districts
 local function InitializeDistricts()
+    if not Config or not Config.Districts then
+        Utils.PrintDebug('[ERROR] Config.Districts not loaded')
+        return
+    end
+    
     for _, district in pairs(Config.Districts) do
         districtInfluence[district.id] = {
             pvp = 0,
@@ -24,6 +31,11 @@ local function GetAvailableMissions(source, districtId)
     if not player then return {} end
 
     local availableMissions = {}
+    if not Config or not Config.Missions then
+        Utils.PrintDebug('[ERROR] Config.Missions not loaded')
+        return availableMissions
+    end
+
     for _, mission in pairs(Config.Missions) do
         if mission.district == districtId then
             -- Check if mission type matches player's team
@@ -41,6 +53,11 @@ local function AcceptMission(source, missionId)
     local player = QBX.Functions.GetPlayer(source)
     if not player then return end
 
+    if not Config or not Config.Missions then
+        Utils.PrintDebug('[ERROR] Config.Missions not loaded')
+        return
+    end
+
     local mission = nil
     for _, m in pairs(Config.Missions) do
         if m.id == missionId then
@@ -57,6 +74,12 @@ local function AcceptMission(source, missionId)
     -- Check if player is in the correct district
     local playerCoords = GetEntityCoords(GetPlayerPed(source))
     local inDistrict = false
+    
+    if not Config or not Config.Districts then
+        Utils.PrintDebug('[ERROR] Config.Districts not loaded')
+        return
+    end
+
     for _, district in pairs(Config.Districts) do
         if district.id == mission.district then
             for _, zone in pairs(district.zones) do
@@ -167,6 +190,11 @@ RegisterNetEvent('dz:server:getUIData', function()
     local playerCoords = GetEntityCoords(GetPlayerPed(source))
     local currentDistrict = nil
 
+    if not Config or not Config.Districts then
+        Utils.PrintDebug('[ERROR] Config.Districts not loaded')
+        return
+    end
+
     -- Find current district
     for _, district in pairs(Config.Districts) do
         for _, zone in pairs(district.zones) do
@@ -214,7 +242,5 @@ end)
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
     if GetCurrentResourceName() ~= resourceName then return end
-    
     InitializeDistricts()
-    Utils.PrintDebug('Server initialized')
 end) 
