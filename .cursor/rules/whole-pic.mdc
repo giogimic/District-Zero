@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Whole‑Picture Verification
+
+Cross‑check new outputs against the existing architecture diagram (real or inferred).
+
+
+Confirm that changes don’t break CI runs, introduce configuration drift, or require unplanned infrastructure updates.

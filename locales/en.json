@@ -1,8 +1,8 @@
 {
   "menu": {
     "title": "District Zero",
-    "factions": "Factions",
-    "factions_desc": "Manage factions and members",
+    "teams": "Teams",
+    "teams_desc": "Select your team for district missions",
     "events": "Events",
     "events_desc": "View and manage district events",
     "districts": "Districts",
@@ -10,22 +10,18 @@
     "close": "Close",
     "keybind": "Open District Zero Menu"
   },
-  "factions": {
-    "title": "Factions",
-    "create": "Create Faction",
-    "edit": "Edit Faction",
-    "name": "Name",
-    "description": "Description",
-    "members": "Members",
-    "level": "Level",
-    "confirmDelete": "Are you sure you want to delete this faction?",
-    "join": "Join Faction",
-    "leave": "Leave Faction",
-    "noFactions": "No factions available",
-    "noMembers": "No members in this faction",
-    "memberCount": "Member Count",
-    "influence": "Influence",
-    "resources": "Resources"
+  "teams": {
+    "title": "Teams",
+    "select": "Select Team",
+    "pvp": "PvP Team",
+    "pve": "PvE Team",
+    "pvp_desc": "Fight against other players in district conflicts",
+    "pve_desc": "Complete missions against AI enemies",
+    "current": "Current Team",
+    "noTeam": "No team selected",
+    "selectPrompt": "Select a team to access missions in this district",
+    "confirmSwitch": "Are you sure you want to switch teams?",
+    "switchCooldown": "You must wait before switching teams again"
   },
   "events": {
     "title": "District Events",
@@ -62,9 +58,9 @@
     "name": "Name",
     "description": "Description",
     "influence": "Influence",
-    "controllingFaction": "Controlling Faction",
+    "controllingTeam": "Dominant Team",
     "noDistricts": "No districts available",
-    "noControl": "No faction in control",
+    "noControl": "No team in control",
     "influenceGain": "Influence Gain",
     "influenceLoss": "Influence Loss"
   },

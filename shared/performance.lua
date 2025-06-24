@@ -1,5 +1,5 @@
 -- District Zero Performance Handler
-local Utils = require 'shared/utils'
+-- Version: 1.0.0
 
 -- Performance Configuration
 local Config = {
@@ -7,7 +7,7 @@ local Config = {
         default = 1000, -- Default throttle time in ms
         events = {
             ['dz:district:update'] = 5000,
-            ['dz:faction:update'] = 5000,
+            ['dz:team:update'] = 5000,
             ['dz:mission:update'] = 3000
         }
     },
@@ -16,6 +16,15 @@ local Config = {
         maxSize = 1000 -- Maximum cache size
     }
 }
+
+-- Helper function to get current timestamp
+local function GetCurrentTimestamp()
+    if IsDuplicityVersion() then -- Server-side
+        return os.time()
+    else -- Client-side
+        return GetGameTimer() / 1000 -- Convert to seconds
+    end
+end
 
 -- Event Throttling
 local ThrottledEvents = {}
@@ -60,13 +69,13 @@ local function SetCache(key, value, ttl)
     end
     
     Cache.data[key] = value
-    Cache.timestamps[key] = os.time() + ttl
+    Cache.timestamps[key] = GetCurrentTimestamp() + ttl
 end
 
 local function GetCache(key)
     if not Cache.data[key] then return nil end
     
-    if os.time() > Cache.timestamps[key] then
+    if GetCurrentTimestamp() > Cache.timestamps[key] then
         Cache.data[key] = nil
         Cache.timestamps[key] = nil
         return nil

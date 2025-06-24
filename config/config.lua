@@ -413,6 +413,40 @@ Config.Times = {
     districtUpdateInterval = 300 -- 5 minutes
 }
 
+-- Safe Zones (outside districts)
+Config.SafeZones = {
+    {
+        name = 'Hospital',
+        coords = vector3(295.0, -580.0, 43.0),
+        radius = 100.0,
+        blip = {
+            sprite = 61,
+            color = 2,
+            scale = 0.6
+        }
+    },
+    {
+        name = 'Police Station',
+        coords = vector3(425.0, -980.0, 30.0),
+        radius = 150.0,
+        blip = {
+            sprite = 60,
+            color = 29,
+            scale = 0.6
+        }
+    },
+    {
+        name = 'Airport Terminal',
+        coords = vector3(-1042.0, -2746.0, 21.0),
+        radius = 200.0,
+        blip = {
+            sprite = 90,
+            color = 3,
+            scale = 0.6
+        }
+    }
+}
+
 -- Debug Configuration
 Config.Debug = {
     enabled = true,

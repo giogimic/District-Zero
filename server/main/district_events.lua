@@ -1,5 +1,5 @@
 -- District Zero District Events Handler
-local QBCore = exports['qb-core']:GetCoreObject()
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventCooldowns = {}
@@ -177,7 +177,7 @@ end
 RegisterNetEvent('district-zero:server:createEvent')
 AddEventHandler('district-zero:server:createEvent', function(data)
     local source = source
-    local player = QBCore.Functions.GetPlayer(source)
+    local player = QBX.Functions.GetPlayer(source)
     
     -- Check if player has permission
     if not player.PlayerData.metadata.admin then
@@ -202,7 +202,7 @@ end)
 RegisterNetEvent('district-zero:server:updateEvent')
 AddEventHandler('district-zero:server:updateEvent', function(data)
     local source = source
-    local player = QBCore.Functions.GetPlayer(source)
+    local player = QBX.Functions.GetPlayer(source)
     
     -- Check if player has permission
     if not player.PlayerData.metadata.admin then
@@ -227,7 +227,7 @@ end)
 RegisterNetEvent('district-zero:server:deleteEvent')
 AddEventHandler('district-zero:server:deleteEvent', function(eventId)
     local source = source
-    local player = QBCore.Functions.GetPlayer(source)
+    local player = QBX.Functions.GetPlayer(source)
     
     -- Check if player has permission
     if not player.PlayerData.metadata.admin then
@@ -249,7 +249,7 @@ end)
 RegisterNetEvent('district-zero:server:startEvent')
 AddEventHandler('district-zero:server:startEvent', function(eventId)
     local source = source
-    local player = QBCore.Functions.GetPlayer(source)
+    local player = QBX.Functions.GetPlayer(source)
     
     -- Check if player has permission
     if not player.PlayerData.metadata.admin then
@@ -270,7 +270,7 @@ end)
 RegisterNetEvent('district-zero:server:joinEvent')
 AddEventHandler('district-zero:server:joinEvent', function(eventId)
     local source = source
-    local player = QBCore.Functions.GetPlayer(source)
+    local player = QBX.Functions.GetPlayer(source)
     
     if not player then return end
     

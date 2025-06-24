@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+DevOps Alignment
+
+Ensure any new code or config integrates smoothly with build/test/deploy pipelines.
+
+
+Validate configuration changes against staging/production workflows; anticipate environment variables, secrets management, rollbacks, and monitoring hooks.

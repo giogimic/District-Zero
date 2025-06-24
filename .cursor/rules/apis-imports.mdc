@@ -1,0 +1,15 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Client‑side:
+
+Use browser globals (window, document), fetch/XHR, DOM APIs, client frameworks (React/Vue/Angular).
+- Never include require('fs'), database drivers, or server‑only modules.
+
+Server‑side:
+
+Use Node.js modules (fs, path), HTTP frameworks (Express/Koa), database connectors.
+
+- Never reference document, window, or browser‑only globals.

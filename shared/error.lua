@@ -1,6 +1,5 @@
 -- District Zero Error Handler
-local Utils = require 'shared/utils'
-local QBX = exports['qb-core']:GetCoreObject()
+-- Version: 1.0.0
 
 -- Error Types
 local ErrorTypes = {
@@ -12,13 +11,25 @@ local ErrorTypes = {
     UNKNOWN = 'UNKNOWN'
 }
 
+-- Simple logging function to avoid circular dependencies
+local function LogError(message, type, context)
+    local prefix = '[District Zero]'
+    if type then
+        prefix = prefix .. ' [' .. type .. ']'
+    end
+    if context then
+        prefix = prefix .. ' [' .. context .. ']'
+    end
+    print('^1' .. prefix .. ' ' .. tostring(message) .. '^7')
+end
+
 -- Error Handler
 local function HandleError(error, type, context)
     type = type or ErrorTypes.UNKNOWN
     context = context or 'Unknown'
     
     -- Log error
-    print(string.format('[District Zero] [%s] [%s] %s', type, context, error))
+    LogError(error, type, context)
     
     -- Notify client if applicable
     if IsDuplicityVersion() then
@@ -64,13 +75,34 @@ local function CheckPermission(source, permission)
     local hasPermission = false
     
     if IsDuplicityVersion() then
-        local Player = QBX.Functions.GetPlayer(source)
-        if Player then
-            hasPermission = Player.PlayerData.permission == permission
+        -- Try to get QBX player data
+        local success, result = pcall(function()
+            local QBX = exports['qbx_core']:GetCoreObject()
+            local Player = QBX.Functions.GetPlayer(source)
+            if Player then
+                return Player.PlayerData.permission == permission
+            end
+            return false
+        end)
+        
+        if success then
+            hasPermission = result
+        else
+            LogError('Failed to get QBX player data: ' .. tostring(result), 'PERMISSION', 'CheckPermission')
         end
     else
-        local PlayerData = QBX.Functions.GetPlayerData()
-        hasPermission = PlayerData.permission == permission
+        -- Client-side permission check
+        local success, result = pcall(function()
+            local QBX = exports['qbx_core']:GetCoreObject()
+            local PlayerData = QBX.Functions.GetPlayerData()
+            return PlayerData.permission == permission
+        end)
+        
+        if success then
+            hasPermission = result
+        else
+            LogError('Failed to get QBX player data: ' .. tostring(result), 'PERMISSION', 'CheckPermission')
+        end
     end
     
     if not hasPermission then

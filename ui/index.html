@@ -1,81 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>District Zero</title>
-    <link href="https://cdn.jsdelivr.net/npm/daisyui@3.9.4/dist/full.css" rel="stylesheet" type="text/css" />
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2/dist/tailwind.min.css" rel="stylesheet" type="text/css" />
-    <link href="./styles/main.css" rel="stylesheet" type="text/css" />
-</head>
-<body class="bg-transparent">
-    <div id="app" class="hidden">
-        <!-- Mission Menu -->
-        <div class="mission-menu glass-morphism">
-            <div class="menu-header">
-                <h1 class="text-2xl font-bold">District Zero</h1>
-                <p class="text-sm opacity-80">Mission Control</p>
-            </div>
-            
-            <!-- District Info -->
-            <div class="district-info">
-                <h2 class="text-xl font-semibold">Current District</h2>
-                <div class="district-stats">
-                    <div class="stat">
-                        <span class="stat-label">Influence</span>
-                        <span class="stat-value" id="district-influence">0%</span>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Control Points</span>
-                        <span class="stat-value" id="control-points">0/3</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mission List -->
-            <div class="mission-list">
-                <h2 class="text-xl font-semibold">Available Missions</h2>
-                <div id="mission-container" class="mission-container">
-                    <!-- Missions will be dynamically inserted here -->
-                </div>
-            </div>
-
-            <!-- Team Selection -->
-            <div class="team-selection">
-                <h2 class="text-xl font-semibold">Select Team</h2>
-                <div class="team-buttons">
-                    <button class="team-btn pvp" data-team="pvp">PvP Team</button>
-                    <button class="team-btn pve" data-team="pve">PvE Team</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Active Mission -->
-        <div class="active-mission glass-morphism hidden">
-            <div class="mission-header">
-                <h2 class="text-xl font-bold" id="mission-title">Mission Title</h2>
-                <p class="text-sm opacity-80" id="mission-description">Mission Description</p>
-            </div>
-            
-            <div class="mission-objectives">
-                <h3 class="text-lg font-semibold">Objectives</h3>
-                <div id="objectives-container">
-                    <!-- Objectives will be dynamically inserted here -->
-                </div>
-            </div>
-
-            <div class="mission-timer">
-                <span class="timer-label">Time Remaining</span>
-                <span class="timer-value" id="mission-timer">00:00</span>
-            </div>
-        </div>
-
-        <!-- Notifications -->
-        <div id="notification-container" class="notification-container">
-            <!-- Notifications will be dynamically inserted here -->
-        </div>
-    </div>
-
-    <script src="./js/main.js" type="module"></script>
-</body>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html> 

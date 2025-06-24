@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+After generation, list the affected files and DevOps artifacts.
+
+Prompt for a sanity check: “Do these changes align with our CI/CD processes and existing architecture?”
+
+
+Refine based on feedback before finalizing.

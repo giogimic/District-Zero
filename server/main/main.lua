@@ -147,23 +147,49 @@ function CheckMissionRequirements(Player, mission)
     return true
 end
 
--- UI Data Callback
+-- Get player's current district
+local function GetPlayerCurrentDistrict(source)
+    local playerCoords = GetEntityCoords(GetPlayerPed(source))
+    
+    for _, district in pairs(Config.Districts) do
+        for _, zone in pairs(district.zones) do
+            local distance = #(playerCoords - zone.coords)
+            if distance <= zone.radius and not zone.isSafeZone then
+                return district.id
+            end
+        end
+    end
+    
+    return nil
+end
+
+-- UI Data Callback (district and team-based)
 QBX.Functions.CreateCallback('dz:server:getUIData', function(source, cb)
     local Player = QBX.Functions.GetPlayer(source)
     if not Player then return cb(nil) end
     
-    -- Get available missions for player
+    -- Get player's current team and district
+    local playerTeam = exports['district_zero']:GetPlayerTeam(source)
+    local playerDistrict = GetPlayerCurrentDistrict(source)
+    
+    -- Get available missions for player in their current district
     local availableMissions = {}
-    for id, mission in pairs(State.missions) do
-        if CheckMissionRequirements(Player, mission) then
-            availableMissions[id] = mission
+    if playerDistrict and playerTeam then
+        for _, mission in pairs(Config.Missions) do
+            if mission.district == playerDistrict and mission.type == playerTeam then
+                if CheckMissionRequirements(Player, mission) then
+                    table.insert(availableMissions, mission)
+                end
+            end
         end
     end
     
     cb({
         missions = availableMissions,
-        districts = State.districts,
-        factions = State.factions
+        districts = Config.Districts,
+        teams = Config.Teams,
+        currentTeam = playerTeam,
+        currentDistrict = playerDistrict
     })
 end)
 

@@ -1,5 +1,6 @@
 -- shared/state.lua
 -- District Zero State Management
+-- Version: 1.0.0
 
 local State = {
     -- Client state
@@ -90,9 +91,6 @@ local function GetState(stateType)
 end
 
 -- District Zero State Handler
-
-local Utils = require 'shared/utils'
-local QBX = exports['qb-core']:GetCoreObject()
 
 -- State Registry
 local StateRegistry = {}

@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before generating code, determine whether this snippet must run in a client environment (browser, mobile UI, edge) or on the server (backend, API, database).
+
+
+If the prompt doesn’t specify, explicitly ask for clarification: “Should this code run client‑side (e.g. browser) or server‑side (e.g. Node/Express)?”

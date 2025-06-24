@@ -48,13 +48,12 @@
 ---@field timeLimit number
 ---@field completed boolean
 
--- Team types
+-- Team types (Simple PvP/PvE system)
 ---@class Team
 ---@field id string
 ---@field name string
 ---@field description string
 ---@field color string
----@field ranks {id: number, name: string, salary: number}[]
 ---@field blip TeamBlip
 
 ---@class TeamBlip
@@ -149,23 +148,21 @@ Types = {
         }
     },
 
-    Faction = {
+    Team = {
         id = 'string',
         name = 'string',
         description = 'string',
         color = 'string',
-        ranks = {
-            {
-                id = 'number',
-                name = 'string',
-                salary = 'number'
-            }
+        blip = {
+            sprite = 'number',
+            color = 'number',
+            scale = 'number'
         }
     },
 
     Player = {
         citizenid = 'string',
-        faction = 'string',
+        team = 'string',
         district = 'string',
         missions = 'table',
         abilities = 'table'

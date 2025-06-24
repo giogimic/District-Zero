@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Before writing any manifest (e.g. package.json, requirements.txt, pom.xml), query the official registry (npm, PyPI, Maven Central, etc.) for each dependency’s latest stable version

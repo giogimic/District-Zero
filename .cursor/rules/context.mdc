@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Context Gathering
+
+Identify existing patterns and conventions (naming, folder structure, branching strategy).
+
+
+Locate relevant infrastructure as code (e.g. Terraform, Dockerfiles, Kubernetes manifests) and CI/CD definitions (e.g. GitHub Actions, Jenkins pipelines).

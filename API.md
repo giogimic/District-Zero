@@ -10,7 +10,7 @@ District Zero is a dynamic territory control system for FiveM servers. This docu
 ```lua
 local playerData = exports['dz']:GetPlayerData()
 ```
-Returns the current player's data including missions, faction, and district information.
+Returns the current player's data including missions, team, and district information.
 
 ### Get Available Missions
 ```lua
@@ -24,11 +24,11 @@ local districts = exports['dz']:GetDistricts()
 ```
 Returns a table of all districts and their current state.
 
-### Get Factions
+### Get Teams
 ```lua
-local factions = exports['dz']:GetFactions()
+local teams = exports['dz']:GetTeams()
 ```
-Returns a table of all factions and their ranks.
+Returns a table of all teams (PvP/PvE configuration).
 
 ## Server Exports
 
@@ -50,11 +50,11 @@ local mission = exports['dz']:GetMission(missionId)
 ```
 Returns a mission's data by its ID.
 
-### Get Faction
+### Get Player Team
 ```lua
-local faction = exports['dz']:GetFaction(factionId)
+local team = exports['dz']:GetPlayerTeam(source)
 ```
-Returns a faction's data by its ID.
+Returns a player's current team assignment.
 
 ## Events
 
@@ -106,7 +106,7 @@ Returns a faction's data by its ID.
 
 #### Faction Events
 
-- `dz:faction:requestUpdate`
+- `dz:team:requestUpdate`
 
   - Requests faction data update
   - Parameters: None

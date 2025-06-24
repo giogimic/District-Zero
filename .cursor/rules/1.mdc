@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+egistry Selection:
+
+Map file type to registry:
+
+package.json → npm
+
+requirements.txt → PyPI
+
+pom.xml → Maven Central
+
+Automated Lookup:
+
+For every dependency name found in the prompt or project context, call the registry API (or HTML scrape as fallback) to retrieve the most recent non‑prerelease version.
+
+Exact Pinning:
+
+Replace any loose version specifier (e.g. ^, ~, or latest) with the exact version string returned by the registry (e.g. "lodash": "4.17.21" or numpy==1.25.1).
+
+Audit Comment:
+
+Insert a comment in the manifest noting the lookup date and source registry, for auditability:
+
+jsonc
+Copy
+Edit
+// Pinned on 2025‑06‑17 via npm registry lookup
+Enforce in Prompt Preamble:
+
+
+Prepend all code‑generation prompts with this rule so it’s applied consistently across every manifest file the AI writes.

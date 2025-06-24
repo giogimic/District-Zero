@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Enable ESLint configs that disallow server APIs in client bundles and vice versa (e.g. no-restricted-imports).

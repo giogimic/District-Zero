@@ -13,17 +13,21 @@ version '1.0.0'
 
 use_experimental_fxv2_oal 'yes'
 
--- Dependencies
+-- Dependencies (flexible for different QBX versions)
 dependencies {
     'ox_lib',
-    'oxmysql',
-    'qbx_core'
+    'oxmysql'
+}
+
+-- Optional dependencies (will work without these but with reduced functionality)
+optional_dependencies {
+    'qbx_core',
+    'qb-core'
 }
 
 -- Shared Scripts (Load order matters)
 shared_scripts {
     '@ox_lib/init.lua',
-    '@qbx_core/shared/locale.lua',
     'config/*.lua',
     'shared/*.lua'
 }
@@ -36,7 +40,8 @@ client_scripts {
 -- Server Scripts (Load order matters)
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/*.lua',
+    'server/database/*.lua'
 }
 
 -- UI Files

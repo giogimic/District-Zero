@@ -1,7 +1,37 @@
 -- client/main/ui.lua
 -- District Zero UI Handler
 
-local QBX = exports['qbx_core']:GetCoreObject()
+-- Try to get QBX Core with comprehensive error handling
+local QBX = nil
+local qbxLoaded = false
+
+-- Try multiple QBX Core export names
+local qbxExports = {
+    'qbx_core',
+    'qb-core',
+    'qb_core'
+}
+
+for _, exportName in ipairs(qbxExports) do
+    local success, result = pcall(function()
+        return exports[exportName]:GetCoreObject()
+    end)
+    
+    if success and result then
+        QBX = result
+        qbxLoaded = true
+        print('^2[District Zero] Successfully loaded QBX Core from: ' .. exportName .. '^7')
+        break
+    else
+        print('^3[District Zero] Failed to load from ' .. exportName .. ': ' .. tostring(result) .. '^7')
+    end
+end
+
+if not qbxLoaded then
+    print('^1[District Zero] WARNING: QBX Core not available. Some features may not work properly.^7')
+    print('^3[District Zero] Make sure qbx_core is started before district-zero^7')
+end
+
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -122,7 +152,15 @@ end)
 
 Events.RegisterEvent('dz:client:ui:notify', function(message, type)
     if State.config.settings.notifications then
-        QBX.Functions.Notify(message, type)
+        if QBX then
+            QBX.Functions.Notify(message, type)
+        else
+            -- Fallback notification
+            TriggerEvent('ox_lib:notify', {
+                type = type or 'info',
+                description = message
+            })
+        end
     end
 end)
 

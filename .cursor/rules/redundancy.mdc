@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Avoid Redundancy
+
+Search project for similar functionality or documentation to prevent duplicate pages or modules.
+
+
+Refactor or extend existing components rather than generating parallel implementations.

@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Place server code under /server, /api, or backend folders; client code under /src, /public, or frontend folders.
+
+
+Match file extensions (.client.js/.server.js in Next.js; .ts vs .d.ts as appropriate).

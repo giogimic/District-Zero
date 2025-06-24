@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Project Audit
+
+Scan all key artifacts: source folders, config files, CI/CD scripts, documentation.
+
+
+Map high‑level modules, tech stack, and release processes to understand the system’s scope.

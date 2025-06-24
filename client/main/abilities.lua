@@ -286,9 +286,9 @@ CreateThread(function()
 end)
 
 -- Initialize abilities
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Citizen.Wait(0)
+        Wait(0)
         if IsControlJustPressed(0, 288) then -- F1
             TriggerAbility('backup')
         elseif IsControlJustPressed(0, 289) then -- F2
@@ -374,9 +374,9 @@ function UpdateUI()
 end
 
 -- Update cooldowns
-Citizen.CreateThread(function()
+CreateThread(function()
     while true do
-        Citizen.Wait(1000)
+        Wait(1000)
         if isUIOpen then
             for abilityId, endTime in pairs(cooldowns) do
                 local remainingTime = endTime - GetGameTimer()

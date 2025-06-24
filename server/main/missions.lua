@@ -1,291 +1,419 @@
-local activeMissions = {}
-local playerMissions = {}
-local missionCooldowns = {}
+-- District Zero Missions Server Handler
+-- Version: 1.0.0
 
--- Initialize mission system
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1000)
-        UpdateMissionStates()
+local QBX = exports['qbx_core']:GetCoreObject()
+local Utils = require 'shared/utils'
+
+-- Mission State Management
+local MissionState = {
+    activeMissions = {},
+    playerMissions = {},
+    missionCooldowns = {},
+    lastSync = 0,
+    syncInterval = 3000 -- 3 seconds
+}
+
+-- Mission States
+local MISSION_STATES = {
+    ACTIVE = 'active',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+    EXPIRED = 'expired'
+}
+
+-- Initialize missions from config
+local function InitializeMissions()
+    if not Config or not Config.Missions then
+        Utils.PrintDebug('[ERROR] Config.Missions not loaded')
+        return false
     end
-end)
 
--- Update mission states and handle timeouts
-function UpdateMissionStates()
-    local currentTime = os.time()
-    
-    for missionId, mission in pairs(activeMissions) do
-        if mission.state == Config.MissionStates.IN_PROGRESS then
-            -- Check for mission timeout
-            if currentTime >= mission.endTime then
-                FailMission(missionId, "Time's up!")
+    -- Load mission data from database
+    local success = pcall(function()
+        local result = MySQL.query.await('SELECT * FROM dz_missions WHERE active = 1')
+        if result then
+            for _, mission in ipairs(result) do
+                -- Parse objectives from JSON
+                local objectives = json.decode(mission.objectives or '[]')
+                mission.objectives = objectives
             end
-            
-            -- Check if all players are still in the mission area
-            for playerId, _ in pairs(mission.players) do
-                if not IsPlayerInMissionArea(playerId, mission) then
-                    FailMission(missionId, "Player left mission area")
-                    break
+        end
+    end)
+
+    if not success then
+        Utils.PrintDebug('[ERROR] Failed to load missions from database')
+        return false
+    end
+
+    Utils.PrintDebug('Missions initialized successfully')
+    return true
+end
+
+-- Get available missions for player
+local function GetAvailableMissions(playerId, districtId)
+    local player = QBX.Functions.GetPlayer(playerId)
+    if not player then return {} end
+
+    local availableMissions = {}
+    local playerTeam = exports['district-zero']:GetPlayerTeam(playerId)
+
+    if not Config or not Config.Missions then
+        return availableMissions
+    end
+
+    for _, mission in pairs(Config.Missions) do
+        -- Check if mission is for the correct district
+        if mission.district == districtId then
+            -- Check if mission type matches player's team
+            if mission.type == playerTeam then
+                -- Check if player is not already in a mission
+                if not MissionState.playerMissions[playerId] then
+                    -- Check mission cooldown
+                    if not MissionState.missionCooldowns[mission.id] or 
+                       os.time() > MissionState.missionCooldowns[mission.id] then
+                        table.insert(availableMissions, mission)
+                    end
                 end
             end
         end
     end
+
+    return availableMissions
 end
 
--- Start a new mission
-RegisterNetEvent('mission:start')
-AddEventHandler('mission:start', function(missionType, missionId)
-    local source = source
-    local player = source
-    
-    -- Validate mission request
-    if not CanStartMission(player, missionType, missionId) then
-        TriggerClientEvent('mission:notification', player, "Cannot start mission", "error")
-        return
-    end
-    
-    -- Get mission data
-    local mission = Config.Missions[missionType][missionId]
-    if not mission then return end
-    
-    -- Create mission instance
-    local missionInstance = {
-        id = missionId,
-        type = missionType,
-        state = Config.MissionStates.IN_PROGRESS,
-        startTime = os.time(),
-        endTime = os.time() + mission.timeLimit,
-        players = {[player] = true},
-        location = mission.locations[1],
-        vehicle = mission.vehicle,
-        reward = mission.reward
-    }
-    
-    -- Add to active missions
-    activeMissions[missionId] = missionInstance
-    playerMissions[player] = missionId
-    
-    -- Set cooldown
-    missionCooldowns[missionId] = os.time() + mission.cooldown
-    
-    -- Notify players
-    TriggerClientEvent('mission:started', player, missionInstance)
-    TriggerClientEvent('mission:notification', player, "Mission started: " .. mission.name)
-    
-    -- Start mission timer
-    StartMissionTimer(missionId)
-end)
-
--- Join an existing mission
-RegisterNetEvent('mission:join')
-AddEventHandler('mission:join', function(missionId)
-    local source = source
-    local player = source
-    
-    -- Validate join request
-    if not CanJoinMission(player, missionId) then
-        TriggerClientEvent('mission:notification', player, "Cannot join mission", "error")
-        return
-    end
-    
-    local mission = activeMissions[missionId]
-    if not mission then return end
-    
-    -- Add player to mission
-    mission.players[player] = true
-    playerMissions[player] = missionId
-    
-    -- Notify players
-    TriggerClientEvent('mission:playerJoined', -1, missionId, player)
-    TriggerClientEvent('mission:notification', player, "Joined mission: " .. Config.Missions[mission.type][mission.id].name)
-end)
-
--- Complete mission
-RegisterNetEvent('mission:complete')
-AddEventHandler('mission:complete', function(missionId)
-    local source = source
-    local player = source
-    
-    local mission = activeMissions[missionId]
-    if not mission or mission.state ~= Config.MissionStates.IN_PROGRESS then return end
-    
-    -- Validate completion
-    if not IsPlayerInMissionArea(player, mission) then
-        TriggerClientEvent('mission:notification', player, "Must be in mission area to complete", "error")
-        return
-    end
-    
-    -- Calculate rewards
-    local reward = CalculateRewards(mission)
-    
-    -- Distribute rewards
-    for playerId, _ in pairs(mission.players) do
-        GiveReward(playerId, reward)
-        TriggerClientEvent('mission:completed', playerId, missionId, reward)
-    end
-    
-    -- Clean up mission
-    CleanupMission(missionId)
-end)
-
--- Fail mission
-function FailMission(missionId, reason)
-    local mission = activeMissions[missionId]
-    if not mission then return end
-    
-    -- Notify players
-    for playerId, _ in pairs(mission.players) do
-        TriggerClientEvent('mission:failed', playerId, missionId, reason)
-        TriggerClientEvent('mission:notification', playerId, "Mission failed: " .. reason, "error")
-    end
-    
-    -- Clean up mission
-    CleanupMission(missionId)
-end
-
--- Check if player can start mission
-function CanStartMission(player, missionType, missionId)
-    -- Check if mission exists
-    if not Config.Missions[missionType] or not Config.Missions[missionType][missionId] then
+-- Start mission
+local function StartMission(playerId, missionId, districtId)
+    local player = QBX.Functions.GetPlayer(playerId)
+    if not player then 
+        TriggerClientEvent('QBCore:Notify', playerId, 'Player data not found', 'error')
         return false
     end
-    
+
     -- Check if player is already in a mission
-    if playerMissions[player] then
+    if MissionState.playerMissions[playerId] then
+        TriggerClientEvent('QBCore:Notify', playerId, 'You are already in a mission', 'error')
         return false
     end
-    
-    -- Check mission cooldown
-    if missionCooldowns[missionId] and os.time() < missionCooldowns[missionId] then
-        return false
-    end
-    
-    -- Check player rank
-    local playerRank = GetPlayerFactionRank(player)
-    local requiredRank = Config.Missions[missionType][missionId].requiredRank
-    if playerRank < requiredRank then
-        return false
-    end
-    
-    -- Check online players requirement
-    if not MeetsPlayerRequirement(missionType, missionId) then
-        return false
-    end
-    
-    return true
-end
 
--- Check if player can join mission
-function CanJoinMission(player, missionId)
-    local mission = activeMissions[missionId]
-    if not mission then return false end
-    
-    -- Check if player is already in a mission
-    if playerMissions[player] then
-        return false
-    end
-    
-    -- Check if mission is full
-    if CountMissionPlayers(missionId) >= Config.MissionRequirements.MAX_PLAYERS then
-        return false
-    end
-    
-    -- Check player rank
-    local playerRank = GetPlayerFactionRank(player)
-    local requiredRank = Config.Missions[mission.type][mission.id].requiredRank
-    if playerRank < requiredRank then
-        return false
-    end
-    
-    return true
-end
-
--- Check if mission meets player requirement
-function MeetsPlayerRequirement(missionType, missionId)
-    local mission = Config.Missions[missionType][missionId]
-    local onlinePlayers = GetOnlinePlayers()
-    
-    if missionType == Config.MissionTypes.CRIMINAL then
-        return CountFactionPlayers(Config.MissionTypes.POLICE) >= mission.policeRequired
-    else
-        return CountFactionPlayers(Config.MissionTypes.CRIMINAL) >= mission.minCriminals
-    end
-end
-
--- Calculate mission rewards
-function CalculateRewards(mission)
-    local baseReward = mission.reward
-    local playerCount = CountMissionPlayers(mission.id)
-    
-    -- Apply team bonus
-    if playerCount == Config.MissionRequirements.MAX_PLAYERS then
-        baseReward.money = baseReward.money * Config.MissionRewards.BONUS_MULTIPLIER
-        baseReward.reputation = baseReward.reputation * Config.MissionRewards.BONUS_MULTIPLIER
-    end
-    
-    return baseReward
-end
-
--- Give reward to player
-function GiveReward(player, reward)
-    -- Add money
-    -- Implement based on your economy system
-    
-    -- Add reputation
-    -- Implement based on your reputation system
-    
-    -- Notify player
-    TriggerClientEvent('mission:reward', player, reward)
-end
-
--- Clean up mission
-function CleanupMission(missionId)
-    local mission = activeMissions[missionId]
-    if not mission then return end
-    
-    -- Remove players from mission
-    for playerId, _ in pairs(mission.players) do
-        playerMissions[playerId] = nil
-    end
-    
-    -- Remove mission
-    activeMissions[missionId] = nil
-end
-
--- Helper functions
-function CountMissionPlayers(missionId)
-    local mission = activeMissions[missionId]
-    if not mission then return 0 end
-    
-    local count = 0
-    for _ in pairs(mission.players) do
-        count = count + 1
-    end
-    return count
-end
-
-function CountFactionPlayers(faction)
-    local count = 0
-    for _, player in ipairs(GetPlayers()) do
-        if GetPlayerFaction(player) == faction then
-            count = count + 1
+    -- Find mission in config
+    local mission = nil
+    for _, m in pairs(Config.Missions) do
+        if m.id == missionId and m.district == districtId then
+            mission = m
+            break
         end
     end
-    return count
+
+    if not mission then
+        TriggerClientEvent('QBCore:Notify', playerId, 'Mission not found', 'error')
+        return false
+    end
+
+    -- Check if player is in the correct district
+    local playerCoords = GetEntityCoords(GetPlayerPed(playerId))
+    local inDistrict = false
+    
+    for _, district in pairs(Config.Districts) do
+        if district.id == districtId then
+            for _, zone in pairs(district.zones) do
+                local distance = #(playerCoords - zone.coords)
+                if distance <= zone.radius then
+                    inDistrict = true
+                    break
+                end
+            end
+        end
+        if inDistrict then break end
+    end
+
+    if not inDistrict then
+        TriggerClientEvent('QBCore:Notify', playerId, 'You must be in the mission district to start this mission', 'error')
+        return false
+    end
+
+    -- Check if player has selected a team
+    local playerTeam = exports['district-zero']:GetPlayerTeam(playerId)
+    if not playerTeam then
+        TriggerClientEvent('QBCore:Notify', playerId, 'You must select a team first', 'error')
+        return false
+    end
+
+    -- Check if mission type matches player's team
+    if mission.type ~= playerTeam then
+        TriggerClientEvent('QBCore:Notify', playerId, 'This mission is not available for your team', 'error')
+        return false
+    end
+
+    -- Create mission instance
+    local missionInstance = {
+        id = mission.id,
+        title = mission.title,
+        description = mission.description,
+        type = mission.type,
+        district = mission.district,
+        objectives = mission.objectives,
+        reward = mission.reward,
+        timeLimit = mission.timeLimit or 300, -- 5 minutes default
+        startTime = os.time(),
+        endTime = os.time() + (mission.timeLimit or 300),
+        player = playerId,
+        state = MISSION_STATES.ACTIVE,
+        completedObjectives = {},
+        progress = 0
+    }
+
+    -- Add to active missions
+    MissionState.activeMissions[missionId] = missionInstance
+    MissionState.playerMissions[playerId] = missionId
+
+    -- Save mission progress to database
+    MySQL.insert.await([[
+        INSERT INTO dz_mission_progress (mission_id, citizenid, status, started_at)
+        VALUES (?, ?, 'active', CURRENT_TIMESTAMP)
+        ON DUPLICATE KEY UPDATE status = 'active', started_at = CURRENT_TIMESTAMP
+    ]], {missionId, player.PlayerData.citizenid})
+
+    -- Send mission data to client
+    TriggerClientEvent('dz:client:missionStarted', playerId, missionInstance)
+    TriggerClientEvent('QBCore:Notify', playerId, 'Mission started: ' .. mission.title, 'success')
+
+    Utils.PrintDebug('Mission started: ' .. mission.title .. ' for player ' .. playerId)
+    return true
 end
 
-function IsPlayerInMissionArea(player, mission)
-    local playerCoords = GetEntityCoords(GetPlayerPed(player))
-    local missionCoords = mission.location
-    local distance = #(vector3(playerCoords.x, playerCoords.y, playerCoords.z) - vector3(missionCoords.x, missionCoords.y, missionCoords.z))
-    return distance <= 50.0
+-- Complete objective
+local function CompleteObjective(playerId, missionId, objectiveId)
+    local player = QBX.Functions.GetPlayer(playerId)
+    if not player then return false end
+
+    local mission = MissionState.activeMissions[missionId]
+    if not mission or mission.player ~= playerId then
+        TriggerClientEvent('QBCore:Notify', playerId, 'No active mission found', 'error')
+        return false
+    end
+
+    local objective = mission.objectives[objectiveId]
+    if not objective then
+        TriggerClientEvent('QBCore:Notify', playerId, 'Invalid objective', 'error')
+        return false
+    end
+
+    -- Check if objective is already completed
+    if mission.completedObjectives[objectiveId] then
+        TriggerClientEvent('QBCore:Notify', playerId, 'Objective already completed', 'info')
+        return false
+    end
+
+    -- Mark objective as complete
+    mission.completedObjectives[objectiveId] = true
+    mission.progress = mission.progress + 1
+
+    -- Check if all objectives are complete
+    local allComplete = true
+    for i, _ in ipairs(mission.objectives) do
+        if not mission.completedObjectives[i] then
+            allComplete = false
+            break
+        end
+    end
+
+    if allComplete then
+        -- Complete mission
+        CompleteMission(playerId, missionId)
+    else
+        -- Update mission progress
+        TriggerClientEvent('dz:client:missionUpdated', playerId, mission)
+        TriggerClientEvent('QBCore:Notify', playerId, 'Objective completed!', 'success')
+    end
+
+    return true
 end
 
--- Export functions
-exports('GetActiveMissions', function()
-    return activeMissions
+-- Complete mission
+local function CompleteMission(playerId, missionId)
+    local player = QBX.Functions.GetPlayer(playerId)
+    if not player then return false end
+
+    local mission = MissionState.activeMissions[missionId]
+    if not mission then return false end
+
+    -- Give rewards
+    if mission.reward then
+        player.Functions.AddMoney('cash', mission.reward)
+    end
+
+    -- Update district influence
+    local playerTeam = exports['district-zero']:GetPlayerTeam(playerId)
+    if playerTeam and mission.district then
+        exports['district-zero']:UpdateDistrictInfluence(mission.district, 10)
+    end
+
+    -- Update database
+    MySQL.update.await([[
+        UPDATE dz_mission_progress 
+        SET status = 'completed', completed_at = CURRENT_TIMESTAMP
+        WHERE mission_id = ? AND citizenid = ?
+    ]], {missionId, player.PlayerData.citizenid})
+
+    -- Set mission cooldown
+    MissionState.missionCooldowns[missionId] = os.time() + 300 -- 5 minutes cooldown
+
+    -- Complete mission
+    mission.state = MISSION_STATES.COMPLETED
+    TriggerClientEvent('dz:client:missionCompleted', playerId, missionId, mission.reward)
+    TriggerClientEvent('QBCore:Notify', playerId, 'Mission completed! Reward: $' .. mission.reward, 'success')
+
+    -- Clean up mission
+    MissionState.activeMissions[missionId] = nil
+    MissionState.playerMissions[playerId] = nil
+
+    Utils.PrintDebug('Mission completed: ' .. mission.title .. ' for player ' .. playerId)
+    return true
+end
+
+-- Fail mission
+local function FailMission(playerId, missionId, reason)
+    local player = QBX.Functions.GetPlayer(playerId)
+    if not player then return false end
+
+    local mission = MissionState.activeMissions[missionId]
+    if not mission then return false end
+
+    -- Update database
+    MySQL.update.await([[
+        UPDATE dz_mission_progress 
+        SET status = 'failed', completed_at = CURRENT_TIMESTAMP
+        WHERE mission_id = ? AND citizenid = ?
+    ]], {missionId, player.PlayerData.citizenid})
+
+    -- Fail mission
+    mission.state = MISSION_STATES.FAILED
+    TriggerClientEvent('dz:client:missionFailed', playerId, missionId, reason)
+    TriggerClientEvent('QBCore:Notify', playerId, 'Mission failed: ' .. reason, 'error')
+
+    -- Clean up mission
+    MissionState.activeMissions[missionId] = nil
+    MissionState.playerMissions[playerId] = nil
+
+    Utils.PrintDebug('Mission failed: ' .. mission.title .. ' for player ' .. playerId .. ' - ' .. reason)
+    return true
+end
+
+-- Check mission timeouts
+local function CheckMissionTimeouts()
+    local currentTime = os.time()
+    
+    for missionId, mission in pairs(MissionState.activeMissions) do
+        if mission.state == MISSION_STATES.ACTIVE and currentTime >= mission.endTime then
+            FailMission(mission.player, missionId, "Time's up!")
+        end
+    end
+end
+
+-- Sync mission state to clients
+local function SyncMissionState()
+    local currentTime = GetGameTimer()
+    
+    if currentTime - MissionState.lastSync < MissionState.syncInterval then
+        return
+    end
+    
+    MissionState.lastSync = currentTime
+    
+    -- Send mission state to all clients
+    for _, playerId in ipairs(GetPlayers()) do
+        local playerMission = MissionState.playerMissions[playerId]
+        if playerMission then
+            local mission = MissionState.activeMissions[playerMission]
+            if mission then
+                TriggerClientEvent('dz:client:mission:sync', playerId, mission)
+            end
+        end
+    end
+end
+
+-- Event handlers
+RegisterNetEvent('dz:server:acceptMission', function(missionId, districtId)
+    local source = source
+    StartMission(source, missionId, districtId)
 end)
 
-exports('GetPlayerMission', function(player)
-    return playerMissions[player]
+RegisterNetEvent('dz:server:capturePoint', function(missionId, objectiveId)
+    local source = source
+    CompleteObjective(source, missionId, objectiveId)
+end)
+
+RegisterNetEvent('dz:server:mission:getAvailable', function(districtId)
+    local source = source
+    local availableMissions = GetAvailableMissions(source, districtId)
+    TriggerClientEvent('dz:client:mission:available', source, availableMissions)
+end)
+
+-- Player cleanup
+AddEventHandler('playerDropped', function()
+    local source = source
+    
+    -- Fail any active mission
+    local missionId = MissionState.playerMissions[source]
+    if missionId then
+        FailMission(source, missionId, 'Player disconnected')
+    end
+end)
+
+-- Mission monitoring thread
+CreateThread(function()
+    while true do
+        Wait(1000) -- Check every second
+        CheckMissionTimeouts()
+    end
+end)
+
+-- State sync thread
+CreateThread(function()
+    while true do
+        Wait(MissionState.syncInterval)
+        SyncMissionState()
+    end
+end)
+
+-- Initialize on resource start
+AddEventHandler('onResourceStart', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
+    -- Wait for database to be ready
+    CreateThread(function()
+        Wait(5000) -- Wait for database initialization
+        
+        if not InitializeMissions() then
+            print('^1[District Zero] Failed to initialize missions^7')
+            return
+        end
+        
+        print('^2[District Zero] Missions system initialized successfully^7')
+    end)
+end)
+
+-- Exports
+exports('GetActiveMissions', function()
+    return MissionState.activeMissions
+end)
+
+exports('GetPlayerMission', function(playerId)
+    return MissionState.playerMissions[playerId]
+end)
+
+exports('GetAvailableMissions', function(playerId, districtId)
+    return GetAvailableMissions(playerId, districtId)
+end)
+
+exports('StartMission', function(playerId, missionId, districtId)
+    return StartMission(playerId, missionId, districtId)
+end)
+
+exports('CompleteMission', function(playerId, missionId)
+    return CompleteMission(playerId, missionId)
+end)
+
+exports('FailMission', function(playerId, missionId, reason)
+    return FailMission(playerId, missionId, reason)
 end) 

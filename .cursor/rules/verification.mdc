@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+After generation, perform a quick sanity check:
+
+“Does this snippet reference any APIs unavailable in its target environment?”
+
+
+If yes, refactor or regenerate.

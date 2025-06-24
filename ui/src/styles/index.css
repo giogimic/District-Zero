@@ -1,0 +1,295 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom CSS Variables */
+:root {
+  --color-neon-green: #00ff41;
+  --color-neon-blue: #00d4ff;
+  --color-neon-purple: #9d00ff;
+  --color-neon-pink: #ff0080;
+  --color-neon-yellow: #ffff00;
+  --color-neon-orange: #ff6b35;
+  
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;
+  --color-dark-900: #0f172a;
+  --color-dark-950: #020617;
+  
+  --glass-light: rgba(255, 255, 255, 0.1);
+  --glass-dark: rgba(0, 0, 0, 0.3);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: transparent;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Glass Morphism */
+.glass {
+  background: var(--glass-light);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.glass-dark {
+  background: var(--glass-dark);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* Neon Effects */
+.neon-glow {
+  text-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+}
+
+.neon-border {
+  box-shadow: 0 0 5px currentColor, 0 0 10px currentColor, 0 0 15px currentColor;
+}
+
+.neon-green {
+  color: var(--color-neon-green);
+}
+
+.neon-blue {
+  color: var(--color-neon-blue);
+}
+
+.neon-purple {
+  color: var(--color-neon-purple);
+}
+
+.neon-pink {
+  color: var(--color-neon-pink);
+}
+
+.neon-yellow {
+  color: var(--color-neon-yellow);
+}
+
+.neon-orange {
+  color: var(--color-neon-orange);
+}
+
+/* Animations */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px var(--color-neon-green), 0 0 10px var(--color-neon-green), 0 0 15px var(--color-neon-green);
+  }
+  100% {
+    box-shadow: 0 0 10px var(--color-neon-green), 0 0 20px var(--color-neon-green), 0 0 30px var(--color-neon-green);
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideUp {
+  0% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes slideDown {
+  0% { transform: translateY(-100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Utility Classes */
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--glass-dark);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Component Specific Styles */
+.district-card {
+  transition: all 0.3s ease;
+}
+
+.district-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.mission-card {
+  transition: all 0.3s ease;
+}
+
+.mission-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+.team-button {
+  transition: all 0.3s ease;
+}
+
+.team-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress Bars */
+.progress-bar {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.pvp {
+  background: linear-gradient(90deg, var(--color-neon-pink), var(--color-neon-purple));
+}
+
+.progress-fill.pve {
+  background: linear-gradient(90deg, var(--color-neon-blue), var(--color-neon-green));
+}
+
+/* Notification Styles */
+.notification {
+  animation: slideUp 0.3s ease-out;
+}
+
+.notification.success {
+  border-left: 4px solid var(--color-neon-green);
+}
+
+.notification.error {
+  border-left: 4px solid var(--color-neon-pink);
+}
+
+.notification.warning {
+  border-left: 4px solid var(--color-neon-yellow);
+}
+
+.notification.info {
+  border-left: 4px solid var(--color-neon-blue);
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top: 2px solid var(--color-neon-green);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .glass {
+    border-radius: 10px;
+  }
+  
+  .district-card,
+  .mission-card {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Focus States for Accessibility */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid var(--color-neon-green);
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  .glass {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid white;
+  }
+  
+  .neon-glow {
+    text-shadow: 0 0 2px currentColor;
+  }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+} 
