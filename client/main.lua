@@ -83,7 +83,7 @@ local function CreateBlip(data)
         SetBlipAsShortRange(newBlip, data.shortRange ~= false)
         
         if data.name then
-            BeginTextCommandSetBlipName("STRING")
+    BeginTextCommandSetBlipName("STRING")
             AddTextComponentString(data.name)
             EndTextCommandSetBlipName(newBlip)
         end
@@ -187,10 +187,10 @@ BlipManager.CreateDistrictBlips = function()
             if blip then
                 BlipManager.blips['district_' .. district.id] = blip
             end
-            
-            -- Create control point blips
+
+        -- Create control point blips
             if district.controlPoints then
-                for _, point in pairs(district.controlPoints) do
+        for _, point in pairs(district.controlPoints) do
                     if point.coords then
                         local pointBlipData = {
                             coords = point.coords,
@@ -210,10 +210,10 @@ BlipManager.CreateDistrictBlips = function()
             end
         end
     end
-    
+
     -- Create safe zone blips
     if Config.SafeZones then
-        for _, safeZone in pairs(Config.SafeZones) do
+    for _, safeZone in pairs(Config.SafeZones) do
             if safeZone.coords then
                 local blipData = {
                     coords = safeZone.coords,
@@ -315,29 +315,29 @@ local function CheckDistrictBoundaries()
 
     -- Check if in safe zone first
     if Config.SafeZones then
-        for _, safeZone in pairs(Config.SafeZones) do
-            local distance = #(playerCoords - safeZone.coords)
-            if distance <= safeZone.radius then
-                inSafeZone = true
-                break
+    for _, safeZone in pairs(Config.SafeZones) do
+        local distance = #(playerCoords - safeZone.coords)
+        if distance <= safeZone.radius then
+            inSafeZone = true
+            break
             end
         end
     end
 
     -- Check if in district
     if Config.Districts then
-        for _, district in pairs(Config.Districts) do
+    for _, district in pairs(Config.Districts) do
             if district.zones then
-                for _, zone in pairs(district.zones) do
-                    local distance = #(playerCoords - zone.coords)
-                    if distance <= zone.radius then
-                        inDistrict = true
-                        districtFound = district
-                        break
+        for _, zone in pairs(district.zones) do
+            local distance = #(playerCoords - zone.coords)
+            if distance <= zone.radius then
+                inDistrict = true
+                districtFound = district
+                break
                     end
-                end
             end
-            if inDistrict then break end
+        end
+        if inDistrict then break end
         end
     end
 

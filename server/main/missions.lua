@@ -104,7 +104,7 @@ local function StartMission(playerId, missionId, districtId)
         end
     end
 
-    if not mission then
+    if not mission then 
         TriggerClientEvent('QBCore:Notify', playerId, 'Mission not found', 'error')
         return false
     end
@@ -143,7 +143,7 @@ local function StartMission(playerId, missionId, districtId)
         TriggerClientEvent('QBCore:Notify', playerId, 'This mission is not available for your team', 'error')
         return false
     end
-
+    
     -- Create mission instance
     local missionInstance = {
         id = mission.id,
@@ -161,7 +161,7 @@ local function StartMission(playerId, missionId, districtId)
         completedObjectives = {},
         progress = 0
     }
-
+    
     -- Add to active missions
     MissionState.activeMissions[missionId] = missionInstance
     MissionState.playerMissions[playerId] = missionId
@@ -191,19 +191,19 @@ local function CompleteObjective(playerId, missionId, objectiveId)
         TriggerClientEvent('QBCore:Notify', playerId, 'No active mission found', 'error')
         return false
     end
-
+    
     local objective = mission.objectives[objectiveId]
     if not objective then
         TriggerClientEvent('QBCore:Notify', playerId, 'Invalid objective', 'error')
         return false
     end
-
+    
     -- Check if objective is already completed
     if mission.completedObjectives[objectiveId] then
         TriggerClientEvent('QBCore:Notify', playerId, 'Objective already completed', 'info')
         return false
     end
-
+    
     -- Mark objective as complete
     mission.completedObjectives[objectiveId] = true
     mission.progress = mission.progress + 1
@@ -216,7 +216,7 @@ local function CompleteObjective(playerId, missionId, objectiveId)
             break
         end
     end
-
+    
     if allComplete then
         -- Complete mission
         CompleteMission(playerId, missionId)
@@ -225,7 +225,7 @@ local function CompleteObjective(playerId, missionId, objectiveId)
         TriggerClientEvent('dz:client:missionUpdated', playerId, mission)
         TriggerClientEvent('QBCore:Notify', playerId, 'Objective completed!', 'success')
     end
-
+    
     return true
 end
 
@@ -236,7 +236,7 @@ local function CompleteMission(playerId, missionId)
 
     local mission = MissionState.activeMissions[missionId]
     if not mission then return false end
-
+    
     -- Give rewards
     if mission.reward then
         player.Functions.AddMoney('cash', mission.reward)
