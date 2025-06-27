@@ -86,11 +86,7 @@ end
 
 -- Save configuration
 function ErrorHandler.SaveConfiguration()
-    local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not Utils.DoesDirectoryExist(configDir) then
-        Utils.CreateDirectory(configDir)
-    end
-    
+    -- Simply save without directory check
     SaveResourceFile(GetCurrentResourceName(), "config/error_handler.json", json.encode(CONFIG, {indent = true}))
 end
 
@@ -204,11 +200,6 @@ end
 
 -- Save error log
 function ErrorHandler.SaveErrorLog()
-    local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not Utils.DoesDirectoryExist(dataDir) then
-        Utils.CreateDirectory(dataDir)
-    end
-    
     local logData = {
         totalErrors = errorState.errorCount,
         lastUpdated = os.time(),
@@ -248,11 +239,6 @@ end
 
 -- Save performance log
 function ErrorHandler.SavePerformanceLog()
-    local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not Utils.DoesDirectoryExist(dataDir) then
-        Utils.CreateDirectory(dataDir)
-    end
-    
     local perfData = {
         lastUpdated = os.time(),
         metrics = errorState.performanceMetrics

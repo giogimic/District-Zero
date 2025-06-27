@@ -1,12 +1,6 @@
 -- Server Team System Enhancement
 -- Version: 1.0.0
 
-local QBoxIntegration = require 'shared/qbox_integration'
-local Utils = require 'shared/utils'
-
--- Get QBX Core object
-local QBX = QBoxIntegration.GetCoreObject()
-
 -- Team System State
 local TeamSystem = {
     teams = {},

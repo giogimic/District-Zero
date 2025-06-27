@@ -34,6 +34,7 @@ shared_scripts {
 
 -- Client scripts
 client_scripts {
+    'client/exports.lua',  -- Load exports first
     'client/main.lua',
     'client/main/*.lua'
 }
@@ -41,6 +42,7 @@ client_scripts {
 -- Server scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/init.lua',  -- Load initialization first
     'server/main.lua',
     'server/teams.lua',
     'server/release.lua',
@@ -81,7 +83,40 @@ exports {
     -- Final integration
     'GetUnifiedAPI',
     'GetSystemStatus',
-    'GetIntegrationHealth'
+    'GetIntegrationHealth',
+    
+    -- Missing exports that are being called
+    'GetConfig',
+    'GetUtils',
+    'GetDatabaseManager',
+    'GetAdvancedMissionSystem',
+    'GetDynamicEventsSystem',
+    'GetAdvancedTeamSystem',
+    'GetAchievementSystem',
+    'GetCurrentDistrict',
+    'GetCurrentTeam',
+    'GetCurrentMission',
+    'GetBlipCount',
+    'GetAllDistricts',
+    'GetDistrict',
+    'GetPlayerTeam',
+    'GetTeamStats',
+    'GetAvailableMissions',
+    'GetPerformanceMetrics',
+    'GetErrorReport',
+    'GetDistrictHistory',
+    'GetPlayerMissionHistory',
+    'GetTeamAnalytics',
+    'GetPlayerLeaderboard',
+    'GetGlobalLeaderboard',
+    'GetSystemConfig',
+    'GetDistrictControl',
+    'GetDistrictInfluence',
+    'GetControlPoints',
+    'GetTeamMembers',
+    'GetTeamBalance',
+    'GetTeamLeaderboard',
+    'GetTeamMembersInRange'
 }
 
 -- Server exports
@@ -100,14 +135,49 @@ server_exports {
     'GetReleaseSystem',
     'GetUnifiedAPI',
     'GetSystemStatus',
-    'GetIntegrationHealth'
+    'GetIntegrationHealth',
+    
+    -- Missing server exports
+    'GetConfig',
+    'GetUtils',
+    'GetDatabaseManager',
+    'GetAdvancedMissionSystem',
+    'GetDynamicEventsSystem',
+    'GetAdvancedTeamSystem',
+    'GetAchievementSystem',
+    'GetDistrictHistory',
+    'GetPlayerMissionHistory',
+    'GetTeamAnalytics',
+    'GetPlayerLeaderboard',
+    'GetGlobalLeaderboard',
+    'GetSystemConfig'
 }
 
 -- Client exports
 client_exports {
     'GetUI',
     'GetClientEvents',
-    'GetClientPerformance'
+    'GetClientPerformance',
+    
+    -- Missing client exports
+    'GetCurrentDistrict',
+    'GetCurrentTeam',
+    'GetCurrentMission',
+    'GetBlipCount',
+    'GetAllDistricts',
+    'GetDistrict',
+    'GetPlayerTeam',
+    'GetTeamStats',
+    'GetAvailableMissions',
+    'GetPerformanceMetrics',
+    'GetErrorReport',
+    'GetDistrictControl',
+    'GetDistrictInfluence',
+    'GetControlPoints',
+    'GetTeamMembers',
+    'GetTeamBalance',
+    'GetTeamLeaderboard',
+    'GetTeamMembersInRange'
 }
 
 -- Resource Configuration

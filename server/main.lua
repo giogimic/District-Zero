@@ -969,15 +969,15 @@ end
 -- Version: 1.0.0
 
 -- Import shared modules
-local Config = exports['district_zero']:GetConfig()
-local PerformanceSystem = exports['district_zero']:GetPerformanceSystem()
-local DatabaseManager = exports['district_zero']:GetDatabaseManager()
-local SecuritySystem = exports['district_zero']:GetSecuritySystem()
-local AdvancedMissionSystem = exports['district_zero']:GetAdvancedMissionSystem()
-local DynamicEventsSystem = exports['district_zero']:GetDynamicEventsSystem()
-local AdvancedTeamSystem = exports['district_zero']:GetAdvancedTeamSystem()
-local AchievementSystem = exports['district_zero']:GetAchievementSystem()
-local AnalyticsSystem = exports['district_zero']:GetAnalyticsSystem()
+local Config = exports['district-zero']:GetConfig()
+local PerformanceSystem = exports['district-zero']:GetPerformanceSystem()
+local DatabaseManager = exports['district-zero']:GetDatabaseManager()
+local SecuritySystem = exports['district-zero']:GetSecuritySystem()
+local AdvancedMissionSystem = exports['district-zero']:GetAdvancedMissionSystem()
+local DynamicEventsSystem = exports['district-zero']:GetDynamicEventsSystem()
+local AdvancedTeamSystem = exports['district-zero']:GetAdvancedTeamSystem()
+local AchievementSystem = exports['district-zero']:GetAchievementSystem()
+local AnalyticsSystem = exports['district-zero']:GetAnalyticsSystem()
 
 -- Server state
 local ServerState = {
@@ -2774,4 +2774,66 @@ exports('GetIntegrationHealth', function()
             release = ReleaseSystem and true or false
         }
     }
+end)
+
+-- Add missing exports
+exports('GetConfig', function()
+    return Config
+end)
+
+exports('GetUtils', function()
+    return Utils
+end)
+
+exports('GetDatabaseManager', function()
+    return DatabaseManager
+end)
+
+exports('GetAdvancedMissionSystem', function()
+    return AdvancedMissionSystem
+end)
+
+exports('GetDynamicEventsSystem', function()
+    return DynamicEventsSystem
+end)
+
+exports('GetAdvancedTeamSystem', function()
+    return AdvancedTeamSystem
+end)
+
+exports('GetAchievementSystem', function()
+    return AchievementSystem
+end)
+
+exports('GetDistrictHistory', function(districtId, limit)
+    -- Implementation for getting district history
+    return {}, "Not implemented yet"
+end)
+
+exports('GetPlayerMissionHistory', function(playerId, limit)
+    -- Implementation for getting player mission history
+    return {}, "Not implemented yet"
+end)
+
+exports('GetTeamAnalytics', function(teamType, days)
+    -- Implementation for getting team analytics
+    return {}, "Not implemented yet"
+end)
+
+exports('GetPlayerLeaderboard', function(teamType, limit)
+    -- Implementation for getting player leaderboard
+    return {}, "Not implemented yet"
+end)
+
+exports('GetGlobalLeaderboard', function(limit)
+    -- Implementation for getting global leaderboard
+    return {}, "Not implemented yet"
+end)
+
+exports('GetSystemConfig', function(configKey)
+    -- Implementation for getting system config
+    if configKey and Config[configKey] then
+        return Config[configKey], "Success"
+    end
+    return Config, "Success"
 end) 

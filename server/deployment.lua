@@ -83,11 +83,6 @@ end
 
 -- Save deployment configuration
 function Deployment.SaveConfiguration()
-    local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not Utils.DoesDirectoryExist(configDir) then
-        Utils.CreateDirectory(configDir)
-    end
-    
     SaveResourceFile(GetCurrentResourceName(), "config/deployment.json", json.encode(CONFIG, {indent = true}))
 end
 
@@ -106,11 +101,6 @@ end
 
 -- Save deployment history
 function Deployment.SaveDeploymentHistory()
-    local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not Utils.DoesDirectoryExist(dataDir) then
-        Utils.CreateDirectory(dataDir)
-    end
-    
     local history = {
         deployments = deploymentState.deploymentHistory,
         rollbackVersions = deploymentState.rollbackVersions,

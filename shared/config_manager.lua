@@ -172,7 +172,7 @@ function ConfigManager.LoadConfiguration(configName, defaultConfig)
     
     -- Create config file if it doesn't exist
     if not configFile then
-        ConfigManager.SaveConfiguration(configName, config)
+        SaveConfiguration(configName, config)
     end
     
     print(string.format("^2[District Zero] ^7Loaded configuration: %s", configName))
@@ -202,32 +202,21 @@ end
 -- Save configuration to file
 local function SaveConfiguration(configName, configData)
     if not configName or not configData then
-        Utils.HandleError('Invalid parameters for SaveConfiguration', 'ConfigManager')
+        print('^1[District Zero] Invalid parameters for SaveConfiguration^7')
         return false
     end
     
-    local configDir = GetResourcePath(GetCurrentResourceName()) .. '/config'
-    if not Utils.DoesDirectoryExist(configDir) then
-        Utils.CreateDirectory(configDir)
-    end
-    
-    local configFile = configDir .. '/' .. configName .. '.json'
-    local success, error = pcall(function()
-        local file = io.open(configFile, 'w')
-        if file then
-            file:write(json.encode(configData, { indent = true }))
-            file:close()
-            return true
-        end
-        return false
+    -- Use SaveResourceFile instead of io operations
+    local success = pcall(function()
+        SaveResourceFile(GetCurrentResourceName(), 'config/' .. configName .. '.json', json.encode(configData, { indent = true }))
     end)
     
     if not success then
-        Utils.HandleError('Failed to save configuration: ' .. tostring(error), 'ConfigManager')
+        print('^1[District Zero] Failed to save configuration: ' .. configName .. '^7')
         return false
     end
     
-    Utils.PrintDebug('Configuration saved: ' .. configName, 'ConfigManager')
+    print('^2[District Zero] Configuration saved: ' .. configName .. '^7')
     return true
 end
 

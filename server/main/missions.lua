@@ -1,18 +1,12 @@
--- Mission System Enhancement (Server)
+-- Mission System (Server)
 -- Version: 1.0.0
-
-local QBoxIntegration = require 'shared/qbox_integration'
-local Utils = require 'shared/utils'
-
--- Get QBX Core object
-local QBX = QBoxIntegration.GetCoreObject()
 
 -- Mission System State
 local MissionSystem = {
-    playerMissions = {},
-    missionCooldowns = {},
-    missionStats = {},
-    lastUpdate = 0
+    activeMissions = {},
+    missionHistory = {},
+    missionQueue = {},
+    lastMissionTime = 0
 }
 
 -- Mission Configuration
@@ -58,9 +52,9 @@ local MissionDifficulty = {
 
 -- Initialize mission system
 local function InitializeMissionSystem()
-    MissionSystem.playerMissions = {}
-    MissionSystem.missionCooldowns = {}
-    MissionSystem.missionStats = {}
+    MissionSystem.activeMissions = {}
+    MissionSystem.missionHistory = {}
+    MissionSystem.missionQueue = {}
     
     print('^2[District Zero] ^7Server mission system initialized')
 end
@@ -107,10 +101,10 @@ local function CreatePlayerMission(playerId, missionType, difficulty, districtId
     }
     
     -- Store mission
-    if not MissionSystem.playerMissions[playerId] then
-        MissionSystem.playerMissions[playerId] = {}
+    if not MissionSystem.activeMissions[playerId] then
+        MissionSystem.activeMissions[playerId] = {}
     end
-    MissionSystem.playerMissions[playerId][missionId] = mission
+    MissionSystem.activeMissions[playerId][missionId] = mission
     
     -- Notify client
     TriggerClientEvent('dz:client:mission:created', playerId, mission)
@@ -290,18 +284,18 @@ end
 
 -- Get player mission
 local function GetPlayerMission(playerId, missionId)
-    if not MissionSystem.playerMissions[playerId] then
+    if not MissionSystem.activeMissions[playerId] then
         return nil
     end
-    return MissionSystem.playerMissions[playerId][missionId]
+    return MissionSystem.activeMissions[playerId][missionId]
 end
 
 -- Get player active missions
 local function GetPlayerActiveMissions(playerId)
     local activeMissions = {}
     
-    if MissionSystem.playerMissions[playerId] then
-        for missionId, mission in pairs(MissionSystem.playerMissions[playerId]) do
+    if MissionSystem.activeMissions[playerId] then
+        for missionId, mission in pairs(MissionSystem.activeMissions[playerId]) do
             if mission.status == 'active' then
                 table.insert(activeMissions, mission)
             end
@@ -507,7 +501,7 @@ CreateThread(function()
         end
         
         -- Check for timed out missions
-        for playerId, missions in pairs(MissionSystem.playerMissions) do
+        for playerId, missions in pairs(MissionSystem.activeMissions) do
             for missionId, mission in pairs(missions) do
                 if mission.status == 'active' then
                     local elapsed = currentTime - mission.startTime
@@ -533,7 +527,7 @@ AddEventHandler('playerDropped', function()
     local playerId = source
     
     -- Clean up player missions
-    MissionSystem.playerMissions[playerId] = nil
+    MissionSystem.activeMissions[playerId] = nil
     
     -- Clean up player cooldowns
     for cooldownKey, _ in pairs(MissionSystem.missionCooldowns) do
@@ -545,7 +539,7 @@ end)
 
 -- Exports
 exports('GetPlayerMissions', function(playerId)
-    return MissionSystem.playerMissions[playerId] or {}
+    return MissionSystem.activeMissions[playerId] or {}
 end)
 
 exports('CreatePlayerMission', function(playerId, missionType, difficulty, districtId)

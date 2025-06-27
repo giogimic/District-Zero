@@ -1,14 +1,13 @@
--- Server District Events System
+-- District Events System (Server)
 -- Version: 1.0.0
 
-local QBoxIntegration = require 'shared/qbox_integration'
-local Utils = require 'shared/utils'
-
--- Get QBX Core object
-local QBX = QBoxIntegration.GetCoreObject()
-
-local activeEvents = {}
-local eventCooldowns = {}
+-- District Events State
+local DistrictEvents = {
+    activeEvents = {},
+    eventHistory = {},
+    eventQueue = {},
+    lastEventTime = 0
+}
 
 -- Event Types
 local eventTypes = {
@@ -159,13 +158,13 @@ local function UpdateEventProgress(districtId, progress)
     end
     
     -- Check if event exists
-    if not activeEvents[districtId] then
+    if not DistrictEvents.activeEvents[districtId] then
         Utils.HandleError('No active event for district: ' .. tostring(districtId), 'UpdateEventProgress')
         return false
     end
     
     -- Update progress
-    activeEvents[districtId].progress = progress
+    DistrictEvents.activeEvents[districtId].progress = progress
     
     -- Check if event is complete
     if progress >= 100 then
@@ -339,11 +338,11 @@ end)
 
 -- Exports
 exports('GetActiveEvents', function()
-    return activeEvents
+    return DistrictEvents.activeEvents
 end)
 
 exports('GetEventCooldowns', function()
-    return eventCooldowns
+    return DistrictEvents.eventCooldowns
 end)
 
 exports('StartEvent', function(districtId, eventType)
