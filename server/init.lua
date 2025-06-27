@@ -1,223 +1,241 @@
 -- District Zero Server Initialization
--- Version: 1.0.0
+-- This file initializes all core systems and global variables
 
--- Global variables
-Config = nil
-Utils = nil
+-- Initialize global variables first
+Config = {}
+Utils = {}
+DatabaseManager = nil
+QBCore = nil
 QBX = nil
 
--- System modules (will be initialized later)
-DistrictsSystem = nil
-MissionsSystem = nil
-TeamsSystem = nil
-EventsSystem = nil
-AchievementsSystem = nil
-AnalyticsSystem = nil
-SecuritySystem = nil
-PerformanceSystem = nil
-IntegrationSystem = nil
-PolishSystem = nil
-DeploymentSystem = nil
-ReleaseSystem = nil
-DatabaseManager = nil
-AdvancedMissionSystem = nil
-DynamicEventsSystem = nil
-AdvancedTeamSystem = nil
-AchievementSystem = nil
+-- Performance system placeholder
+PerformanceSystem = {
+    StartMonitoring = function() end,
+    StopMonitoring = function() end,
+    GetMetrics = function() return {} end
+}
 
--- Initialize QBX Core
-local function InitializeCore()
-    local qbxExports = {'qbx_core', 'qb-core', 'qb_core'}
-    
-    for _, exportName in ipairs(qbxExports) do
-        local success, result = pcall(function()
-            return exports[exportName]:GetCoreObject()
-        end)
-        
-        if success and result then
-            QBX = result
-            print('^2[District Zero] Successfully loaded QBX Core from: ' .. exportName .. '^7')
-            return true
-        end
+-- Load configuration
+local configPath = GetResourcePath(GetCurrentResourceName()) .. '/shared/config.lua'
+local configFile = LoadResourceFile(GetCurrentResourceName(), 'shared/config.lua')
+if configFile then
+    local configFunc, err = load(configFile)
+    if configFunc then
+        configFunc()
+        print('[District Zero] Configuration loaded successfully')
+    else
+        print('[District Zero] Error loading configuration: ' .. tostring(err))
     end
-    
-    print('^1[District Zero] WARNING: QBX Core not available. Some features may not work properly.^7')
-    return false
+else
+    print('[District Zero] Configuration file not found')
 end
 
--- Initialize Config
-local function InitializeConfig()
-    local success, result = pcall(function()
-        return require('shared.config')
-    end)
-    
-    if success then
-        Config = result
-        print('^2[District Zero] Config loaded successfully^7')
-        return true
+-- Load utilities
+local utilsFile = LoadResourceFile(GetCurrentResourceName(), 'shared/utils.lua')
+if utilsFile then
+    local utilsFunc, err = load(utilsFile)
+    if utilsFunc then
+        utilsFunc()
+        print('[District Zero] Utilities loaded successfully')
     else
-        -- Try loading from file
-        local configFile = LoadResourceFile(GetCurrentResourceName(), 'shared/config.lua')
-        if configFile then
-            local func, err = load(configFile)
-            if func then
-                Config = func()
-                print('^2[District Zero] Config loaded from file^7')
+        print('[District Zero] Error loading utilities: ' .. tostring(err))
+    end
+else
+    print('[District Zero] Utilities file not found')
+end
+
+-- Initialize QBX Core with fallback
+local function InitializeCore()
+    local coreResources = {'qbx_core', 'qb-core', 'qb_core'}
+    
+    for _, resourceName in ipairs(coreResources) do
+        if GetResourceState(resourceName) == 'started' then
+            local success, result = pcall(function()
+                return exports[resourceName]:GetCoreObject()
+            end)
+            
+            if success and result then
+                QBCore = result
+                QBX = result
+                print('[District Zero] Successfully loaded QBX Core from: ' .. resourceName)
                 return true
             end
         end
     end
     
-    print('^1[District Zero] ERROR: Failed to load config^7')
+    print('[District Zero] Warning: Could not load QBX Core - some features may not work')
     return false
 end
 
--- Initialize Utils
-local function InitializeUtils()
-    local success, result = pcall(function()
-        return require('shared.utils')
-    end)
-    
-    if success then
-        Utils = result
-        print('^2[District Zero] Utils loaded successfully^7')
-        return true
-    else
-        -- Create basic utils
-        Utils = {
-            PrintDebug = function(msg) print('^3[District Zero Debug] ^7' .. tostring(msg)) end,
-            PrintError = function(msg, context) print('^1[District Zero Error] ^7' .. tostring(msg) .. ' (Context: ' .. tostring(context) .. ')') end,
-            PrintInfo = function(msg) print('^2[District Zero Info] ^7' .. tostring(msg)) end
-        }
-        print('^3[District Zero] Using basic utils^7')
-        return true
-    end
-end
-
--- Initialize Database
+-- Initialize database
 local function InitializeDatabase()
-    if not MySQL then
-        print('^1[District Zero] ERROR: MySQL not available^7')
-        return false
-    end
+    -- Create data directory if needed
+    local dataPath = GetResourcePath(GetCurrentResourceName()) .. '/data'
     
-    -- Disable foreign key checks for initialization
-    MySQL.query('SET FOREIGN_KEY_CHECKS = 0')
-    
-    -- Drop existing tables if needed (careful with this in production!)
-    local dropTables = false -- Set to true only for development/reset
-    
-    if dropTables then
-        local tables = {
-            'dz_crime_reports',
-            'dz_crimes',
-            'dz_player_equipment',
-            'dz_equipment',
-            'dz_ability_progress',
-            'dz_mission_progress',
-            'dz_faction_members',
-            'dz_players',
-            'dz_abilities',
-            'dz_missions',
-            'dz_factions',
-            'dz_districts'
-        }
-        
-        for _, table in ipairs(tables) do
-            MySQL.query('DROP TABLE IF EXISTS ' .. table)
-        end
-    end
-    
-    -- Create tables
-    local schemaFile = LoadResourceFile(GetCurrentResourceName(), 'server/database/schema.sql')
-    if schemaFile then
-        -- Execute schema in chunks (split by semicolon)
-        local statements = {}
-        for statement in schemaFile:gmatch("([^;]+);") do
-            table.insert(statements, statement:match("^%s*(.-)%s*$"))
-        end
-        
-        for _, statement in ipairs(statements) do
-            if statement and statement ~= "" and not statement:match("^%-%-") then
-                local success, err = pcall(function()
-                    MySQL.query.await(statement)
-                end)
-                
-                if not success then
-                    print('^3[District Zero] Warning executing SQL: ' .. tostring(err) .. '^7')
-                end
+    -- Initialize database manager
+    DatabaseManager = {
+        ready = false,
+        Execute = function(query, params)
+            if MySQL and MySQL.query then
+                return MySQL.query.await(query, params)
             end
+            return {}
+        end,
+        Insert = function(query, params)
+            if MySQL and MySQL.insert then
+                return MySQL.insert.await(query, params)
+            end
+            return 0
+        end,
+        Update = function(query, params)
+            if MySQL and MySQL.update then
+                return MySQL.update.await(query, params)
+            end
+            return 0
+        end,
+        Scalar = function(query, params)
+            if MySQL and MySQL.scalar then
+                return MySQL.scalar.await(query, params)
+            end
+            return nil
+        end,
+        Single = function(query, params)
+            if MySQL and MySQL.single then
+                return MySQL.single.await(query, params)
+            end
+            return nil
         end
-    end
+    }
     
-    -- Re-enable foreign key checks
-    MySQL.query('SET FOREIGN_KEY_CHECKS = 1')
-    
-    print('^2[District Zero] Database initialized^7')
-    return true
+    -- Run database initialization
+    CreateThread(function()
+        if MySQL and MySQL.ready then
+            MySQL.ready(function()
+                -- Disable foreign key checks temporarily
+                MySQL.query('SET FOREIGN_KEY_CHECKS = 0')
+                
+                -- Load and execute schema
+                local schemaFile = LoadResourceFile(GetCurrentResourceName(), 'database/schema.sql')
+                if schemaFile then
+                    -- Split schema into individual statements
+                    local statements = {}
+                    for statement in schemaFile:gmatch("([^;]+);") do
+                        local trimmed = statement:match("^%s*(.-)%s*$")
+                        if trimmed and trimmed ~= "" then
+                            table.insert(statements, trimmed)
+                        end
+                    end
+                    
+                    -- Execute each statement
+                    for _, statement in ipairs(statements) do
+                        local success, err = pcall(function()
+                            MySQL.query.await(statement)
+                        end)
+                        if not success then
+                            print('[District Zero] Database statement error: ' .. tostring(err))
+                        end
+                    end
+                    
+                    print('[District Zero] Database schema initialized')
+                else
+                    print('[District Zero] Database schema file not found')
+                end
+                
+                -- Re-enable foreign key checks
+                MySQL.query('SET FOREIGN_KEY_CHECKS = 1')
+                
+                DatabaseManager.ready = true
+            end)
+        else
+            print('[District Zero] MySQL not available - database features disabled')
+        end
+    end)
 end
 
--- Initialize all systems
-local function InitializeSystems()
-    -- Create placeholder systems
-    DistrictsSystem = {}
-    MissionsSystem = {}
-    TeamsSystem = {}
-    EventsSystem = {}
-    AchievementsSystem = {}
-    AnalyticsSystem = {}
-    SecuritySystem = {}
-    PerformanceSystem = {}
-    IntegrationSystem = {}
-    PolishSystem = {}
-    DeploymentSystem = {}
-    ReleaseSystem = {}
-    DatabaseManager = {}
-    AdvancedMissionSystem = {}
-    DynamicEventsSystem = {}
-    AdvancedTeamSystem = {}
-    AchievementSystem = {}
+-- Register all exports
+local function RegisterExports()
+    -- Config exports
+    exports('GetConfig', function() return Config end)
+    exports('GetConfigValue', function(key) return Config[key] end)
     
-    print('^2[District Zero] All systems initialized^7')
-    return true
+    -- Utils exports
+    exports('GetUtils', function() return Utils end)
+    
+    -- Database exports
+    exports('GetDatabaseManager', function() return DatabaseManager end)
+    
+    -- Performance exports
+    exports('GetPerformanceSystem', function() return PerformanceSystem end)
+    
+    -- Placeholder exports for systems that will be initialized later
+    exports('GetCurrentDistrict', function(playerId) return nil end)
+    exports('GetTeamStats', function(team) return {} end)
+    exports('GetPlayerTeam', function(playerId) return 'neutral' end)
+    exports('GetDistrictInfluence', function(districtId) return { pvp = 0, pve = 0 } end)
+    exports('GetMissionProgress', function(playerId, missionId) return 0 end)
+    exports('GetPlayerAchievements', function(playerId) return {} end)
+    exports('GetAnalyticsData', function(category) return {} end)
+    exports('GetSecurityStatus', function() return { status = 'active', threats = 0 } end)
+    exports('GetPerformanceMetrics', function() return { fps = 60, memory = 0, cpu = 0 } end)
+    exports('GetDistrictControl', function(districtId) return 'neutral' end)
+    exports('GetControlPoints', function(districtId) return {} end)
+    exports('GetActiveEvents', function() return {} end)
+    exports('GetEventProgress', function(eventId) return 0 end)
+    exports('GetTeamMembers', function(team) return {} end)
+    exports('GetMissionStatus', function(missionId) return 'inactive' end)
+    exports('GetPlayerStats', function(playerId) return {} end)
+    exports('GetDistrictBonuses', function(districtId) return {} end)
+    exports('GetActiveBuffs', function(playerId) return {} end)
+    exports('GetLeaderboard', function(category) return {} end)
+    exports('GetServerMetrics', function() return {} end)
+    exports('GetPlayerRank', function(playerId) return 1 end)
+    exports('GetDistrictResources', function(districtId) return {} end)
+    exports('GetUpgradeStatus', function(upgradeId) return 'locked' end)
+    exports('GetQuestProgress', function(playerId, questId) return 0 end)
+    exports('GetFactionStanding', function(playerId, faction) return 0 end)
+    exports('GetEventRewards', function(eventId) return {} end)
+    exports('GetChallengeStatus', function(challengeId) return 'inactive' end)
+    exports('GetPlayerInventory', function(playerId) return {} end)
+    exports('GetSkillLevel', function(playerId, skill) return 0 end)
+    exports('GetPrestigeLevel', function(playerId) return 0 end)
+    exports('GetSeasonProgress', function() return 0 end)
+    exports('GetBattlePassTier', function(playerId) return 0 end)
+    exports('GetDailyRewards', function(playerId) return {} end)
+    exports('GetWeeklyChallenge', function() return {} end)
+    exports('GetGuildInfo', function(guildId) return {} end)
+    exports('GetAllianceStatus', function(alliance) return 'neutral' end)
+    exports('GetTerritoryMap', function() return {} end)
+    exports('GetResourceNodes', function(districtId) return {} end)
+    exports('GetMarketPrices', function() return {} end)
+    exports('GetAuctionListings', function() return {} end)
+    exports('GetPlayerReputation', function(playerId) return 0 end)
+    
+    print('[District Zero] All exports registered')
 end
 
 -- Main initialization
 CreateThread(function()
-    Wait(1000) -- Wait for other resources
-    
-    print('^2[District Zero] Starting initialization...^7')
-    
-    -- Initialize core components
-    local coreLoaded = InitializeCore()
-    local configLoaded = InitializeConfig()
-    local utilsLoaded = InitializeUtils()
+    -- Initialize core
+    InitializeCore()
     
     -- Initialize database
-    local dbLoaded = InitializeDatabase()
+    InitializeDatabase()
     
-    -- Initialize systems
-    local systemsLoaded = InitializeSystems()
+    -- Register exports
+    RegisterExports()
+    
+    -- Wait a bit for everything to initialize
+    Wait(1000)
     
     -- Load main server file
-    if configLoaded and utilsLoaded then
-        local mainFile = LoadResourceFile(GetCurrentResourceName(), 'server/main.lua')
-        if mainFile then
-            local func, err = load(mainFile)
-            if func then
-                func()
-                print('^2[District Zero] Main server file loaded^7')
-            else
-                print('^1[District Zero] Error loading main server file: ' .. tostring(err) .. '^7')
-            end
+    local mainFile = LoadResourceFile(GetCurrentResourceName(), 'server/main.lua')
+    if mainFile then
+        local mainFunc, err = load(mainFile)
+        if mainFunc then
+            mainFunc()
+            print('[District Zero] Main server file loaded')
+        else
+            print('[District Zero] Error loading main server file: ' .. tostring(err))
         end
     end
-    
-    print('^2[District Zero] Initialization complete^7')
-    print('^2[District Zero] Status:^7')
-    print('  - QBX Core: ' .. (coreLoaded and '^2Loaded^7' or '^1Not Loaded^7'))
-    print('  - Config: ' .. (configLoaded and '^2Loaded^7' or '^1Not Loaded^7'))
-    print('  - Utils: ' .. (utilsLoaded and '^2Loaded^7' or '^1Not Loaded^7'))
-    print('  - Database: ' .. (dbLoaded and '^2Loaded^7' or '^1Not Loaded^7'))
-    print('  - Systems: ' .. (systemsLoaded and '^2Loaded^7' or '^1Not Loaded^7'))
 end) 

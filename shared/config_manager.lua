@@ -146,6 +146,27 @@ function ConfigManager.Initialize()
     print("^2[District Zero] ^7Configuration Manager Initialized")
 end
 
+-- Save configuration to file
+local function SaveConfiguration(configName, configData)
+    if not configName or not configData then
+        print('^1[District Zero] Invalid parameters for SaveConfiguration^7')
+        return false
+    end
+    
+    -- Use SaveResourceFile instead of io operations
+    local success = pcall(function()
+        SaveResourceFile(GetCurrentResourceName(), 'config/' .. configName .. '.json', json.encode(configData, { indent = true }))
+    end)
+    
+    if not success then
+        print('^1[District Zero] Failed to save configuration: ' .. configName .. '^7')
+        return false
+    end
+    
+    print('^2[District Zero] Configuration saved: ' .. configName .. '^7')
+    return true
+end
+
 -- Load all configurations
 function ConfigManager.LoadAllConfigurations()
     for configName, defaultConfig in pairs(DEFAULT_CONFIGS) do
@@ -199,26 +220,7 @@ function ConfigManager.MergeConfigurations(defaultConfig, loadedConfig)
     return merged
 end
 
--- Save configuration to file
-local function SaveConfiguration(configName, configData)
-    if not configName or not configData then
-        print('^1[District Zero] Invalid parameters for SaveConfiguration^7')
-        return false
-    end
-    
-    -- Use SaveResourceFile instead of io operations
-    local success = pcall(function()
-        SaveResourceFile(GetCurrentResourceName(), 'config/' .. configName .. '.json', json.encode(configData, { indent = true }))
-    end)
-    
-    if not success then
-        print('^1[District Zero] Failed to save configuration: ' .. configName .. '^7')
-        return false
-    end
-    
-    print('^2[District Zero] Configuration saved: ' .. configName .. '^7')
-    return true
-end
+
 
 -- Setup configuration watchers
 function ConfigManager.SetupConfigWatchers()
@@ -299,7 +301,7 @@ function ConfigManager.UpdateConfiguration(configName, updates)
     end
     
     -- Save updated configuration
-    ConfigManager.SaveConfiguration(configName, config)
+    SaveConfiguration(configName, config)
     
     -- Notify systems of configuration change
     TriggerEvent("district_zero:config:changed", configName, config)
@@ -337,7 +339,7 @@ function ConfigManager.ResetConfiguration(configName)
     local defaultConfig = configState.defaults[configName]
     if defaultConfig then
         configState.configs[configName] = ConfigManager.MergeConfigurations({}, defaultConfig)
-        ConfigManager.SaveConfiguration(configName, configState.configs[configName])
+        SaveConfiguration(configName, configState.configs[configName])
         print(string.format("^2[District Zero] ^7Configuration %s reset to defaults", configName))
         return true
     end

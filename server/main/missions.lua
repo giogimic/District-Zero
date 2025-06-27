@@ -421,13 +421,12 @@ RegisterNetEvent('dz:server:mission:claimRewards', function(missionId, rewards)
     -- Rewards are handled by the completion function
 end)
 
--- NUI Callbacks
-RegisterNUICallback('getAvailableMissions', function(data, cb)
+-- Server Events for Mission UI
+RegisterNetEvent('dz:server:getAvailableMissions', function(districtId)
     local playerId = source
-    local districtId = data.districtId
     
     if not districtId then
-        cb({
+        TriggerClientEvent('dz:client:missionResponse', playerId, {
             success = false,
             error = 'District ID required'
         })
@@ -436,20 +435,17 @@ RegisterNUICallback('getAvailableMissions', function(data, cb)
     
     local missions = GetAvailableMissionsForPlayer(playerId, districtId)
     
-    cb({
+    TriggerClientEvent('dz:client:missionResponse', playerId, {
         success = true,
         data = missions
     })
 end)
 
-RegisterNUICallback('createMission', function(data, cb)
+RegisterNetEvent('dz:server:createMission', function(missionType, difficulty, districtId)
     local playerId = source
-    local missionType = data.missionType
-    local difficulty = data.difficulty
-    local districtId = data.districtId
     
     if not missionType or not difficulty or not districtId then
-        cb({
+        TriggerClientEvent('dz:client:missionResponse', playerId, {
             success = false,
             error = 'Missing mission parameters'
         })
@@ -458,14 +454,14 @@ RegisterNUICallback('createMission', function(data, cb)
     
     local success, result = CreatePlayerMission(playerId, missionType, difficulty, districtId)
     
-    cb({
+    TriggerClientEvent('dz:client:missionResponse', playerId, {
         success = success,
         data = success and result or nil,
         error = not success and result or nil
     })
 end)
 
-RegisterNUICallback('getPlayerMissions', function(data, cb)
+RegisterNetEvent('dz:server:getPlayerMissions', function()
     local playerId = source
     
     local activeMissions = GetPlayerActiveMissions(playerId)
@@ -477,7 +473,7 @@ RegisterNUICallback('getPlayerMissions', function(data, cb)
         totalExp = 0
     }
     
-    cb({
+    TriggerClientEvent('dz:client:missionResponse', playerId, {
         success = true,
         data = {
             activeMissions = activeMissions,
