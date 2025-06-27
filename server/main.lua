@@ -2670,4 +2670,108 @@ AddEventHandler('dz:analytics:metric_response', function(metricId, metricData)
     print('^2[District Zero] ^7Metric data sent to player ' .. playerId .. ': ' .. metricId)
 end)
 
-print('^2[District Zero] ^7Advanced analytics system integrated') 
+print('^2[District Zero] ^7Advanced analytics system integrated')
+
+-- Exports
+exports('GetDistrictsSystem', function()
+    return DistrictsSystem
+end)
+
+exports('GetMissionsSystem', function()
+    return MissionsSystem
+end)
+
+exports('GetTeamsSystem', function()
+    return TeamsSystem
+end)
+
+exports('GetEventsSystem', function()
+    return EventsSystem
+end)
+
+exports('GetAchievementsSystem', function()
+    return AchievementsSystem
+end)
+
+exports('GetAnalyticsSystem', function()
+    return AnalyticsSystem
+end)
+
+exports('GetSecuritySystem', function()
+    return SecuritySystem
+end)
+
+exports('GetPerformanceSystem', function()
+    return PerformanceSystem
+end)
+
+exports('GetIntegrationSystem', function()
+    return IntegrationSystem
+end)
+
+exports('GetPolishSystem', function()
+    return PolishSystem
+end)
+
+exports('GetDeploymentSystem', function()
+    return DeploymentSystem
+end)
+
+exports('GetReleaseSystem', function()
+    return ReleaseSystem
+end)
+
+exports('GetUnifiedAPI', function()
+    return {
+        districts = DistrictsSystem,
+        missions = MissionsSystem,
+        teams = TeamsSystem,
+        events = EventsSystem,
+        achievements = AchievementsSystem,
+        analytics = AnalyticsSystem,
+        security = SecuritySystem,
+        performance = PerformanceSystem,
+        integration = IntegrationSystem,
+        polish = PolishSystem,
+        deployment = DeploymentSystem,
+        release = ReleaseSystem
+    }
+end)
+
+exports('GetSystemStatus', function()
+    return {
+        districts = DistrictsSystem and true or false,
+        missions = MissionsSystem and true or false,
+        teams = TeamsSystem and true or false,
+        events = EventsSystem and true or false,
+        achievements = AchievementsSystem and true or false,
+        analytics = AnalyticsSystem and true or false,
+        security = SecuritySystem and true or false,
+        performance = PerformanceSystem and true or false,
+        integration = IntegrationSystem and true or false,
+        polish = PolishSystem and true or false,
+        deployment = DeploymentSystem and true or false,
+        release = ReleaseSystem and true or false
+    }
+end)
+
+exports('GetIntegrationHealth', function()
+    return {
+        qbx_core = QBX and true or false,
+        database = true,
+        systems = {
+            districts = DistrictsSystem and true or false,
+            missions = MissionsSystem and true or false,
+            teams = TeamsSystem and true or false,
+            events = EventsSystem and true or false,
+            achievements = AchievementsSystem and true or false,
+            analytics = AnalyticsSystem and true or false,
+            security = SecuritySystem and true or false,
+            performance = PerformanceSystem and true or false,
+            integration = IntegrationSystem and true or false,
+            polish = PolishSystem and true or false,
+            deployment = DeploymentSystem and true or false,
+            release = ReleaseSystem and true or false
+        }
+    }
+end) 

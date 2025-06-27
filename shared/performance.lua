@@ -1,6 +1,8 @@
 -- Performance Optimization System for District Zero
 -- Version: 1.0.0
 
+local Utils = require 'shared/utils'
+
 local PerformanceSystem = {
     -- Blip Management
     blips = {},
@@ -39,21 +41,21 @@ local PerformanceSystem = {
     performanceMetrics = {
         fps = 0,
         memoryUsage = 0,
+        cpu = 0,
         networkLatency = 0,
         blipCount = 0,
         eventCount = 0,
         cacheHits = 0,
         cacheMisses = 0
     },
-    metricsUpdateInterval = 5000, -- 5 seconds
+    metricsUpdateInterval = 1000, -- 1 second
     lastMetricsUpdate = 0,
     
     -- Network Optimization
     networkThrottles = {},
     networkConfig = {
-        maxEventsPerSecond = 50,
-        batchSize = 10,
-        compressionThreshold = 1024 -- 1KB
+        maxEventsPerSecond = 10,
+        batchSize = 50
     }
 }
 

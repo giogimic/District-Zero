@@ -99,7 +99,9 @@ local function ClearQueryCache()
 end
 
 -- Register cleanup handler
-RegisterCleanup('database', function()
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() ~= resourceName then return end
+    
     -- Clear query cache
     ClearQueryCache()
     

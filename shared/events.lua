@@ -732,8 +732,10 @@ local function GenerateScheduledEvents()
     
     -- Generate event for random district
     local districts = {}
-    for districtId, _ in pairs(Config.districts) do
-        table.insert(districts, districtId)
+    if Config and Config.districts then
+        for districtId, _ in pairs(Config.districts) do
+            table.insert(districts, districtId)
+        end
     end
     
     if #districts > 0 then

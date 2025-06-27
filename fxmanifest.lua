@@ -34,13 +34,20 @@ shared_scripts {
 
 -- Client scripts
 client_scripts {
-    'client/*.lua'
+    'client/main.lua',
+    'client/main/*.lua'
 }
 
 -- Server scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua'
+    'server/main.lua',
+    'server/teams.lua',
+    'server/release.lua',
+    'server/deployment.lua',
+    'server/final_integration.lua',
+    'server/main/*.lua',
+    'server/database/*.lua'
 }
 
 -- UI files
