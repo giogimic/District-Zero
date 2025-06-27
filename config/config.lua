@@ -230,12 +230,15 @@ Config.Missions = {
         type = 'pvp',
         reward = 2500,
         district = 'downtown',
+        coords = vector3(-75.0, -818.0, 243.0),
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
                 count = 2,
-                timeLimit = 600
+                timeLimit = 600,
+                coords = vector3(-75.0, -818.0, 243.0),
+                radius = 50.0
             }
         }
     },
@@ -246,12 +249,15 @@ Config.Missions = {
         type = 'pve',
         reward = 2000,
         district = 'downtown',
+        coords = vector3(-158.0, -565.0, 34.0),
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 8,
-                timeLimit = 900
+                timeLimit = 900,
+                coords = vector3(-158.0, -565.0, 34.0),
+                radius = 100.0
             }
         }
     },
@@ -263,12 +269,15 @@ Config.Missions = {
         type = 'pvp',
         reward = 3000,
         district = 'vinewood',
+        coords = vector3(-300.0, 100.0, 66.0),
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
                 count = 2,
-                timeLimit = 600
+                timeLimit = 600,
+                coords = vector3(-300.0, 100.0, 66.0),
+                radius = 50.0
             }
         }
     },
@@ -279,12 +288,15 @@ Config.Missions = {
         type = 'pve',
         reward = 2500,
         district = 'vinewood',
+        coords = vector3(-420.0, 1070.0, 325.0),
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 10,
-                timeLimit = 900
+                timeLimit = 900,
+                coords = vector3(-420.0, 1070.0, 325.0),
+                radius = 100.0
             }
         }
     },
@@ -296,12 +308,15 @@ Config.Missions = {
         type = 'pvp',
         reward = 2000,
         district = 'port',
+        coords = vector3(1000.0, -3000.0, 5.0),
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
                 count = 2,
-                timeLimit = 600
+                timeLimit = 600,
+                coords = vector3(1000.0, -3000.0, 5.0),
+                radius = 50.0
             }
         }
     },
@@ -312,12 +327,15 @@ Config.Missions = {
         type = 'pve',
         reward = 2000,
         district = 'port',
+        coords = vector3(1200.0, -3100.0, 5.0),
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 8,
-                timeLimit = 900
+                timeLimit = 900,
+                coords = vector3(1200.0, -3100.0, 5.0),
+                radius = 100.0
             }
         }
     },
@@ -329,12 +347,15 @@ Config.Missions = {
         type = 'pvp',
         reward = 2500,
         district = 'airport',
+        coords = vector3(-1000.0, -3000.0, 13.0),
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
                 count = 2,
-                timeLimit = 600
+                timeLimit = 600,
+                coords = vector3(-1000.0, -3000.0, 13.0),
+                radius = 50.0
             }
         }
     },
@@ -345,12 +366,15 @@ Config.Missions = {
         type = 'pve',
         reward = 2000,
         district = 'airport',
+        coords = vector3(-1100.0, -2900.0, 13.0),
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 8,
-                timeLimit = 900
+                timeLimit = 900,
+                coords = vector3(-1100.0, -2900.0, 13.0),
+                radius = 100.0
             }
         }
     },
@@ -362,12 +386,15 @@ Config.Missions = {
         type = 'pvp',
         reward = 2000,
         district = 'sandy',
+        coords = vector3(2000.0, 3700.0, 32.0),
         objectives = {
             {
                 type = 'capture',
                 target = 'control_point',
                 count = 2,
-                timeLimit = 600
+                timeLimit = 600,
+                coords = vector3(2000.0, 3700.0, 32.0),
+                radius = 50.0
             }
         }
     },
@@ -378,12 +405,15 @@ Config.Missions = {
         type = 'pve',
         reward = 2000,
         district = 'sandy',
+        coords = vector3(1850.0, 3650.0, 32.0),
         objectives = {
             {
                 type = 'eliminate',
                 target = 'npc',
                 count = 8,
-                timeLimit = 900
+                timeLimit = 900,
+                coords = vector3(1850.0, 3650.0, 32.0),
+                radius = 100.0
             }
         }
     }

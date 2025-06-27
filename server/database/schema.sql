@@ -331,4 +331,262 @@ INSERT INTO dz_player_equipment (player_id, equipment_id, status, durability) VA
 (2, 2, 'equipped', 100),
 (3, 3, 'equipped', 100),
 (4, 4, 'equipped', 100),
-(5, 5, 'equipped', 100); 
+(5, 5, 'equipped', 100);
+
+-- Player Statistics Table
+CREATE TABLE IF NOT EXISTS player_stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL,
+    player_name VARCHAR(100),
+    team_type ENUM('pvp', 'pve', 'neutral') DEFAULT 'neutral',
+    total_captures INT DEFAULT 0,
+    total_missions INT DEFAULT 0,
+    total_eliminations INT DEFAULT 0,
+    total_assists INT DEFAULT 0,
+    total_team_events INT DEFAULT 0,
+    total_points INT DEFAULT 0,
+    total_playtime INT DEFAULT 0, -- in seconds
+    last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_player (player_id),
+    INDEX idx_team_type (team_type),
+    INDEX idx_total_points (total_points),
+    INDEX idx_last_active (last_active)
+);
+
+-- District Control History Table
+CREATE TABLE IF NOT EXISTS district_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    district_id VARCHAR(50) NOT NULL,
+    district_name VARCHAR(100),
+    controlling_team ENUM('pvp', 'pve', 'neutral') NOT NULL,
+    previous_team ENUM('pvp', 'pve', 'neutral'),
+    capture_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    capture_duration INT DEFAULT 0, -- in seconds
+    capture_method ENUM('control_point', 'influence', 'event', 'admin') DEFAULT 'control_point',
+    captured_by VARCHAR(50), -- player_id who initiated capture
+    influence_pvp INT DEFAULT 0,
+    influence_pve INT DEFAULT 0,
+    INDEX idx_district_id (district_id),
+    INDEX idx_controlling_team (controlling_team),
+    INDEX idx_capture_time (capture_time),
+    INDEX idx_captured_by (captured_by)
+);
+
+-- Control Point Capture History Table
+CREATE TABLE IF NOT EXISTS control_point_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    district_id VARCHAR(50) NOT NULL,
+    point_id VARCHAR(50) NOT NULL,
+    point_name VARCHAR(100),
+    capturing_team ENUM('pvp', 'pve') NOT NULL,
+    capture_start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    capture_end_time TIMESTAMP NULL,
+    capture_duration INT DEFAULT 0, -- in seconds
+    capture_success BOOLEAN DEFAULT FALSE,
+    captured_by VARCHAR(50), -- player_id who completed capture
+    participants JSON, -- Array of player_ids who participated
+    INDEX idx_district_point (district_id, point_id),
+    INDEX idx_capturing_team (capturing_team),
+    INDEX idx_capture_start (capture_start_time),
+    INDEX idx_captured_by (captured_by)
+);
+
+-- Mission Completion Logs Table
+CREATE TABLE IF NOT EXISTS mission_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    mission_id VARCHAR(100) NOT NULL,
+    player_id VARCHAR(50) NOT NULL,
+    mission_type VARCHAR(50) NOT NULL,
+    mission_title VARCHAR(200),
+    mission_difficulty ENUM('EASY', 'MEDIUM', 'HARD', 'EXPERT') DEFAULT 'EASY',
+    district_id VARCHAR(50),
+    objectives JSON, -- Mission objectives and completion status
+    rewards JSON, -- Rewards given
+    completion_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    duration INT DEFAULT 0, -- in seconds
+    success BOOLEAN DEFAULT TRUE,
+    progress_data JSON, -- Detailed progress tracking
+    INDEX idx_mission_id (mission_id),
+    INDEX idx_player_id (player_id),
+    INDEX idx_mission_type (mission_type),
+    INDEX idx_completion_time (completion_time),
+    INDEX idx_district_id (district_id)
+);
+
+-- Team Performance Analytics Table
+CREATE TABLE IF NOT EXISTS team_analytics (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    team_type ENUM('pvp', 'pve') NOT NULL,
+    date DATE NOT NULL,
+    total_members INT DEFAULT 0,
+    total_captures INT DEFAULT 0,
+    total_missions INT DEFAULT 0,
+    total_eliminations INT DEFAULT 0,
+    total_assists INT DEFAULT 0,
+    total_team_events INT DEFAULT 0,
+    total_points INT DEFAULT 0,
+    average_playtime INT DEFAULT 0, -- in seconds
+    district_control_time INT DEFAULT 0, -- in seconds
+    events_created INT DEFAULT 0,
+    events_completed INT DEFAULT 0,
+    events_failed INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_team_date (team_type, date),
+    INDEX idx_team_type (team_type),
+    INDEX idx_date (date),
+    INDEX idx_total_points (total_points)
+);
+
+-- Team Events Table
+CREATE TABLE IF NOT EXISTS team_events (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id VARCHAR(100) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    team_type ENUM('pvp', 'pve') NOT NULL,
+    creator_id VARCHAR(50),
+    event_data JSON,
+    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    end_time TIMESTAMP NULL,
+    duration INT DEFAULT 0, -- in seconds
+    status ENUM('active', 'completed', 'failed', 'cancelled') DEFAULT 'active',
+    participants JSON, -- Array of participant data
+    rewards_distributed JSON, -- Rewards given to participants
+    INDEX idx_event_id (event_id),
+    INDEX idx_team_type (team_type),
+    INDEX idx_event_type (event_type),
+    INDEX idx_start_time (start_time),
+    INDEX idx_status (status)
+);
+
+-- Player Session Logs Table
+CREATE TABLE IF NOT EXISTS session_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL,
+    session_start TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_end TIMESTAMP NULL,
+    session_duration INT DEFAULT 0, -- in seconds
+    team_type ENUM('pvp', 'pve', 'neutral'),
+    districts_visited JSON, -- Array of district IDs visited
+    activities_performed JSON, -- Array of activities during session
+    INDEX idx_player_id (player_id),
+    INDEX idx_session_start (session_start),
+    INDEX idx_team_type (team_type)
+);
+
+-- District Influence History Table
+CREATE TABLE IF NOT EXISTS district_influence_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    district_id VARCHAR(50) NOT NULL,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    influence_pvp INT DEFAULT 0,
+    influence_pve INT DEFAULT 0,
+    influence_neutral INT DEFAULT 0,
+    total_influence INT DEFAULT 0,
+    change_reason VARCHAR(100), -- Reason for influence change
+    INDEX idx_district_id (district_id),
+    INDEX idx_timestamp (timestamp),
+    INDEX idx_influence_pvp (influence_pvp),
+    INDEX idx_influence_pve (influence_pve)
+);
+
+-- Achievement Tracking Table
+CREATE TABLE IF NOT EXISTS achievements (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_id VARCHAR(50) NOT NULL,
+    achievement_id VARCHAR(50) NOT NULL,
+    achievement_name VARCHAR(100) NOT NULL,
+    achievement_description TEXT,
+    achievement_type VARCHAR(50),
+    progress_current INT DEFAULT 0,
+    progress_required INT DEFAULT 1,
+    completed BOOLEAN DEFAULT FALSE,
+    completed_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_player_achievement (player_id, achievement_id),
+    INDEX idx_player_id (player_id),
+    INDEX idx_achievement_id (achievement_id),
+    INDEX idx_completed (completed)
+);
+
+-- System Configuration Table
+CREATE TABLE IF NOT EXISTS system_config (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    config_key VARCHAR(100) NOT NULL,
+    config_value TEXT,
+    config_type ENUM('string', 'integer', 'float', 'boolean', 'json') DEFAULT 'string',
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_config_key (config_key),
+    INDEX idx_config_key (config_key)
+);
+
+-- Insert default system configuration
+INSERT IGNORE INTO system_config (config_key, config_value, config_type, description) VALUES
+('team_balance_threshold', '5', 'integer', 'Maximum difference between team sizes'),
+('team_switch_cooldown', '300', 'integer', 'Team switch cooldown in seconds'),
+('team_event_interval', '600', 'integer', 'Random team event interval in seconds'),
+('capture_time', '60', 'integer', 'Control point capture time in seconds'),
+('mission_cooldown', '300', 'integer', 'Mission cooldown in seconds'),
+('influence_decay_rate', '0.1', 'float', 'Influence decay rate per minute'),
+('max_team_size', '50', 'integer', 'Maximum team size'),
+('team_bonus_multiplier', '1.2', 'float', 'Team activity bonus multiplier');
+
+-- Create views for common queries
+CREATE OR REPLACE VIEW player_leaderboard AS
+SELECT 
+    ps.player_id,
+    ps.player_name,
+    ps.team_type,
+    ps.total_captures,
+    ps.total_missions,
+    ps.total_eliminations,
+    ps.total_assists,
+    ps.total_team_events,
+    ps.total_points,
+    ps.total_playtime,
+    ps.last_active,
+    ROW_NUMBER() OVER (PARTITION BY ps.team_type ORDER BY ps.total_points DESC) as team_rank,
+    ROW_NUMBER() OVER (ORDER BY ps.total_points DESC) as global_rank
+FROM player_stats ps
+WHERE ps.team_type IN ('pvp', 'pve');
+
+CREATE OR REPLACE VIEW district_control_summary AS
+SELECT 
+    dh.district_id,
+    dh.district_name,
+    dh.controlling_team,
+    dh.capture_time as last_capture,
+    TIMESTAMPDIFF(SECOND, dh.capture_time, NOW()) as control_duration,
+    COUNT(*) as total_captures
+FROM district_history dh
+WHERE dh.capture_time = (
+    SELECT MAX(capture_time) 
+    FROM district_history dh2 
+    WHERE dh2.district_id = dh.district_id
+)
+GROUP BY dh.district_id, dh.district_name, dh.controlling_team, dh.capture_time;
+
+CREATE OR REPLACE VIEW team_performance_summary AS
+SELECT 
+    ta.team_type,
+    ta.date,
+    ta.total_members,
+    ta.total_captures,
+    ta.total_missions,
+    ta.total_eliminations,
+    ta.total_assists,
+    ta.total_team_events,
+    ta.total_points,
+    ta.average_playtime,
+    ta.district_control_time,
+    ta.events_created,
+    ta.events_completed,
+    ta.events_failed,
+    ROUND(ta.events_completed / NULLIF(ta.events_created, 0) * 100, 2) as event_success_rate
+FROM team_analytics ta
+ORDER BY ta.date DESC, ta.team_type; 

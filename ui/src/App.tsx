@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useDistrictZeroStore, useCurrentTab, useLoading, useError } from './store'
 import { closeNUI } from './utils/nui'
@@ -7,34 +7,57 @@ import {
   DistrictsTab, 
   MissionsTab, 
   TeamsTab, 
+  AnalyticsTab,
   SettingsTab 
 } from './components/tabs'
 import { NotificationContainer } from './components/NotificationContainer'
 import { TabNavigation } from './components/TabNavigation'
 import { LoadingOverlay } from './components/LoadingOverlay'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { TeamSelectionModal } from './components/TeamSelectionModal'
 
 const App: React.FC = () => {
   const isOpen = useDistrictZeroStore((state) => state.isOpen)
   const currentTab = useCurrentTab()
   const loading = useLoading()
   const error = useError()
+  const currentDistrict = useDistrictZeroStore((state) => state.currentDistrict)
+  const currentTeam = useDistrictZeroStore((state) => state.currentTeam)
+  
+  const [showTeamSelect, setShowTeamSelect] = useState(false)
+  const [teamSelectDistrict, setTeamSelectDistrict] = useState(null)
 
   // Handle escape key to close UI
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isOpen) {
-        closeNUI()
+        if (showTeamSelect) {
+          setShowTeamSelect(false)
+        } else {
+          closeNUI()
+        }
       }
     }
 
     window.addEventListener('keydown', handleKeyPress)
     return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [isOpen])
+  }, [isOpen, showTeamSelect])
 
   // Don't render if UI is not open
   if (!isOpen) {
     return null
+  }
+
+  // Show team selection modal if needed
+  if (showTeamSelect && teamSelectDistrict) {
+    return (
+      <ErrorBoundary>
+        <TeamSelectionModal 
+          district={teamSelectDistrict} 
+          onClose={() => setShowTeamSelect(false)} 
+        />
+      </ErrorBoundary>
+    )
   }
 
   return (
@@ -56,6 +79,16 @@ const App: React.FC = () => {
               <div className="text-sm text-gray-300">
                 Mission Control System
               </div>
+              {currentDistrict && (
+                <div className="text-sm text-neon-blue">
+                  District: {currentDistrict.name}
+                </div>
+              )}
+              {currentTeam && (
+                <div className={`text-sm ${currentTeam === 'pvp' ? 'text-neon-pink' : 'text-neon-blue'}`}>
+                  Team: {currentTeam.toUpperCase()}
+                </div>
+              )}
             </div>
             
             <button
@@ -87,6 +120,7 @@ const App: React.FC = () => {
                 {currentTab === 'districts' && <DistrictsTab />}
                 {currentTab === 'missions' && <MissionsTab />}
                 {currentTab === 'teams' && <TeamsTab />}
+                {currentTab === 'analytics' && <AnalyticsTab />}
                 {currentTab === 'settings' && <SettingsTab />}
               </motion.div>
             </AnimatePresence>

@@ -6,62 +6,147 @@ fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
-name 'District-Zero'
+name 'District Zero FiveM'
+description 'District-based competitive gaming system for FiveM'
 author 'District Zero Team'
-description 'District Zero - A dynamic district control system'
 version '1.0.0'
+url 'https://github.com/district-zero/fivem-mm'
 
-use_experimental_fxv2_oal 'yes'
-
--- Dependencies (flexible for different QBX versions)
+-- Resource dependencies
 dependencies {
-    'ox_lib',
-    'oxmysql'
+    'mysql-async',  -- Database support
+    'oxmysql',      -- Alternative database support
+    'es_extended',  -- ESX framework support (optional)
+    'qb-core',       -- QBCore framework support (optional)
+    'ox_lib'
 }
 
 -- Optional dependencies (will work without these but with reduced functionality)
 optional_dependencies {
-    'qbx_core',
-    'qb-core'
+    'qbx_core'
 }
 
--- Shared Scripts (Load order matters)
+-- Shared scripts
 shared_scripts {
     '@ox_lib/init.lua',
     'config/*.lua',
-    'shared/*.lua'
+    'shared/*.lua',
+    'shared/config.lua',
+    'shared/types.lua',
+    'shared/utils.lua',
+    'shared/constants.lua'
 }
 
--- Client Scripts
+-- Client scripts
 client_scripts {
-    'client/*.lua'
+    'client/*.lua',
+    'client/main.lua',
+    'client/ui.lua',
+    'client/events.lua',
+    'client/performance.lua'
 }
 
--- Server Scripts (Load order matters)
+-- Server scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/*.lua',
-    'server/database/*.lua'
+    'server/database/*.lua',
+    'server/database.lua',
+    'server/districts.lua',
+    'server/missions.lua',
+    'server/teams.lua',
+    'server/events.lua',
+    'server/achievements.lua',
+    'server/analytics.lua',
+    'server/security.lua',
+    'server/performance.lua',
+    'server/integration.lua',
+    'server/polish.lua',
+    'server/deployment.lua',
+    'server/release.lua',
+    'server/final_integration.lua'
 }
 
--- UI Files
+-- UI files
 ui_page 'ui/dist/index.html'
 
 files {
     'ui/dist/index.html',
     'ui/dist/assets/*',
-    'locales/*.json'
+    'locales/*.json',
+    'ui/index.html',
+    'ui/static/js/main.js',
+    'ui/static/css/main.css',
+    'ui/static/media/*'
+}
+
+-- Configuration files
+data_file 'CONFIG_FILE' 'config/*.json'
+
+-- Export functions
+exports {
+    -- Core systems
+    'GetDistrictsSystem',
+    'GetMissionsSystem', 
+    'GetTeamsSystem',
+    'GetEventsSystem',
+    'GetAchievementsSystem',
+    
+    -- Advanced systems
+    'GetAnalyticsSystem',
+    'GetSecuritySystem',
+    'GetPerformanceSystem',
+    
+    -- Integration systems
+    'GetIntegrationSystem',
+    'GetPolishSystem',
+    'GetDeploymentSystem',
+    'GetReleaseSystem',
+    
+    -- Final integration
+    'GetUnifiedAPI',
+    'GetSystemStatus',
+    'GetIntegrationHealth'
+}
+
+-- Server exports
+server_exports {
+    'GetDistrictsSystem',
+    'GetMissionsSystem',
+    'GetTeamsSystem', 
+    'GetEventsSystem',
+    'GetAchievementsSystem',
+    'GetAnalyticsSystem',
+    'GetSecuritySystem',
+    'GetPerformanceSystem',
+    'GetIntegrationSystem',
+    'GetPolishSystem',
+    'GetDeploymentSystem',
+    'GetReleaseSystem',
+    'GetUnifiedAPI',
+    'GetSystemStatus',
+    'GetIntegrationHealth'
+}
+
+-- Client exports
+client_exports {
+    'GetUI',
+    'GetClientEvents',
+    'GetClientPerformance'
 }
 
 -- Resource Configuration
 provide 'district_zero'
 
 -- Resource information
-repository 'https://github.com/GioGimic/district-zero'
-issues 'https://github.com/GioGimic/district-zero/issues'
+repository 'https://github.com/district-zero/fivem-mm'
+bugs 'https://github.com/district-zero/fivem-mm/issues'
 
 escrow_ignore {
     'bridge/**/*.lua',
     'shared/**/*.lua',
     'locales/**/*.json'
 }
+
+-- Performance settings
+use_experimental_fxv2_oal 'yes'

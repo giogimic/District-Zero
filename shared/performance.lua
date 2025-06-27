@@ -1,280 +1,548 @@
--- District Zero Performance Handler
+-- Performance Optimization System for District Zero
 -- Version: 1.0.0
 
--- Performance Configuration
-local Config = {
-    throttle = {
-        default = 1000, -- Default throttle time in ms
-        events = {
-            ['dz:district:update'] = 5000,
-            ['dz:team:update'] = 5000,
-            ['dz:mission:update'] = 3000
-        }
+local PerformanceSystem = {
+    -- Blip Management
+    blips = {},
+    blipPool = {},
+    maxBlips = 150,
+    blipCleanupInterval = 30000, -- 30 seconds
+    lastBlipCleanup = 0,
+    
+    -- Event Throttling
+    eventThrottles = {},
+    throttleConfig = {
+        district_update = { interval = 1000, maxPerInterval = 5 },
+        mission_update = { interval = 2000, maxPerInterval = 3 },
+        team_update = { interval = 1500, maxPerInterval = 4 },
+        influence_update = { interval = 3000, maxPerInterval = 2 },
+        capture_update = { interval = 500, maxPerInterval = 10 },
+        notification = { interval = 100, maxPerInterval = 20 }
     },
-    cache = {
-        ttl = 300, -- Cache time to live in seconds
-        maxSize = 1000 -- Maximum cache size
+    
+    -- Memory Management
+    memoryUsage = 0,
+    memoryThreshold = 100 * 1024 * 1024, -- 100MB
+    garbageCollectionInterval = 60000, -- 1 minute
+    lastGarbageCollection = 0,
+    
+    -- Caching System
+    cache = {},
+    cacheConfig = {
+        maxSize = 1000,
+        ttl = 300000, -- 5 minutes
+        cleanupInterval = 60000 -- 1 minute
+    },
+    lastCacheCleanup = 0,
+    
+    -- Performance Monitoring
+    performanceMetrics = {
+        fps = 0,
+        memoryUsage = 0,
+        networkLatency = 0,
+        blipCount = 0,
+        eventCount = 0,
+        cacheHits = 0,
+        cacheMisses = 0
+    },
+    metricsUpdateInterval = 5000, -- 5 seconds
+    lastMetricsUpdate = 0,
+    
+    -- Network Optimization
+    networkThrottles = {},
+    networkConfig = {
+        maxEventsPerSecond = 50,
+        batchSize = 10,
+        compressionThreshold = 1024 -- 1KB
     }
 }
 
--- Helper function to get current timestamp
-local function GetCurrentTimestamp()
-    if IsDuplicityVersion() then -- Server-side
-        return os.time()
-    else -- Client-side
-        return GetGameTimer() / 1000 -- Convert to seconds
+-- Blip Management System
+local function CreateOptimizedBlip(data)
+    if not data or not data.coords then
+        return nil, 'Invalid blip data'
     end
+    
+    -- Check blip limit
+    local blipCount = 0
+    for _ in pairs(PerformanceSystem.blips) do
+        blipCount = blipCount + 1
+    end
+    
+    if blipCount >= PerformanceSystem.maxBlips then
+        -- Clean up old blips
+        PerformanceSystem.CleanupOldBlips()
+        
+        -- Check again after cleanup
+        blipCount = 0
+        for _ in pairs(PerformanceSystem.blips) do
+            blipCount = blipCount + 1
+        end
+        
+        if blipCount >= PerformanceSystem.maxBlips then
+            return nil, 'Maximum blip limit reached'
+        end
+    end
+    
+    -- Try to reuse blip from pool
+    local blip = nil
+    if #PerformanceSystem.blipPool > 0 then
+        blip = table.remove(PerformanceSystem.blipPool)
+    else
+        blip = AddBlipForCoord(data.coords.x, data.coords.y, data.coords.z)
+    end
+    
+    if not blip or blip == 0 then
+        return nil, 'Failed to create blip'
+    end
+    
+    -- Configure blip
+    SetBlipSprite(blip, data.sprite or 1)
+    SetBlipDisplay(blip, data.display or 4)
+    SetBlipScale(blip, data.scale or 0.8)
+    SetBlipColour(blip, data.color or 0)
+    SetBlipAsShortRange(blip, data.shortRange ~= false)
+    
+    if data.name then
+        BeginTextCommandSetBlipName("STRING")
+        AddTextComponentString(data.name)
+        EndTextCommandSetBlipName(blip)
+    end
+    
+    -- Store blip data
+    local blipId = data.id or ('blip_' .. GetGameTimer())
+    PerformanceSystem.blips[blipId] = {
+        blip = blip,
+        data = data,
+        created = GetGameTimer(),
+        lastUpdate = GetGameTimer()
+    }
+    
+    return blipId, blip
 end
 
--- Event Throttling
-local ThrottledEvents = {}
-
-local function ThrottleEvent(eventName, callback, time)
-    time = time or Config.throttle.default
+local function RemoveOptimizedBlip(blipId)
+    local blipData = PerformanceSystem.blips[blipId]
+    if not blipData then
+        return false, 'Blip not found'
+    end
     
-    if ThrottledEvents[eventName] and (GetGameTimer() - ThrottledEvents[eventName]) < time then
+    -- Remove blip
+    if blipData.blip and blipData.blip ~= 0 then
+        RemoveBlip(blipData.blip)
+        
+        -- Add to pool for reuse
+        if #PerformanceSystem.blipPool < 50 then
+            table.insert(PerformanceSystem.blipPool, blipData.blip)
+        end
+    end
+    
+    PerformanceSystem.blips[blipId] = nil
+    return true, 'Blip removed'
+end
+
+local function UpdateOptimizedBlip(blipId, data)
+    local blipData = PerformanceSystem.blips[blipId]
+    if not blipData then
+        return false, 'Blip not found'
+    end
+    
+    -- Update blip properties
+    if data.coords then
+        SetBlipCoords(blipData.blip, data.coords.x, data.coords.y, data.coords.z)
+    end
+    
+    if data.sprite then
+        SetBlipSprite(blipData.blip, data.sprite)
+    end
+    
+    if data.color then
+        SetBlipColour(blipData.blip, data.color)
+    end
+    
+    if data.scale then
+        SetBlipScale(blipData.blip, data.scale)
+    end
+    
+    -- Update metadata
+    blipData.lastUpdate = GetGameTimer()
+    if data.data then
+        blipData.data = data.data
+    end
+    
+    return true, 'Blip updated'
+end
+
+local function CleanupOldBlips()
+    local currentTime = GetGameTimer()
+    local toRemove = {}
+    
+    for blipId, blipData in pairs(PerformanceSystem.blips) do
+        -- Remove blips older than 5 minutes
+        if currentTime - blipData.lastUpdate > 300000 then
+            table.insert(toRemove, blipId)
+        end
+    end
+    
+    for _, blipId in ipairs(toRemove) do
+        RemoveOptimizedBlip(blipId)
+    end
+    
+    PerformanceSystem.lastBlipCleanup = currentTime
+    return #toRemove
+end
+
+-- Event Throttling System
+local function ShouldThrottleEvent(eventType)
+    local config = PerformanceSystem.throttleConfig[eventType]
+    if not config then
         return false
     end
     
-    ThrottledEvents[eventName] = GetGameTimer()
-    return callback()
+    local currentTime = GetGameTimer()
+    local throttle = PerformanceSystem.eventThrottles[eventType]
+    
+    if not throttle then
+        PerformanceSystem.eventThrottles[eventType] = {
+            lastEvent = 0,
+            eventCount = 0,
+            intervalStart = currentTime
+        }
+        return false
+    end
+    
+    -- Check if we're in a new interval
+    if currentTime - throttle.intervalStart >= config.interval then
+        throttle.eventCount = 0
+        throttle.intervalStart = currentTime
+    end
+    
+    -- Check if we've exceeded the limit
+    if throttle.eventCount >= config.maxPerInterval then
+        return true
+    end
+    
+    -- Update event count
+    throttle.eventCount = throttle.eventCount + 1
+    throttle.lastEvent = currentTime
+    
+    return false
 end
 
--- Cache Management
-local Cache = {
-    data = {},
-    timestamps = {}
-}
+local function ThrottledTriggerEvent(eventName, ...)
+    if ShouldThrottleEvent(eventName) then
+        return false, 'Event throttled'
+    end
+    
+    TriggerEvent(eventName, ...)
+    return true, 'Event triggered'
+end
 
-local function SetCache(key, value, ttl)
-    ttl = ttl or Config.cache.ttl
+local function ThrottledTriggerServerEvent(eventName, ...)
+    if ShouldThrottleEvent(eventName) then
+        return false, 'Event throttled'
+    end
+    
+    TriggerServerEvent(eventName, ...)
+    return true, 'Event triggered'
+end
+
+-- Memory Management System
+local function GetMemoryUsage()
+    local memoryInfo = collectgarbage('count')
+    PerformanceSystem.memoryUsage = memoryInfo * 1024 -- Convert to bytes
+    return PerformanceSystem.memoryUsage
+end
+
+local function OptimizeMemory()
+    local currentTime = GetGameTimer()
+    
+    -- Force garbage collection
+    collectgarbage('collect')
+    
+    -- Clean up old cache entries
+    PerformanceSystem.CleanupCache()
+    
+    -- Clean up old blips
+    PerformanceSystem.CleanupOldBlips()
+    
+    PerformanceSystem.lastGarbageCollection = currentTime
+    return GetMemoryUsage()
+end
+
+local function CheckMemoryThreshold()
+    local memoryUsage = GetMemoryUsage()
+    
+    if memoryUsage > PerformanceSystem.memoryThreshold then
+        OptimizeMemory()
+        return true, 'Memory optimized'
+    end
+    
+    return false, 'Memory usage normal'
+end
+
+-- Caching System
+local function GetCacheKey(...)
+    local args = {...}
+    local key = ''
+    for i, arg in ipairs(args) do
+        key = key .. tostring(arg) .. '_'
+    end
+    return key:sub(1, -2) -- Remove trailing underscore
+end
+
+local function GetFromCache(...)
+    local key = GetCacheKey(...)
+    local cacheEntry = PerformanceSystem.cache[key]
+    
+    if not cacheEntry then
+        PerformanceSystem.performanceMetrics.cacheMisses = PerformanceSystem.performanceMetrics.cacheMisses + 1
+        return nil
+    end
+    
+    -- Check if entry is expired
+    if GetGameTimer() - cacheEntry.timestamp > PerformanceSystem.cacheConfig.ttl then
+        PerformanceSystem.cache[key] = nil
+        PerformanceSystem.performanceMetrics.cacheMisses = PerformanceSystem.performanceMetrics.cacheMisses + 1
+        return nil
+    end
+    
+    PerformanceSystem.performanceMetrics.cacheHits = PerformanceSystem.performanceMetrics.cacheHits + 1
+    return cacheEntry.data
+end
+
+local function SetCache(data, ttl, ...)
+    local key = GetCacheKey(...)
+    local currentTime = GetGameTimer()
     
     -- Check cache size
-    if #Cache.data >= Config.cache.maxSize then
-        -- Remove oldest entry
+    local cacheSize = 0
+    for _ in pairs(PerformanceSystem.cache) do
+        cacheSize = cacheSize + 1
+    end
+    
+    if cacheSize >= PerformanceSystem.cacheConfig.maxSize then
+        -- Remove oldest entries
         local oldestKey = nil
-        local oldestTime = math.huge
+        local oldestTime = currentTime
         
-        for k, time in pairs(Cache.timestamps) do
-            if time < oldestTime then
-                oldestTime = time
+        for k, entry in pairs(PerformanceSystem.cache) do
+            if entry.timestamp < oldestTime then
+                oldestTime = entry.timestamp
                 oldestKey = k
             end
         end
         
         if oldestKey then
-            Cache.data[oldestKey] = nil
-            Cache.timestamps[oldestKey] = nil
+            PerformanceSystem.cache[oldestKey] = nil
         end
     end
     
-    Cache.data[key] = value
-    Cache.timestamps[key] = GetCurrentTimestamp() + ttl
+    PerformanceSystem.cache[key] = {
+        data = data,
+        timestamp = currentTime,
+        ttl = ttl or PerformanceSystem.cacheConfig.ttl
+    }
+    
+    return true
 end
 
-local function GetCache(key)
-    if not Cache.data[key] then return nil end
+local function CleanupCache()
+    local currentTime = GetGameTimer()
+    local toRemove = {}
     
-    if GetCurrentTimestamp() > Cache.timestamps[key] then
-        Cache.data[key] = nil
-        Cache.timestamps[key] = nil
-        return nil
-    end
-    
-    return Cache.data[key]
-end
-
--- Loop Optimization
-local function OptimizeLoop(callback, interval)
-    interval = interval or 1000
-    local lastRun = 0
-    
-    return function(...)
-        local currentTime = GetGameTimer()
-        if currentTime - lastRun >= interval then
-            lastRun = currentTime
-            return callback(...)
+    for key, entry in pairs(PerformanceSystem.cache) do
+        if currentTime - entry.timestamp > entry.ttl then
+            table.insert(toRemove, key)
         end
     end
-end
-
--- Resource Cleanup
-local function Cleanup()
-    -- Clear cache
-    Cache.data = {}
-    Cache.timestamps = {}
     
-    -- Clear throttled events
-    ThrottledEvents = {}
-end
-
--- Performance Metrics
-local Metrics = {
-    timers = {},
-    counters = {},
-    memory = {}
-}
-
--- Timer Functions
-local function StartTimer(name)
-    if not name then return end
-    Metrics.timers[name] = GetGameTimer()
-end
-
-local function EndTimer(name)
-    if not name or not Metrics.timers[name] then return end
-    
-    local startTime = Metrics.timers[name]
-    local endTime = GetGameTimer()
-    local duration = endTime - startTime
-    
-    Metrics.timers[name] = nil
-    
-    return duration
-end
-
--- Counter Functions
-local function IncrementCounter(name, amount)
-    if not name then return end
-    amount = amount or 1
-    
-    if not Metrics.counters[name] then
-        Metrics.counters[name] = 0
+    for _, key in ipairs(toRemove) do
+        PerformanceSystem.cache[key] = nil
     end
     
-    Metrics.counters[name] = Metrics.counters[name] + amount
+    PerformanceSystem.lastCacheCleanup = currentTime
+    return #toRemove
 end
 
-local function GetCounter(name)
-    if not name then return 0 end
-    return Metrics.counters[name] or 0
-end
-
-local function ResetCounter(name)
-    if not name then return end
-    Metrics.counters[name] = 0
-end
-
--- Memory Functions
-local function TrackMemory(name)
-    if not name then return end
+-- Performance Monitoring System
+local function UpdatePerformanceMetrics()
+    local currentTime = GetGameTimer()
     
-    Metrics.memory[name] = {
-        start = collectgarbage('count'),
-        time = GetGameTimer()
+    -- Update FPS (simplified)
+    PerformanceSystem.performanceMetrics.fps = GetFrameRate()
+    
+    -- Update memory usage
+    PerformanceSystem.performanceMetrics.memoryUsage = GetMemoryUsage()
+    
+    -- Update blip count
+    local blipCount = 0
+    for _ in pairs(PerformanceSystem.blips) do
+        blipCount = blipCount + 1
+    end
+    PerformanceSystem.performanceMetrics.blipCount = blipCount
+    
+    -- Update event count
+    local eventCount = 0
+    for _, throttle in pairs(PerformanceSystem.eventThrottles) do
+        eventCount = eventCount + throttle.eventCount
+    end
+    PerformanceSystem.performanceMetrics.eventCount = eventCount
+    
+    PerformanceSystem.lastMetricsUpdate = currentTime
+end
+
+local function GetPerformanceMetrics()
+    return PerformanceSystem.performanceMetrics
+end
+
+local function LogPerformanceMetrics()
+    local metrics = GetPerformanceMetrics()
+    print('^3[District Zero Performance] ^7Metrics:')
+    print('  FPS: ' .. metrics.fps)
+    print('  Memory: ' .. math.floor(metrics.memoryUsage / 1024 / 1024) .. 'MB')
+    print('  Blips: ' .. metrics.blipCount)
+    print('  Events: ' .. metrics.eventCount)
+    print('  Cache Hits: ' .. metrics.cacheHits)
+    print('  Cache Misses: ' .. metrics.cacheMisses)
+end
+
+-- Network Optimization System
+local function ShouldThrottleNetwork(eventName)
+    local currentTime = GetGameTimer()
+    local throttle = PerformanceSystem.networkThrottles[eventName]
+    
+    if not throttle then
+        PerformanceSystem.networkThrottles[eventName] = {
+            lastEvent = 0,
+            eventCount = 0,
+            intervalStart = currentTime
+        }
+        return false
+    end
+    
+    -- Check if we're in a new second
+    if currentTime - throttle.intervalStart >= 1000 then
+        throttle.eventCount = 0
+        throttle.intervalStart = currentTime
+    end
+    
+    -- Check if we've exceeded the limit
+    if throttle.eventCount >= PerformanceSystem.networkConfig.maxEventsPerSecond then
+        return true
+    end
+    
+    throttle.eventCount = throttle.eventCount + 1
+    throttle.lastEvent = currentTime
+    
+    return false
+end
+
+local function OptimizedTriggerServerEvent(eventName, ...)
+    if ShouldThrottleNetwork(eventName) then
+        return false, 'Network throttled'
+    end
+    
+    TriggerServerEvent(eventName, ...)
+    return true, 'Event sent'
+end
+
+-- Batch Processing System
+local function CreateBatchProcessor(batchSize, processFunction)
+    local batch = {
+        items = {},
+        size = batchSize or PerformanceSystem.networkConfig.batchSize,
+        processFunction = processFunction,
+        lastProcess = 0
     }
-end
-
-local function GetMemoryUsage(name)
-    if not name or not Metrics.memory[name] then return 0 end
     
-    local start = Metrics.memory[name].start
-    local current = collectgarbage('count')
-    
-    return current - start
-end
-
--- Performance Report
-local function GenerateReport()
-    local report = {
-        timers = {},
-        counters = Metrics.counters,
-        memory = {}
-    }
-    
-    -- Process timers
-    for name, startTime in pairs(Metrics.timers) do
-        local duration = GetGameTimer() - startTime
-        report.timers[name] = duration
+    function batch:Add(item)
+        table.insert(self.items, item)
+        
+        if #self.items >= self.size then
+            self:Process()
+        end
     end
     
-    -- Process memory
-    for name, data in pairs(Metrics.memory) do
-        report.memory[name] = GetMemoryUsage(name)
+    function batch:Process()
+        if #self.items > 0 then
+            self.processFunction(self.items)
+            self.items = {}
+            self.lastProcess = GetGameTimer()
+        end
     end
     
-    return report
+    return batch
 end
+
+-- Performance System Methods
+PerformanceSystem.CreateOptimizedBlip = CreateOptimizedBlip
+PerformanceSystem.RemoveOptimizedBlip = RemoveOptimizedBlip
+PerformanceSystem.UpdateOptimizedBlip = UpdateOptimizedBlip
+PerformanceSystem.CleanupOldBlips = CleanupOldBlips
+PerformanceSystem.ThrottledTriggerEvent = ThrottledTriggerEvent
+PerformanceSystem.ThrottledTriggerServerEvent = ThrottledTriggerServerEvent
+PerformanceSystem.GetMemoryUsage = GetMemoryUsage
+PerformanceSystem.OptimizeMemory = OptimizeMemory
+PerformanceSystem.CheckMemoryThreshold = CheckMemoryThreshold
+PerformanceSystem.GetFromCache = GetFromCache
+PerformanceSystem.SetCache = SetCache
+PerformanceSystem.CleanupCache = CleanupCache
+PerformanceSystem.UpdatePerformanceMetrics = UpdatePerformanceMetrics
+PerformanceSystem.GetPerformanceMetrics = GetPerformanceMetrics
+PerformanceSystem.LogPerformanceMetrics = LogPerformanceMetrics
+PerformanceSystem.OptimizedTriggerServerEvent = OptimizedTriggerServerEvent
+PerformanceSystem.CreateBatchProcessor = CreateBatchProcessor
+
+-- Performance Monitoring Thread
+CreateThread(function()
+    while true do
+        Wait(PerformanceSystem.metricsUpdateInterval)
+        UpdatePerformanceMetrics()
+        
+        -- Log metrics every 30 seconds
+        if GetGameTimer() - PerformanceSystem.lastMetricsUpdate > 30000 then
+            LogPerformanceMetrics()
+        end
+    end
+end)
+
+-- Memory Management Thread
+CreateThread(function()
+    while true do
+        Wait(PerformanceSystem.garbageCollectionInterval)
+        CheckMemoryThreshold()
+    end
+end)
+
+-- Cache Cleanup Thread
+CreateThread(function()
+    while true do
+        Wait(PerformanceSystem.cacheConfig.cleanupInterval)
+        CleanupCache()
+    end
+end)
+
+-- Blip Cleanup Thread
+CreateThread(function()
+    while true do
+        Wait(PerformanceSystem.blipCleanupInterval)
+        CleanupOldBlips()
+    end
+end)
 
 -- Exports
-exports('ThrottleEvent', ThrottleEvent)
-exports('SetCache', SetCache)
-exports('GetCache', GetCache)
-exports('OptimizeLoop', OptimizeLoop)
-exports('Cleanup', Cleanup)
-exports('StartTimer', StartTimer)
-exports('EndTimer', EndTimer)
-exports('IncrementCounter', IncrementCounter)
-exports('GetCounter', GetCounter)
-exports('ResetCounter', ResetCounter)
-exports('TrackMemory', TrackMemory)
+exports('CreateOptimizedBlip', CreateOptimizedBlip)
+exports('RemoveOptimizedBlip', RemoveOptimizedBlip)
+exports('UpdateOptimizedBlip', UpdateOptimizedBlip)
+exports('ThrottledTriggerEvent', ThrottledTriggerEvent)
+exports('ThrottledTriggerServerEvent', ThrottledTriggerServerEvent)
 exports('GetMemoryUsage', GetMemoryUsage)
-exports('GenerateReport', GenerateReport)
+exports('OptimizeMemory', OptimizeMemory)
+exports('GetFromCache', GetFromCache)
+exports('SetCache', SetCache)
+exports('GetPerformanceMetrics', GetPerformanceMetrics)
+exports('OptimizedTriggerServerEvent', OptimizedTriggerServerEvent)
+exports('CreateBatchProcessor', CreateBatchProcessor)
 
--- Performance Documentation
---[[
-Performance Documentation:
-
-Event Throttling:
-- ThrottleEvent(eventName, callback, time)
-  - Throttles event execution to prevent spam
-  - Default throttle time: 1000ms
-  - Custom throttle times per event in Config
-
-Cache Management:
-- SetCache(key, value, ttl)
-  - Stores data in cache with TTL
-  - Default TTL: 300 seconds
-  - Maximum cache size: 1000 entries
-- GetCache(key)
-  - Retrieves data from cache
-  - Returns nil if expired or not found
-
-Loop Optimization:
-- OptimizeLoop(callback, interval)
-  - Optimizes loop execution with interval
-  - Default interval: 1000ms
-  - Prevents excessive CPU usage
-
-Resource Cleanup:
-- Cleanup()
-  - Clears cache
-  - Clears throttled events
-  - Should be called on resource stop
-
-Timer Functions:
-- StartTimer(name): Start a performance timer
-- EndTimer(name): End a performance timer and return duration
-
-Counter Functions:
-- IncrementCounter(name, amount): Increment a counter
-- GetCounter(name): Get counter value
-- ResetCounter(name): Reset counter to 0
-
-Memory Functions:
-- TrackMemory(name): Start tracking memory usage
-- GetMemoryUsage(name): Get memory usage in KB
-
-Report Functions:
-- GenerateReport(): Generate performance report
-
-Usage:
-- Throttle event: exports['district_zero']:ThrottleEvent('eventName', callback, time)
-- Cache data: exports['district_zero']:SetCache('key', value, ttl)
-- Get cached data: exports['district_zero']:GetCache('key')
-- Optimize loop: exports['district_zero']:OptimizeLoop(callback, interval)
-- Cleanup: exports['district_zero']:Cleanup()
-- Start tracking performance:
-   StartTimer('operation')
-   TrackMemory('operation')
-
-2. Perform operation
-   -- Your code here
-
-3. End tracking:
-   local duration = EndTimer('operation')
-   local memory = GetMemoryUsage('operation')
-
-4. Generate report:
-   local report = GenerateReport()
-]] 
+return PerformanceSystem 

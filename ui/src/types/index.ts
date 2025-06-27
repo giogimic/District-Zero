@@ -113,7 +113,7 @@ export interface TeamBalance {
 // UI State Types
 export interface UIState {
   isOpen: boolean
-  currentTab: 'dashboard' | 'districts' | 'missions' | 'teams' | 'settings'
+  currentTab: 'dashboard' | 'districts' | 'missions' | 'teams' | 'analytics' | 'settings'
   currentDistrict: District | null
   currentTeam: 'pvp' | 'pve' | null
   currentMission: Mission | null
@@ -204,7 +204,7 @@ export interface TeamStats {
 export type TeamType = 'pvp' | 'pve'
 export type MissionStatus = 'active' | 'completed' | 'failed'
 export type NotificationType = 'success' | 'error' | 'warning' | 'info'
-export type UITab = 'dashboard' | 'districts' | 'missions' | 'teams' | 'settings'
+export type UITab = 'dashboard' | 'districts' | 'missions' | 'teams' | 'analytics' | 'settings'
 
 // FiveM Specific Types
 declare global {

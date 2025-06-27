@@ -1,329 +1,604 @@
--- District Zero Teams Server Module
+-- Server Team System Enhancement
 -- Version: 1.0.0
 
--- Try to get QBX Core with comprehensive error handling
-local QBX = nil
-local qbxLoaded = false
-
--- Try multiple QBX Core export names
-local qbxExports = {
-    'qbx_core',
-    'qb-core',
-    'qb_core'
-}
-
-for _, exportName in ipairs(qbxExports) do
-    local success, result = pcall(function()
-        return exports[exportName]:GetCoreObject()
-    end)
-    
-    if success and result then
-        QBX = result
-        qbxLoaded = true
-        print('^2[District Zero] Successfully loaded QBX Core from: ' .. exportName .. '^7')
-        break
-    else
-        print('^3[District Zero] Failed to load from ' .. exportName .. ': ' .. tostring(result) .. '^7')
-    end
-end
-
-if not qbxLoaded then
-    print('^1[District Zero] WARNING: QBX Core not available. Some features may not work properly.^7')
-    print('^3[District Zero] Make sure qbx_core is started before district-zero^7')
-end
-
+local QBX = exports['qbx_core']:GetCoreObject()
 local Utils = require 'shared/utils'
 
--- Team State Management
-local TeamState = {
-    players = {},
-    teamStats = {
-        pvp = { count = 0, influence = 0 },
-        pve = { count = 0, influence = 0 }
-    },
-    lastSync = 0,
-    syncInterval = 5000 -- 5 seconds
+-- Team System State
+local TeamSystem = {
+    teams = {},
+    teamBalance = { pvp = 0, pve = 0 },
+    teamEvents = {},
+    teamStats = {},
+    teamPersistence = {},
+    lastUpdate = 0
 }
 
 -- Team Configuration
-local TEAMS = {
-    PVP = 'pvp',
-    PVE = 'pve'
+local TeamConfig = {
+    maxTeamSize = 50,
+    balanceThreshold = 5,
+    teamSwitchCooldown = 300000, -- 5 minutes
+    teamEventInterval = 600000, -- 10 minutes
+    teamBonusMultiplier = 1.2,
+    teamCommunicationRange = 100.0,
+    persistenceInterval = 300000, -- 5 minutes
+    teamRewards = {
+        capture = 500,
+        mission = 300,
+        elimination = 100,
+        assist = 50,
+        teamEvent = 1000
+    }
 }
 
--- Initialize teams
-local function InitializeTeams()
-    Utils.PrintDebug('Initializing teams system...')
+-- Team Types
+local TeamTypes = {
+    PVP = 'pvp',
+    PVE = 'pve',
+    NEUTRAL = 'neutral'
+}
+
+-- Team Events
+local TeamEvents = {
+    TEAM_CAPTURE = 'team_capture',
+    TEAM_DEFENSE = 'team_defense',
+    TEAM_MISSION = 'team_mission',
+    TEAM_BATTLE = 'team_battle',
+    TEAM_CHALLENGE = 'team_challenge'
+}
+
+-- Initialize team system
+local function InitializeTeamSystem()
+    TeamSystem.teams = {}
+    TeamSystem.teamBalance = { pvp = 0, pve = 0 }
+    TeamSystem.teamEvents = {}
+    TeamSystem.teamStats = {}
+    TeamSystem.teamPersistence = {}
     
-    -- Load team data from database
-    local success = pcall(function()
-        local result = MySQL.query.await('SELECT * FROM dz_players WHERE team IS NOT NULL')
-        if result then
-            for _, player in ipairs(result) do
-                -- Note: We can't directly map citizenid to playerId here
-                -- This will be handled when players join
-                Utils.PrintDebug('Found team data for player: ' .. player.citizenid)
-            end
+    print('^2[District Zero] ^7Server team system initialized')
+    
+    -- Start persistence timer
+    CreateThread(function()
+        while true do
+            Wait(TeamConfig.persistenceInterval)
+            SaveTeamPersistence()
         end
     end)
     
-    if not success then
-        Utils.PrintDebug('[ERROR] Failed to load team data from database')
-        return false
-    end
+    -- Start team event timer
+    CreateThread(function()
+        while true do
+            Wait(TeamConfig.teamEventInterval)
+            CreateRandomTeamEvent()
+        end
+    end)
+end
+
+-- Load team persistence
+local function LoadTeamPersistence()
+    local success, data = pcall(function()
+        return json.decode(LoadResourceFile(GetCurrentResourceName(), 'data/teams.json') or '{}')
+    end)
     
-    Utils.PrintDebug('Teams system initialized successfully')
-    return true
+    if success and data then
+        TeamSystem.teamPersistence = data
+        print('^2[District Zero] ^7Team persistence loaded')
+    else
+        print('^3[District Zero] ^7No team persistence found, starting fresh')
+    end
+end
+
+-- Save team persistence
+local function SaveTeamPersistence()
+    local data = {
+        teams = TeamSystem.teams,
+        teamStats = TeamSystem.teamStats,
+        lastUpdate = os.time()
+    }
+    
+    local success = pcall(function()
+        SaveResourceFile(GetCurrentResourceName(), 'data/teams.json', json.encode(data), -1)
+    end)
+    
+    if success then
+        print('^2[District Zero] ^7Team persistence saved')
+    else
+        print('^1[District Zero] ^7Failed to save team persistence')
+    end
 end
 
 -- Get player team
-local function GetPlayerTeam(playerId)
-    return TeamState.players[playerId] and TeamState.players[playerId].team or nil
-end
-
--- Set player team
-local function SetPlayerTeam(playerId, team)
-    if not QBX then
-        Utils.PrintError('QBX Core not available', 'SetPlayerTeam')
-        TriggerClientEvent('ox_lib:notify', playerId, {
-            type = 'error',
-            description = 'Core system not available'
-        })
-        return false
-    end
-    
-    local player = QBX.Functions.GetPlayer(playerId)
-    if not player then 
-        TriggerClientEvent('ox_lib:notify', playerId, {
-            type = 'error',
-            description = 'Player data not found'
-        })
-        return false
-    end
-    
-    if team ~= TEAMS.PVP and team ~= TEAMS.PVE then
-        TriggerClientEvent('ox_lib:notify', playerId, {
-            type = 'error',
-            description = 'Invalid team selection'
-        })
-        return false
-    end
-    
-    -- Get old team for stats update
-    local oldTeam = TeamState.players[playerId] and TeamState.players[playerId].team
-    
-    -- Update player team
-    TeamState.players[playerId] = {
-        team = team,
-        citizenid = player.PlayerData.citizenid,
-        name = player.PlayerData.charinfo.firstname .. ' ' .. player.PlayerData.charinfo.lastname,
-        setTime = GetGameTimer()
-    }
-    
-    -- Update team stats
-    if oldTeam then
-        TeamState.teamStats[oldTeam].count = math.max(0, TeamState.teamStats[oldTeam].count - 1)
-    end
-    TeamState.teamStats[team].count = TeamState.teamStats[team].count + 1
-    
-    -- Save to database
-    MySQL.insert.await([[
-        INSERT INTO dz_players (citizenid, team, last_updated)
-        VALUES (?, ?, CURRENT_TIMESTAMP)
-        ON DUPLICATE KEY UPDATE team = ?, last_updated = CURRENT_TIMESTAMP
-    ]], {player.PlayerData.citizenid, team, team})
-    
-    -- Notify client
-    TriggerClientEvent('dz:client:teamSelected', playerId, team)
-    TriggerClientEvent('ox_lib:notify', playerId, {
-        type = 'success',
-        description = 'Joined ' .. (team == TEAMS.PVP and 'PvP' or 'PvE') .. ' team'
-    })
-    
-    -- Update district influence for all districts the player is in
-    for districtId, district in pairs(exports['district-zero']:GetAllDistricts()) do
-        if district.players and district.players[playerId] then
-            district.players[playerId].team = team
-            exports['district-zero']:CalculateDistrictInfluence(districtId)
+local function GetPlayerTeam(source)
+    for teamType, members in pairs(TeamSystem.teams) do
+        if members[source] then
+            return teamType
         end
     end
-    
-    Utils.PrintDebug('Player ' .. playerId .. ' joined team ' .. team)
-    return true
+    return nil
 end
 
--- Get team statistics
-local function GetTeamStats()
-    return TeamState.teamStats
-end
-
--- Get players in team
-local function GetTeamPlayers(team)
-    local players = {}
-    for playerId, playerData in pairs(TeamState.players) do
-        if playerData.team == team then
-            table.insert(players, {
-                id = playerId,
-                name = playerData.name,
-                setTime = playerData.setTime
-            })
-        end
-    end
-    return players
-end
-
--- Get team balance
-local function GetTeamBalance()
-    local pvpCount = TeamState.teamStats.pvp.count
-    local pveCount = TeamState.teamStats.pve.count
-    local total = pvpCount + pveCount
-    
-    if total == 0 then
-        return { pvp = 0.5, pve = 0.5 }
+-- Add player to team
+local function AddPlayerToTeam(source, teamType)
+    if not teamType or (teamType ~= TeamTypes.PVP and teamType ~= TeamTypes.PVE) then
+        return false, 'Invalid team type'
     end
     
-    return {
-        pvp = pvpCount / total,
-        pve = pveCount / total
-    }
-end
-
--- Suggest team for player (for balance)
-local function SuggestTeam(playerId)
-    local balance = GetTeamBalance()
-    
-    if balance.pvp < balance.pve then
-        return TEAMS.PVP
-    elseif balance.pve < balance.pvp then
-        return TEAMS.PVE
-    else
-        -- Equal balance, return random
-        return math.random() < 0.5 and TEAMS.PVP or TEAMS.PVE
-    end
-end
-
--- Check if player can join team (for balance)
-local function CanJoinTeam(playerId, team)
-    local balance = GetTeamBalance()
-    local currentTeam = GetPlayerTeam(playerId)
-    
-    -- If player is already in this team, allow
-    if currentTeam == team then
-        return true
+    -- Remove from current team first
+    local currentTeam = GetPlayerTeam(source)
+    if currentTeam then
+        RemovePlayerFromTeam(source, currentTeam)
     end
     
     -- Check team balance
-    if team == TEAMS.PVP and balance.pvp > 0.6 then
-        return false, 'PvP team is full'
-    elseif team == TEAMS.PVE and balance.pve > 0.6 then
-        return false, 'PvE team is full'
+    local currentBalance = TeamSystem.teamBalance
+    local targetTeamCount = currentBalance[teamType] or 0
+    local otherTeamCount = currentBalance[teamType == TeamTypes.PVP and TeamTypes.PVE or TeamTypes.PVP] or 0
+    
+    if targetTeamCount - otherTeamCount >= TeamConfig.balanceThreshold then
+        return false, 'Team is full, please join the other team'
     end
     
-    return true
+    -- Initialize team if doesn't exist
+    if not TeamSystem.teams[teamType] then
+        TeamSystem.teams[teamType] = {}
+    end
+    
+    -- Add player to team
+    TeamSystem.teams[teamType][source] = {
+        id = source,
+        team = teamType,
+        joinTime = os.time(),
+        stats = {
+            captures = 0,
+            missions = 0,
+            eliminations = 0,
+            assists = 0,
+            teamEvents = 0
+        }
+    }
+    
+    -- Update team balance
+    TeamSystem.teamBalance[teamType] = (TeamSystem.teamBalance[teamType] or 0) + 1
+    
+    -- Notify all clients
+    TriggerClientEvent('dz:client:team:memberJoined', -1, source, teamType)
+    TriggerClientEvent('dz:client:team:balanceUpdate', -1, TeamSystem.teamBalance)
+    
+    -- Load persistent stats if available
+    if TeamSystem.teamPersistence[source] then
+        TeamSystem.teams[teamType][source].stats = TeamSystem.teamPersistence[source].stats or TeamSystem.teams[teamType][source].stats
+    end
+    
+    return true, 'Player added to team'
 end
 
--- Sync team state to clients
-local function SyncTeamState()
-    local currentTime = GetGameTimer()
-    
-    if currentTime - TeamState.lastSync < TeamState.syncInterval then
-        return
+-- Remove player from team
+local function RemovePlayerFromTeam(source, teamType)
+    if not TeamSystem.teams[teamType] or not TeamSystem.teams[teamType][source] then
+        return false, 'Player not in team'
     end
     
-    TeamState.lastSync = currentTime
+    -- Save stats to persistence
+    TeamSystem.teamPersistence[source] = {
+        stats = TeamSystem.teams[teamType][source].stats,
+        lastTeam = teamType,
+        lastUpdate = os.time()
+    }
     
-    -- Send team state to all clients
-    for _, playerId in ipairs(GetPlayers()) do
-        local playerTeam = GetPlayerTeam(playerId)
-        local teamStats = GetTeamStats()
-        local teamBalance = GetTeamBalance()
+    -- Remove from team
+    TeamSystem.teams[teamType][source] = nil
+    
+    -- Update team balance
+    TeamSystem.teamBalance[teamType] = math.max(0, (TeamSystem.teamBalance[teamType] or 0) - 1)
+    
+    -- Notify all clients
+    TriggerClientEvent('dz:client:team:memberLeft', -1, source, teamType)
+    TriggerClientEvent('dz:client:team:balanceUpdate', -1, TeamSystem.teamBalance)
+    
+    return true, 'Player removed from team'
+end
+
+-- Update player stats
+local function UpdatePlayerStats(source, statType, value)
+    local teamType = GetPlayerTeam(source)
+    if not teamType or not TeamSystem.teams[teamType] or not TeamSystem.teams[teamType][source] then
+        return false, 'Player not in team'
+    end
+    
+    local playerData = TeamSystem.teams[teamType][source]
+    playerData.stats[statType] = (playerData.stats[statType] or 0) + (value or 1)
+    
+    -- Award rewards if applicable
+    if TeamConfig.teamRewards[statType] then
+        local reward = TeamConfig.teamRewards[statType] * (value or 1)
+        local Player = QBX.Functions.GetPlayer(source)
+        if Player then
+            Player.Functions.AddMoney('cash', reward)
+            TriggerClientEvent('dz:client:notification', source, 'Team reward: $' .. reward, 'success')
+        end
+    end
+    
+    return true, 'Stats updated'
+end
+
+-- Create team event
+local function CreateTeamEvent(eventType, data, source)
+    local teamType = GetPlayerTeam(source)
+    if not teamType then
+        return false, 'Player not in team'
+    end
+    
+    local eventId = Utils.GenerateId()
+    local event = {
+        id = eventId,
+        type = eventType,
+        team = teamType,
+        creator = source,
+        data = data or {},
+        startTime = os.time(),
+        participants = {},
+        status = 'active'
+    }
+    
+    TeamSystem.teamEvents[eventId] = event
+    
+    -- Notify all clients
+    TriggerClientEvent('dz:client:team:eventCreated', -1, event)
+    
+    return true, eventId
+end
+
+-- Join team event
+local function JoinTeamEvent(eventId, source)
+    local event = TeamSystem.teamEvents[eventId]
+    if not event then
+        return false, 'Event not found'
+    end
+    
+    local teamType = GetPlayerTeam(source)
+    if event.team ~= teamType then
+        return false, 'Event is for different team'
+    end
+    
+    if event.status ~= 'active' then
+        return false, 'Event is not active'
+    end
+    
+    event.participants[source] = {
+        joinTime = os.time(),
+        stats = {}
+    }
+    
+    return true, 'Joined team event'
+end
+
+-- Complete team event
+local function CompleteTeamEvent(eventId, success, source)
+    local event = TeamSystem.teamEvents[eventId]
+    if not event then
+        return false, 'Event not found'
+    end
+    
+    event.status = success and 'completed' or 'failed'
+    event.endTime = os.time()
+    
+    -- Award team bonuses
+    if success then
+        local participantCount = 0
+        for _, _ in pairs(event.participants) do
+            participantCount = participantCount + 1
+        end
         
-        TriggerClientEvent('dz:client:team:sync', playerId, {
-            currentTeam = playerTeam,
-            stats = teamStats,
-            balance = teamBalance
-        })
+        if participantCount > 0 then
+            local bonus = math.floor(TeamConfig.teamRewards.teamEvent * TeamConfig.teamBonusMultiplier / participantCount)
+            
+            for participantId, _ in pairs(event.participants) do
+                UpdatePlayerStats(participantId, 'teamEvents', 1)
+                
+                local Player = QBX.Functions.GetPlayer(participantId)
+                if Player then
+                    Player.Functions.AddMoney('cash', bonus)
+                    TriggerClientEvent('dz:client:notification', participantId, 'Team event reward: $' .. bonus, 'success')
+                end
+            end
+        end
     end
+    
+    -- Notify all clients
+    TriggerClientEvent('dz:client:team:eventCompleted', -1, eventId, success)
+    
+    return true, 'Team event completed'
+end
+
+-- Create random team event
+local function CreateRandomTeamEvent()
+    local eventTypes = {
+        TeamEvents.TEAM_CAPTURE,
+        TeamEvents.TEAM_DEFENSE,
+        TeamEvents.TEAM_MISSION,
+        TeamEvents.TEAM_BATTLE,
+        TeamEvents.TEAM_CHALLENGE
+    }
+    
+    local randomEvent = eventTypes[math.random(1, #eventTypes)]
+    local eventId = Utils.GenerateId()
+    
+    local event = {
+        id = eventId,
+        type = randomEvent,
+        team = math.random() > 0.5 and TeamTypes.PVP or TeamTypes.PVE,
+        creator = 'system',
+        data = {
+            description = 'Random team event: ' .. randomEvent,
+            duration = 300, -- 5 minutes
+            reward = 1500
+        },
+        startTime = os.time(),
+        participants = {},
+        status = 'active'
+    }
+    
+    TeamSystem.teamEvents[eventId] = event
+    
+    -- Notify all clients
+    TriggerClientEvent('dz:client:team:eventCreated', -1, event)
+    
+    -- Auto-complete after duration
+    SetTimeout(event.data.duration * 1000, function()
+        if TeamSystem.teamEvents[eventId] and TeamSystem.teamEvents[eventId].status == 'active' then
+            CompleteTeamEvent(eventId, true)
+        end
+    end)
+end
+
+-- Get team leaderboard
+local function GetTeamLeaderboard()
+    local leaderboard = {
+        pvp = {},
+        pve = {}
+    }
+    
+    for teamType, members in pairs(TeamSystem.teams) do
+        for playerId, memberData in pairs(members) do
+            table.insert(leaderboard[teamType], {
+                id = playerId,
+                stats = memberData.stats,
+                joinTime = memberData.joinTime
+            })
+        end
+    end
+    
+    -- Sort by total stats
+    for team, members in pairs(leaderboard) do
+        table.sort(members, function(a, b)
+            local aTotal = (a.stats.captures or 0) + (a.stats.missions or 0) + (a.stats.eliminations or 0)
+            local bTotal = (b.stats.captures or 0) + (b.stats.missions or 0) + (b.stats.eliminations or 0)
+            return aTotal > bTotal
+        end)
+    end
+    
+    return leaderboard
+end
+
+-- Send team message
+local function SendTeamMessage(targetId, message, source)
+    local teamType = GetPlayerTeam(source)
+    if not teamType then
+        return false, 'Not in a team'
+    end
+    
+    TriggerClientEvent('dz:client:team:receiveMessage', targetId, message, source, teamType)
+    return true, 'Message sent'
 end
 
 -- Event handlers
-RegisterNetEvent('dz:server:selectTeam', function(team)
+RegisterNetEvent('dz:server:team:join', function(teamType)
     local source = source
-    local canJoin, reason = CanJoinTeam(source, team)
+    local success, message = AddPlayerToTeam(source, teamType)
     
-    if not canJoin then
-        TriggerClientEvent('QBCore:Notify', source, reason, 'error')
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, message, 'error')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:leave', function(teamType)
+    local source = source
+    local success, message = RemovePlayerFromTeam(source, teamType)
+    
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, message, 'error')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:updateStats', function(statType, value)
+    local source = source
+    local success, message = UpdatePlayerStats(source, statType, value)
+    
+    if not success then
+        print('^1[District Zero] ^7Failed to update stats: ' .. message)
+    end
+end)
+
+RegisterNetEvent('dz:server:team:createEvent', function(event)
+    local source = source
+    local success, eventId = CreateTeamEvent(event.type, event.data, source)
+    
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, eventId, 'error')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:joinEvent', function(eventId)
+    local source = source
+    local success, message = JoinTeamEvent(eventId, source)
+    
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, message, 'error')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:completeEvent', function(eventId, success)
+    local source = source
+    local success, message = CompleteTeamEvent(eventId, success, source)
+    
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, message, 'error')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:eventReward', function(eventId, bonus)
+    local source = source
+    local Player = QBX.Functions.GetPlayer(source)
+    if Player then
+        Player.Functions.AddMoney('cash', bonus)
+        TriggerClientEvent('dz:client:notification', source, 'Team event reward: $' .. bonus, 'success')
+    end
+end)
+
+RegisterNetEvent('dz:server:team:sendMessage', function(targetId, message)
+    local source = source
+    local success, message = SendTeamMessage(targetId, message, source)
+    
+    if not success then
+        TriggerClientEvent('dz:client:notification', source, message, 'error')
+    end
+end)
+
+-- Commands
+QBX.Commands.Add('jointeam', 'Join a team (pvp/pve)', {{name = 'team', help = 'Team type (pvp/pve)'}}, true, function(source, args)
+    local teamType = args[1] and args[1]:lower()
+    if not teamType or (teamType ~= 'pvp' and teamType ~= 'pve') then
+        TriggerClientEvent('dz:client:notification', source, 'Usage: /jointeam [pvp/pve]', 'error')
         return
     end
     
-    SetPlayerTeam(source, team)
+    local success, message = AddPlayerToTeam(source, teamType)
+    TriggerClientEvent('dz:client:notification', source, message, success and 'success' or 'error')
 end)
 
-RegisterNetEvent('dz:server:team:getInfo', function()
-    local source = source
-    local playerTeam = GetPlayerTeam(source)
-    local teamStats = GetTeamStats()
-    local teamBalance = GetTeamBalance()
-    local suggestedTeam = SuggestTeam(source)
-    
-    TriggerClientEvent('dz:client:team:info', source, {
-        currentTeam = playerTeam,
-        stats = teamStats,
-        balance = teamBalance,
-        suggestedTeam = suggestedTeam
-    })
-end)
-
-RegisterNetEvent('dz:server:team:getPlayers', function(team)
-    local source = source
-    local players = GetTeamPlayers(team)
-    TriggerClientEvent('dz:client:team:players', source, team, players)
-end)
-
--- Player cleanup
-AddEventHandler('playerDropped', function()
-    local source = source
-    
-    -- Update team stats
-    local playerTeam = TeamState.players[source] and TeamState.players[source].team
-    if playerTeam then
-        TeamState.teamStats[playerTeam].count = math.max(0, TeamState.teamStats[playerTeam].count - 1)
+QBX.Commands.Add('leaveteam', 'Leave current team', {}, true, function(source, args)
+    local currentTeam = GetPlayerTeam(source)
+    if not currentTeam then
+        TriggerClientEvent('dz:client:notification', source, 'Not in a team', 'error')
+        return
     end
     
-    -- Remove player from team state
-    TeamState.players[source] = nil
+    local success, message = RemovePlayerFromTeam(source, currentTeam)
+    TriggerClientEvent('dz:client:notification', source, message, success and 'success' or 'error')
 end)
 
--- State sync thread
-CreateThread(function()
-    while true do
-        Wait(TeamState.syncInterval)
-        SyncTeamState()
+QBX.Commands.Add('switchteam', 'Switch to different team', {{name = 'team', help = 'Team type (pvp/pve)'}}, true, function(source, args)
+    local teamType = args[1] and args[1]:lower()
+    if not teamType or (teamType ~= 'pvp' and teamType ~= 'pve') then
+        TriggerClientEvent('dz:client:notification', source, 'Usage: /switchteam [pvp/pve]', 'error')
+        return
     end
+    
+    local currentTeam = GetPlayerTeam(source)
+    if currentTeam == teamType then
+        TriggerClientEvent('dz:client:notification', source, 'Already in this team', 'error')
+        return
+    end
+    
+    -- Remove from current team
+    if currentTeam then
+        RemovePlayerFromTeam(source, currentTeam)
+    end
+    
+    -- Add to new team
+    local success, message = AddPlayerToTeam(source, teamType)
+    TriggerClientEvent('dz:client:notification', source, message, success and 'success' or 'error')
+end)
+
+QBX.Commands.Add('teamstats', 'Show team statistics', {}, true, function(source, args)
+    local currentTeam = GetPlayerTeam(source)
+    if not currentTeam then
+        TriggerClientEvent('dz:client:notification', source, 'Not in a team', 'error')
+            return
+        end
+        
+    local playerData = TeamSystem.teams[currentTeam][source]
+    if playerData then
+        local stats = playerData.stats
+        local message = string.format('Team Stats - Captures: %d, Missions: %d, Eliminations: %d, Assists: %d, Team Events: %d',
+            stats.captures or 0, stats.missions or 0, stats.eliminations or 0, stats.assists or 0, stats.teamEvents or 0)
+        TriggerClientEvent('dz:client:notification', source, message, 'info')
+    end
+end)
+
+QBX.Commands.Add('teamleaderboard', 'Show team leaderboard', {}, true, function(source, args)
+    local leaderboard = GetTeamLeaderboard()
+    local message = 'Team Leaderboard:\n'
+    
+    for team, members in pairs(leaderboard) do
+        message = message .. '\n' .. team:upper() .. ':\n'
+        for i = 1, math.min(5, #members) do
+            local member = members[i]
+            local total = (member.stats.captures or 0) + (member.stats.missions or 0) + (member.stats.eliminations or 0)
+            message = message .. string.format('%d. Player %d: %d points\n', i, member.id, total)
+        end
+    end
+    
+    TriggerClientEvent('dz:client:notification', source, message, 'info')
+end)
+
+QBX.Commands.Add('createteamevent', 'Create a team event', {{name = 'type', help = 'Event type'}, {name = 'description', help = 'Event description'}}, true, function(source, args)
+    local eventType = args[1]
+    local description = args[2] or 'Custom team event'
+    
+    if not eventType then
+        TriggerClientEvent('dz:client:notification', source, 'Usage: /createteamevent [type] [description]', 'error')
+        return
+    end
+    
+    local data = { description = description }
+    local success, eventId = CreateTeamEvent(eventType, data, source)
+    
+    if success then
+        TriggerClientEvent('dz:client:notification', source, 'Team event created: ' .. eventId, 'success')
+    else
+        TriggerClientEvent('dz:client:notification', source, eventId, 'error')
+    end
+end)
+
+-- Exports
+exports('GetPlayerTeam', function(source)
+    return GetPlayerTeam(source)
+end)
+
+exports('AddPlayerToTeam', function(source, teamType)
+    return AddPlayerToTeam(source, teamType)
+end)
+
+exports('RemovePlayerFromTeam', function(source, teamType)
+    return RemovePlayerFromTeam(source, teamType)
+end)
+
+exports('UpdatePlayerStats', function(source, statType, value)
+    return UpdatePlayerStats(source, statType, value)
+end)
+
+exports('GetTeamLeaderboard', function()
+    return GetTeamLeaderboard()
+end)
+
+exports('GetTeamBalance', function()
+    return TeamSystem.teamBalance
 end)
 
 -- Initialize on resource start
 AddEventHandler('onResourceStart', function(resourceName)
-    if GetCurrentResourceName() ~= resourceName then return end
-    
-    -- Wait for database to be ready
-    CreateThread(function()
-        Wait(5000) -- Wait for database initialization
-        
-        if not InitializeTeams() then
-            print('^1[District Zero] Failed to initialize teams^7')
-            return
-        end
-        
-        print('^2[District Zero] Teams system initialized successfully^7')
-    end)
+    if GetCurrentResourceName() == resourceName then
+        Wait(1000)
+        LoadTeamPersistence()
+        InitializeTeamSystem()
+    end
 end)
 
--- Exports
-exports('GetPlayerTeam', GetPlayerTeam)
-exports('SetPlayerTeam', SetPlayerTeam)
-exports('GetTeamStats', GetTeamStats)
-exports('GetTeamPlayers', GetTeamPlayers)
-exports('GetTeamBalance', GetTeamBalance)
-exports('SuggestTeam', SuggestTeam)
-exports('CanJoinTeam', CanJoinTeam) 
+-- Save persistence on resource stop
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        SaveTeamPersistence()
+    end
+end) 

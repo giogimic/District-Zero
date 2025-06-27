@@ -15,7 +15,9 @@ const unsubscribe = onNUIMessage((event) => {
     case 'showUI':
       store.setOpen(true)
       if (event.data?.showTeamSelect) {
-        store.setCurrentTab('teams')
+        // Show team selection modal
+        store.setCurrentDistrict(event.data.district)
+        // The team selection modal will be handled by the App component
       }
       break
       
@@ -45,6 +47,14 @@ const unsubscribe = onNUIMessage((event) => {
       if (event.data?.teamBalance) {
         store.setTeamBalance(event.data.teamBalance)
       }
+      break
+      
+    case 'team:selected':
+      store.setCurrentTeam(event.data?.team)
+      store.addNotification({
+        type: 'success',
+        message: `Team selected: ${event.data?.team === 'pvp' ? 'PvP' : 'PvE'}`,
+      })
       break
       
     case 'showNotification':

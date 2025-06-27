@@ -8,6 +8,7 @@ const tabs: Array<{ id: UITab; label: string; icon: string }> = [
   { id: 'districts', label: 'Districts', icon: '🗺️' },
   { id: 'missions', label: 'Missions', icon: '🎯' },
   { id: 'teams', label: 'Teams', icon: '👥' },
+  { id: 'analytics', label: 'Analytics', icon: '📈' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
 ]
 

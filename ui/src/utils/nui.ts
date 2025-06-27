@@ -207,4 +207,158 @@ export const mockData = {
       influence: 35,
     },
   ],
-} 
+}
+
+// NUI utility functions for communicating with the FiveM client
+
+interface NuiRequestData {
+  [key: string]: any;
+}
+
+interface NuiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+// Generic fetch function for NUI requests
+export const fetchNui = async <T = any>(
+  eventName: string, 
+  data?: NuiRequestData
+): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    // Generate unique request ID
+    const requestId = Math.random().toString(36).substr(2, 9);
+    
+    // Create response handler
+    const handleResponse = (event: MessageEvent) => {
+      const { type, requestId: responseId, success, data: responseData, error } = event.data;
+      
+      if (type === `${eventName}:response` && responseId === requestId) {
+        // Remove event listener
+        window.removeEventListener('message', handleResponse);
+        
+        if (success) {
+          resolve(responseData);
+        } else {
+          reject(new Error(error || 'Request failed'));
+        }
+      }
+    };
+    
+    // Add response listener
+    window.addEventListener('message', handleResponse);
+    
+    // Send request
+    if (typeof window !== 'undefined' && (window as any).invokeNative) {
+      // FiveM environment
+      fetch(`https://${GetParentResourceName()}/${eventName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          requestId,
+          ...data
+        }),
+      }).catch((error) => {
+        window.removeEventListener('message', handleResponse);
+        reject(error);
+      });
+    } else {
+      // Development environment - simulate response
+      setTimeout(() => {
+        window.removeEventListener('message', handleResponse);
+        
+        // Mock responses for development
+        const mockResponses: { [key: string]: any } = {
+          getDistricts: [
+            {
+              id: 'downtown',
+              name: 'Downtown District',
+              coords: { x: 0, y: 0, z: 0 },
+              radius: 500,
+              controlPoints: [
+                {
+                  id: 'cp1',
+                  name: 'City Hall',
+                  coords: { x: 100, y: 100, z: 0 },
+                  radius: 50,
+                  influence: 25,
+                  currentTeam: 'neutral',
+                  captureProgress: 0,
+                  lastCaptured: 0,
+                  isBeingCaptured: false,
+                  captureStartTime: 0
+                }
+              ],
+              influence: { pvp: 0, pve: 0 },
+              lastCaptured: 0,
+              controllingTeam: 'neutral'
+            }
+          ],
+          getPlayerStats: {
+            districtCaptures: 5,
+            totalExp: 2500,
+            team: 'pvp'
+          },
+          getTeamBalance: {
+            pvp: 12,
+            pve: 8
+          }
+        };
+        
+        const mockResponse = mockResponses[eventName];
+        if (mockResponse !== undefined) {
+          resolve(mockResponse);
+        } else {
+          reject(new Error(`No mock response for ${eventName}`));
+        }
+      }, 100);
+    }
+    
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      window.removeEventListener('message', handleResponse);
+      reject(new Error('Request timeout'));
+    }, 5000);
+  });
+};
+
+// Utility function to get the current resource name
+const GetParentResourceName = (): string => {
+  // In development, return a default name
+  if (typeof window !== 'undefined' && !(window as any).invokeNative) {
+    return 'district-zero';
+  }
+  
+  // In FiveM, this would be available
+  return (window as any).GetParentResourceName?.() || 'district-zero';
+};
+
+// Utility function to send NUI messages without expecting a response
+export const sendNuiMessage = (eventName: string, data?: NuiRequestData) => {
+  if (typeof window !== 'undefined' && (window as any).invokeNative) {
+    // FiveM environment
+    fetch(`https://${GetParentResourceName()}/${eventName}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data || {}),
+    }).catch(console.error);
+  } else {
+    // Development environment - log to console
+    console.log('NUI Message:', { eventName, data });
+  }
+};
+
+// Utility function to close NUI
+export const closeNui = () => {
+  sendNuiMessage('closeNui');
+};
+
+// Utility function to focus/unfocus NUI
+export const setNuiFocus = (focus: boolean, cursor: boolean = true) => {
+  sendNuiMessage('setNuiFocus', { focus, cursor });
+}; 
