@@ -1,29 +1,29 @@
 -- fxmanifest.lua
 -- Resource definition for District Zero
--- Framework Compatibility: Qbox (Modern Standards Only)
+-- Framework Compatibility: QBox Framework (Modern Standards Only)
 
 fx_version 'cerulean'
 game 'gta5'
 lua54 'yes'
 
 name 'District Zero FiveM'
-description 'District-based competitive gaming system for FiveM'
+description 'District-based competitive gaming system for FiveM - QBox Compatible'
 author 'District Zero Team'
 version '1.0.0'
 url 'https://github.com/district-zero/fivem-mm'
 
--- Resource dependencies
+-- QBox Framework Dependencies
 dependencies {
-    'mysql-async',  -- Database support
-    'oxmysql',      -- Alternative database support
-    'es_extended',  -- ESX framework support (optional)
-    'qb-core',       -- QBCore framework support (optional)
-    'ox_lib'
+    'qbx_core',     -- QBox Core Framework (Required)
+    'oxmysql',      -- Database support (QBox Standard)
+    'ox_lib'        -- QBox UI Library
 }
 
 -- Optional dependencies (will work without these but with reduced functionality)
 optional_dependencies {
-    'qbx_core'
+    'qbx_management',
+    'qbx_vehicleshop',
+    'qbx_garages'
 }
 
 -- Shared scripts
@@ -34,7 +34,8 @@ shared_scripts {
     'shared/config.lua',
     'shared/types.lua',
     'shared/utils.lua',
-    'shared/constants.lua'
+    'shared/constants.lua',
+    'shared/qbox_integration.lua'
 }
 
 -- Client scripts
@@ -150,3 +151,7 @@ escrow_ignore {
 
 -- Performance settings
 use_experimental_fxv2_oal 'yes'
+
+-- QBox Framework Integration
+-- This resource is designed to work with QBox Framework
+-- For installation instructions, see: https://docs.qbox.re/installation

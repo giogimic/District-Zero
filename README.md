@@ -1,6 +1,6 @@
-# District Zero
+# District Zero - QBox Framework Compatible
 
-A dynamic mission and district control system for FiveM, built on QBX Core. Inspired by APB Reloaded's district-based mission system.
+A dynamic mission and district control system for FiveM, built specifically for QBox Framework. Inspired by APB Reloaded's district-based mission system.
 
 ## 🚀 Core Features
 
@@ -35,9 +35,9 @@ A dynamic mission and district control system for FiveM, built on QBX Core. Insp
 - **Notification System**: Clear feedback on actions and events with multiple notification types
 - **Real-time Updates**: Live district status, mission progress, and team balance updates
 
-### Framework Integration
-- **QBX Core**: Full compatibility with QBX framework
-- **Database-Driven**: Persistent data storage with automatic migrations
+### QBox Framework Integration
+- **QBox Core**: Full compatibility with QBox Framework
+- **Database-Driven**: Persistent data storage with automatic migrations using oxmysql
 - **Type-Safe**: Shared types between client and server
 - **Event-Based**: Efficient communication between components with rate limiting
 - **Configurable**: Easy to customize through config files
@@ -46,12 +46,31 @@ A dynamic mission and district control system for FiveM, built on QBX Core. Insp
 ## 📦 Installation
 
 ### Prerequisites
-- FiveM Server
-- QBX Core (latest version)
-- MySQL/MariaDB database
+- FiveM Server with QBox Framework installed
+- QBox Core (latest version)
+- MariaDB database (as per QBox requirements)
 - oxmysql resource
 
-### Installation Steps
+### QBox Framework Installation
+
+Before installing District Zero, ensure you have QBox Framework properly installed:
+
+1. **Download QBox Framework**
+   - Visit [QBox Documentation](https://docs.qbox.re/installation)
+   - Download the latest QBox artifacts
+   - Extract to your server directory
+
+2. **Install QBox Framework**
+   - Run `FXServer.exe` to start txAdmin
+   - Follow the QBox installation steps
+   - Select "Popular Recipes" → "QBox Framework"
+
+3. **Verify QBox Installation**
+   - Ensure QBox Core is running
+   - Verify oxmysql is configured
+   - Check that all QBox dependencies are loaded
+
+### District Zero Installation
 
 1. **Clone the Repository**
    ```bash
@@ -68,15 +87,29 @@ A dynamic mission and district control system for FiveM, built on QBX Core. Insp
 3. **Resource Configuration**
    Add to your `server.cfg`:
    ```cfg
+   # QBox Framework (must be loaded first)
+   ensure qbx_core
    ensure oxmysql
+   
+   # District Zero
    ensure district-zero
    ```
 
-4. **Dependencies**
-   Ensure these resources are started before district-zero:
+4. **Dependencies Order**
+   Ensure these resources are started in the correct order:
    ```cfg
+   # Core QBox resources
    ensure qbx_core
    ensure oxmysql
+   ensure ox_lib
+   
+   # Optional QBox resources
+   ensure qbx_management
+   ensure qbx_vehicleshop
+   ensure qbx_garages
+   
+   # District Zero
+   ensure district-zero
    ```
 
 5. **Restart Server**
@@ -87,6 +120,18 @@ A dynamic mission and district control system for FiveM, built on QBX Core. Insp
 ## ⚙️ Configuration
 
 All configuration is done through `config/config.lua`:
+
+### QBox Integration Configuration
+```lua
+Config.QBox = {
+    enabled = true,
+    coreResource = 'qbx_core',
+    databaseResource = 'oxmysql',
+    useQBoxNotifications = true,
+    useQBoxInventory = false, -- Set to true if using qbx_inventory
+    useQBoxVehicles = false   -- Set to true if using qbx_vehicleshop
+}
+```
 
 ### Districts Configuration
 ```lua

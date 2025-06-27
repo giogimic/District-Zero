@@ -292,3 +292,160 @@ Config.Abilities = {
     defaultColor = "#ffffff",
     maxActiveAbilities = 3
 }
+
+-- QBox Framework Integration
+Config.QBox = {
+    enabled = true,
+    coreResource = 'qbx_core',
+    databaseResource = 'oxmysql',
+    useQBoxNotifications = true,
+    useQBoxInventory = false, -- Set to true if using qbx_inventory
+    useQBoxVehicles = false,  -- Set to true if using qbx_vehicleshop
+    useQBoxManagement = false, -- Set to true if using qbx_management
+    useQBoxGarages = false    -- Set to true if using qbx_garages
+}
+
+-- Core System Configuration
+Config.Core = {
+    debug = false,
+    version = '1.0.0',
+    framework = 'qbox',
+    databaseType = 'oxmysql'
+}
+
+-- District System Configuration
+Config.Districts = {
+    enabled = true,
+    maxDistricts = 10,
+    captureTime = 300, -- 5 minutes
+    influenceDecay = 0.1, -- 10% decay per minute
+    safeZoneRadius = 150.0,
+    blipUpdateInterval = 5000, -- 5 seconds
+    controlPointRadius = 50.0,
+    influencePerCapture = 25
+}
+
+-- Mission System Configuration
+Config.Missions = {
+    enabled = true,
+    maxActiveMissions = 5,
+    missionTimeout = 600, -- 10 minutes
+    rewardMultiplier = 1.0,
+    teamBalanceThreshold = 0.3, -- 30% difference triggers rebalancing
+    missionCooldown = 300, -- 5 minutes between missions
+    maxMissionsPerPlayer = 3
+}
+
+-- Team System Configuration
+Config.Teams = {
+    enabled = true,
+    maxTeamSize = 8,
+    teamBalanceEnabled = true,
+    autoBalanceThreshold = 0.4, -- 40% difference triggers auto-balance
+    teamSwitchCooldown = 300, -- 5 minutes
+    allowTeamSwitching = true
+}
+
+-- Event System Configuration
+Config.Events = {
+    enabled = true,
+    maxActiveEvents = 3,
+    eventDuration = 1800, -- 30 minutes
+    eventCooldown = 3600, -- 1 hour
+    specialEventChance = 0.1 -- 10% chance for special events
+}
+
+-- Achievement System Configuration
+Config.Achievements = {
+    enabled = true,
+    maxAchievements = 100,
+    achievementPointsEnabled = true,
+    leaderboardEnabled = true,
+    achievementRewards = true
+}
+
+-- Analytics System Configuration
+Config.Analytics = {
+    enabled = true,
+    dataRetentionDays = 30,
+    performanceTracking = true,
+    playerBehaviorTracking = true,
+    realTimeUpdates = true,
+    exportEnabled = true
+}
+
+-- Security System Configuration
+Config.Security = {
+    enabled = true,
+    antiCheatEnabled = true,
+    rateLimiting = true,
+    inputValidation = true,
+    threatDetection = true,
+    securityLogging = true,
+    maxRequestsPerMinute = 100
+}
+
+-- Performance System Configuration
+Config.Performance = {
+    enabled = true,
+    optimizationEnabled = true,
+    cacheEnabled = true,
+    queryOptimization = true,
+    resourceMonitoring = true,
+    performanceLogging = true
+}
+
+-- UI/UX Configuration
+Config.UI = {
+    enabled = true,
+    theme = 'dark',
+    animations = true,
+    responsive = true,
+    accessibility = true,
+    notifications = true,
+    soundEffects = true
+}
+
+-- Database Configuration
+Config.Database = {
+    type = 'oxmysql',
+    host = 'localhost',
+    port = 3306,
+    database = 'qbox',
+    username = 'root',
+    password = '',
+    charset = 'utf8mb4',
+    connectionLimit = 10,
+    acquireTimeout = 60000,
+    timeout = 60000,
+    reconnect = true
+}
+
+-- Notification Configuration
+Config.Notifications = {
+    enabled = true,
+    type = 'qbox', -- 'qbox', 'ox_lib', 'custom'
+    position = 'top-right',
+    duration = 5000,
+    sound = true,
+    animation = true
+}
+
+-- Localization Configuration
+Config.Locale = {
+    default = 'en',
+    fallback = 'en',
+    supported = {'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'zh', 'ja', 'ko'}
+}
+
+-- Development Configuration
+Config.Development = {
+    debug = false,
+    verbose = false,
+    testing = false,
+    mockData = false,
+    hotReload = false
+}
+
+-- Export the configuration
+return Config

@@ -1,10 +1,11 @@
-# District Zero FiveM - Project Audit
+# District Zero FiveM - Project Audit (QBox Framework Compatible)
 
 ## Project Overview
 
 **Project Name:** District Zero FiveM  
 **Type:** District-based competitive gaming system  
 **Target Platform:** FiveM (GTA V multiplayer modification)  
+**Framework:** QBox Framework Compatible  
 **Implementation Status:** Complete (21-day development plan)  
 **Current Version:** 1.0.0  
 
@@ -66,34 +67,71 @@
    - Advanced UI components
    - Real-time updates
 
-10. **Integration & Deployment**
-    - System orchestration
-    - Unified API
-    - Deployment automation
-    - Release management
+10. **QBox Framework Integration**
+    - Full QBox Framework compatibility
+    - QBox Core integration
+    - oxmysql database support
+    - QBox notification system
+    - QBox inventory integration (optional)
+    - QBox vehicle system integration (optional)
 
 ## Technical Architecture
 
 ### Server-Side (Lua)
 - **Core Systems:** districts.lua, missions.lua, teams.lua, events.lua, achievements.lua
 - **Advanced Systems:** analytics.lua, security.lua, performance.lua, integration.lua, polish.lua, deployment.lua, release.lua
-- **Database Integration:** MySQL/SQLite support
+- **QBox Integration:** qbox_integration.lua (handles all QBox-specific functionality)
+- **Database Integration:** oxmysql support (QBox standard)
 - **Event System:** Custom event handling and cross-system communication
 
 ### Client-Side (Lua)
 - **UI Integration:** React component integration
 - **Event Handling:** Client-side event processing
 - **Performance:** Client-side optimization
+- **QBox Integration:** QBox notification and UI integration
 
 ### Frontend (React/TypeScript)
 - **Components:** Modern React components with TypeScript
 - **State Management:** React hooks and context
 - **Styling:** CSS modules and responsive design
 - **Real-time Updates:** WebSocket-like communication
+- **QBox Theme:** Compatible with QBox UI standards
+
+## QBox Framework Compatibility
+
+### ✅ Fully Compatible
+1. **QBox Core Integration:** Proper integration with qbx_core
+2. **Database Support:** Uses oxmysql (QBox standard)
+3. **Notification System:** QBox notification integration
+4. **Resource Dependencies:** Proper dependency management
+5. **Configuration:** QBox-specific configuration options
+
+### ⚠️ Optional Integrations
+1. **QBox Inventory:** Optional integration with qbx_inventory
+2. **QBox Vehicles:** Optional integration with qbx_vehicleshop
+3. **QBox Management:** Optional integration with qbx_management
+4. **QBox Garages:** Optional integration with qbx_garages
 
 ## Potential Issues & Concerns
 
-### 1. FiveM-Specific Issues
+### 1. QBox-Specific Issues
+
+#### Framework Version Compatibility
+**Issue:** May not work with older QBox versions
+- **Risk:** Compatibility issues with outdated QBox installations
+- **Recommendation:** Ensure QBox Framework is up to date
+
+#### Resource Loading Order
+**Issue:** Incorrect resource loading order may cause issues
+- **Risk:** QBox integration failures, missing dependencies
+- **Recommendation:** Follow proper loading order in server.cfg
+
+#### Database Schema Conflicts
+**Issue:** Potential conflicts with existing QBox database schema
+- **Risk:** Database errors, data corruption
+- **Recommendation:** Use separate database tables with proper prefixes
+
+### 2. FiveM-Specific Issues
 
 #### Resource Loading & Dependencies
 **Issue:** Complex resource dependencies may cause loading issues
@@ -110,7 +148,7 @@
 - **Risk:** Event queue overflow, delayed processing
 - **Recommendation:** Implement event queuing and throttling mechanisms
 
-### 2. Database & Data Management
+### 3. Database & Data Management
 
 #### Database Schema
 **Issue:** Complex database schema with multiple interconnected tables
@@ -122,7 +160,7 @@
 - **Risk:** Database size growth, slow query performance
 - **Recommendation:** Implement data archiving and cleanup strategies
 
-### 3. Security Concerns
+### 4. Security Concerns
 
 #### Client-Side Security
 **Issue:** Client-side code can be modified by players
@@ -134,7 +172,7 @@
 - **Risk:** Players bypassing security measures
 - **Recommendation:** Implement multiple layers of security and regular updates
 
-### 4. Scalability Issues
+### 5. Scalability Issues
 
 #### Player Load
 **Issue:** System may not handle large numbers of players efficiently
@@ -146,7 +184,7 @@
 - **Risk:** Server resource exhaustion
 - **Recommendation:** Implement resource monitoring and optimization
 
-### 5. Integration Complexity
+### 6. Integration Complexity
 
 #### System Dependencies
 **Issue:** Complex interdependencies between systems
@@ -158,19 +196,21 @@
 - **Risk:** API inconsistencies, maintenance overhead
 - **Recommendation:** Implement comprehensive API documentation and testing
 
-## FiveM Best Practices Compliance
+## QBox Framework Best Practices Compliance
 
 ### ✅ Compliant Areas
 1. **Resource Structure:** Proper resource folder structure
 2. **Event System:** Using FiveM's event system correctly
-3. **Database Integration:** Proper database connection handling
+3. **Database Integration:** Proper oxmysql integration
 4. **Client-Server Communication:** Appropriate use of TriggerEvent/TriggerClientEvent
 5. **Resource Management:** Proper resource start/stop handling
+6. **QBox Integration:** Proper QBox Core integration
+7. **Dependency Management:** Correct QBox dependencies
 
 ### ⚠️ Areas Needing Attention
 1. **Resource Dependencies:** Need explicit dependency declarations
 2. **Performance Monitoring:** Should implement FiveM's performance APIs
-3. **Error Handling:** Need more robust error handling for FiveM-specific issues
+3. **Error Handling:** Need more robust error handling for QBox-specific issues
 4. **Resource Limits:** Should respect FiveM's resource limits
 
 ## Recommendations
@@ -180,8 +220,9 @@
    ```lua
    -- In fxmanifest.lua
    dependencies {
-       'mysql-async', -- or oxmysql
-       'es_extended'  -- if using ESX framework
+       'qbx_core',     -- QBox Core Framework (Required)
+       'oxmysql',      -- Database support (QBox Standard)
+       'ox_lib'        -- QBox UI Library
    }
    ```
 
@@ -238,21 +279,25 @@
 - Test individual system functions
 - Test database operations
 - Test event handling
+- Test QBox integration functions
 
 ### Integration Testing
 - Test system interactions
 - Test cross-system communication
 - Test error handling
+- Test QBox framework integration
 
 ### Load Testing
 - Test with multiple players
 - Test database performance
 - Test resource usage
+- Test QBox performance impact
 
 ### Security Testing
 - Test anti-cheat mechanisms
 - Test input validation
 - Test access controls
+- Test QBox security integration
 
 ## Documentation Requirements
 
@@ -261,9 +306,10 @@
 - Database schema documentation
 - Configuration guide
 - Troubleshooting guide
+- QBox integration guide
 
 ### User Documentation
-- Installation guide
+- Installation guide (QBox-specific)
 - Configuration guide
 - User manual
 - FAQ
@@ -273,16 +319,19 @@
 - Monitoring guide
 - Maintenance procedures
 - Security procedures
+- QBox management integration
 
 ## Conclusion
 
-The District Zero FiveM project is a comprehensive and ambitious system that implements a full-featured district-based competitive gaming experience. While the implementation is complete and covers all planned features, there are several areas that need attention to ensure optimal performance, security, and maintainability.
+The District Zero FiveM project is a comprehensive and ambitious system that implements a full-featured district-based competitive gaming experience with full QBox Framework compatibility. While the implementation is complete and covers all planned features, there are several areas that need attention to ensure optimal performance, security, and maintainability.
 
 ### Key Strengths
 - Comprehensive feature set
 - Modern UI/UX design
 - Proper system architecture
 - Good separation of concerns
+- Full QBox Framework compatibility
+- Proper QBox integration
 
 ### Key Areas for Improvement
 - Performance optimization
@@ -297,5 +346,6 @@ The District Zero FiveM project is a comprehensive and ambitious system that imp
 3. Implement performance monitoring
 4. Create comprehensive documentation
 5. Conduct thorough testing
+6. Ensure QBox compatibility testing
 
-The project has a solid foundation and with the recommended improvements, it should provide a robust and scalable solution for FiveM servers looking to implement district-based competitive gameplay. 
+The project has a solid foundation and with the recommended improvements, it should provide a robust and scalable solution for QBox Framework servers looking to implement district-based competitive gameplay. 

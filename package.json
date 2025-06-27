@@ -1,7 +1,7 @@
 {
-  "name": "district-zero-fivem",
+  "name": "district-zero-fivem-qbox",
   "version": "1.0.0",
-  "description": "District-based competitive gaming system for FiveM",
+  "description": "District-based competitive gaming system for FiveM - QBox Framework Compatible",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -28,10 +28,35 @@
     "storybook:build": "storybook build",
     "cypress:open": "cypress open",
     "cypress:run": "cypress run",
-    "docker:build": "docker build -t district-zero-fivem .",
-    "docker:run": "docker run -p 3000:3000 district-zero-fivem",
+    "docker:build": "docker build -t district-zero-fivem-qbox .",
+    "docker:run": "docker run -p 3000:3000 district-zero-fivem-qbox",
     "docker:compose": "docker-compose up -d",
     "docker:compose:down": "docker-compose down"
+  },
+  "keywords": [
+    "fivem",
+    "qbox",
+    "qbox-framework",
+    "district-control",
+    "mission-system",
+    "pvp",
+    "pve",
+    "gaming",
+    "roleplay"
+  ],
+  "author": "District Zero Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/district-zero/fivem-mm.git"
+  },
+  "bugs": {
+    "url": "https://github.com/district-zero/fivem-mm/issues"
+  },
+  "homepage": "https://github.com/district-zero/fivem-mm#readme",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -284,10 +309,6 @@
     "behave": "^0.0.1",
     "rspec": "^0.0.1"
   },
-  "engines": {
-    "node": ">=16.0.0",
-    "npm": ">=8.0.0"
-  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -318,38 +339,6 @@
   "commitizen": {
     "path": "./node_modules/cz-conventional-changelog"
   },
-  "keywords": [
-    "fivem",
-    "gta5",
-    "multiplayer",
-    "gaming",
-    "district",
-    "territory",
-    "missions",
-    "teams",
-    "events",
-    "achievements",
-    "analytics",
-    "security",
-    "performance",
-    "react",
-    "typescript",
-    "lua"
-  ],
-  "author": {
-    "name": "District Zero Team",
-    "email": "team@district-zero.com",
-    "url": "https://github.com/district-zero"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/district-zero/fivem-mm.git"
-  },
-  "bugs": {
-    "url": "https://github.com/district-zero/fivem-mm/issues"
-  },
-  "homepage": "https://github.com/district-zero/fivem-mm#readme",
   "funding": {
     "type": "github",
     "url": "https://github.com/sponsors/district-zero"
