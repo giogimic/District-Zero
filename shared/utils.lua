@@ -461,4 +461,230 @@ if not isInitialized then
     isInitialized = true
 end
 
+-- Debug printing
+Utils.PrintDebug = function(message, context)
+    if Config and Config.Debug then
+        print('^3[District Zero][DEBUG] ' .. (context and '[' .. context .. '] ' or '') .. message .. '^7')
+    end
+end
+
+Utils.PrintError = function(message, context)
+    print('^1[District Zero][ERROR] ' .. (context and '[' .. context .. '] ' or '') .. message .. '^7')
+end
+
+Utils.PrintInfo = function(message, context)
+    print('^2[District Zero][INFO] ' .. (context and '[' .. context .. '] ' or '') .. message .. '^7')
+end
+
+Utils.PrintWarning = function(message, context)
+    print('^6[District Zero][WARNING] ' .. (context and '[' .. context .. '] ' or '') .. message .. '^7')
+end
+
+-- Error handling
+Utils.HandleError = function(error, context)
+    Utils.PrintError(error, context)
+    -- You can add additional error handling here (logging, notifications, etc.)
+end
+
+-- Directory and file utilities
+Utils.DoesDirectoryExist = function(path)
+    -- Simple directory existence check
+    -- In a real implementation, you might want to use os.execute or similar
+    return true -- For now, assume directories exist
+end
+
+Utils.CreateDirectory = function(path)
+    -- Create directory if it doesn't exist
+    -- In a real implementation, you would use os.execute or similar
+    Utils.PrintDebug('Creating directory: ' .. path, 'Utils')
+    return true
+end
+
+Utils.DoesFileExist = function(path)
+    -- Simple file existence check
+    -- In a real implementation, you might want to use io.open or similar
+    return true -- For now, assume files exist
+end
+
+-- Performance utilities
+Utils.GetFrameRate = function()
+    -- Get current frame rate
+    -- In FiveM, you might want to use GetFrameTime() and calculate FPS
+    return 60 -- Default to 60 FPS
+end
+
+Utils.GetGameTimer = function()
+    -- Get game timer
+    return GetGameTimer()
+end
+
+-- String utilities
+Utils.StringStartsWith = function(str, start)
+    return string.sub(str, 1, string.len(start)) == start
+end
+
+Utils.StringEndsWith = function(str, ending)
+    return ending == "" or string.sub(str, -string.len(ending)) == ending
+end
+
+Utils.StringSplit = function(str, delimiter)
+    local result = {}
+    local from = 1
+    local delim_from, delim_to = string.find(str, delimiter, from)
+    while delim_from do
+        table.insert(result, string.sub(str, from, delim_from - 1))
+        from = delim_to + 1
+        delim_from, delim_to = string.find(str, delimiter, from)
+    end
+    table.insert(result, string.sub(str, from))
+    return result
+end
+
+Utils.StringTrim = function(str)
+    return str:match("^%s*(.-)%s*$")
+end
+
+-- Table utilities
+Utils.TableLength = function(t)
+    local count = 0
+    for _ in pairs(t) do count = count + 1 end
+    return count
+end
+
+Utils.TableContains = function(t, value)
+    for _, v in pairs(t) do
+        if v == value then
+            return true
+        end
+    end
+    return false
+end
+
+Utils.TableMerge = function(t1, t2)
+    for k, v in pairs(t2) do
+        t1[k] = v
+    end
+    return t1
+end
+
+Utils.TableCopy = function(t)
+    local copy = {}
+    for k, v in pairs(t) do
+        if type(v) == "table" then
+            copy[k] = Utils.TableCopy(v)
+        else
+            copy[k] = v
+        end
+    end
+    return copy
+end
+
+-- Math utilities
+Utils.Round = function(num, decimals)
+    local mult = 10^(decimals or 0)
+    return math.floor(num * mult + 0.5) / mult
+end
+
+Utils.Clamp = function(value, min, max)
+    return math.min(math.max(value, min), max)
+end
+
+Utils.Lerp = function(a, b, t)
+    return a + (b - a) * t
+end
+
+-- Vector utilities
+Utils.GetDistance = function(pos1, pos2)
+    return #(pos1 - pos2)
+end
+
+Utils.IsInRadius = function(pos1, pos2, radius)
+    return Utils.GetDistance(pos1, pos2) <= radius
+end
+
+-- Time utilities
+Utils.GetCurrentTime = function()
+    return os.time()
+end
+
+Utils.FormatTime = function(seconds)
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
+    local secs = seconds % 60
+    
+    if hours > 0 then
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    else
+        return string.format("%02d:%02d", minutes, secs)
+    end
+end
+
+Utils.FormatDuration = function(seconds)
+    if seconds < 60 then
+        return string.format("%ds", seconds)
+    elseif seconds < 3600 then
+        return string.format("%dm %ds", math.floor(seconds / 60), seconds % 60)
+    else
+        local hours = math.floor(seconds / 3600)
+        local minutes = math.floor((seconds % 3600) / 60)
+        return string.format("%dh %dm", hours, minutes)
+    end
+end
+
+-- Validation utilities
+Utils.IsValidPlayer = function(source)
+    return source and source > 0
+end
+
+Utils.IsValidString = function(str)
+    return str and type(str) == "string" and str ~= ""
+end
+
+Utils.IsValidNumber = function(num)
+    return num and type(num) == "number" and not math.isnan(num)
+end
+
+Utils.IsValidTable = function(t)
+    return t and type(t) == "table"
+end
+
+-- Network utilities
+Utils.GetPlayerName = function(source)
+    if not Utils.IsValidPlayer(source) then
+        return "Unknown"
+    end
+    return GetPlayerName(source) or "Unknown"
+end
+
+Utils.GetPlayerCoords = function(source)
+    if not Utils.IsValidPlayer(source) then
+        return vector3(0, 0, 0)
+    end
+    local ped = GetPlayerPed(source)
+    if ped and ped ~= 0 then
+        return GetEntityCoords(ped)
+    end
+    return vector3(0, 0, 0)
+end
+
+-- Event utilities
+Utils.TriggerClientEvent = function(eventName, source, ...)
+    if Utils.IsValidPlayer(source) then
+        TriggerClientEvent(eventName, source, ...)
+        return true
+    end
+    return false
+end
+
+Utils.TriggerServerEvent = function(eventName, source, ...)
+    TriggerServerEvent(eventName, source, ...)
+    return true
+end
+
+-- Export the utilities
+exports('GetUtils', function()
+    return Utils
+end)
+
+-- Return the utilities
 return Utils

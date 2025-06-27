@@ -29,60 +29,27 @@ optional_dependencies {
 -- Shared scripts
 shared_scripts {
     '@ox_lib/init.lua',
-    'config/*.lua',
-    'shared/*.lua',
-    'shared/config.lua',
-    'shared/types.lua',
-    'shared/utils.lua',
-    'shared/constants.lua',
-    'shared/qbox_integration.lua'
+    'shared/*.lua'
 }
 
 -- Client scripts
 client_scripts {
-    'client/*.lua',
-    'client/main.lua',
-    'client/ui.lua',
-    'client/events.lua',
-    'client/performance.lua'
+    'client/*.lua'
 }
 
 -- Server scripts
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
-    'server/*.lua',
-    'server/database/*.lua',
-    'server/database.lua',
-    'server/districts.lua',
-    'server/missions.lua',
-    'server/teams.lua',
-    'server/events.lua',
-    'server/achievements.lua',
-    'server/analytics.lua',
-    'server/security.lua',
-    'server/performance.lua',
-    'server/integration.lua',
-    'server/polish.lua',
-    'server/deployment.lua',
-    'server/release.lua',
-    'server/final_integration.lua'
+    'server/*.lua'
 }
 
 -- UI files
-ui_page 'ui/dist/index.html'
+ui_page 'ui/index.html'
 
 files {
-    'ui/dist/index.html',
-    'ui/dist/assets/*',
-    'locales/*.json',
     'ui/index.html',
-    'ui/static/js/main.js',
-    'ui/static/css/main.css',
-    'ui/static/media/*'
+    'locales/*.json'
 }
-
--- Configuration files
-data_file 'CONFIG_FILE' 'config/*.json'
 
 -- Export functions
 exports {

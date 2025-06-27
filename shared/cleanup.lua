@@ -3,86 +3,103 @@
 
 local Utils = require 'shared/utils'
 
--- Cleanup Registry
-local CleanupRegistry = {
+-- Cleanup System for District Zero
+-- Handles resource cleanup and state management
+
+local CleanupSystem = {}
+local cleanupHandlers = {
     state = {},
-    events = {},
     nui = {},
-    database = {}
+    database = {},
+    general = {}
 }
 
--- Register cleanup handlers
+-- Register cleanup handler
 local function RegisterCleanup(type, handler)
-    if not CleanupRegistry[type] then
+    if not cleanupHandlers[type] then
         Utils.HandleError('Invalid cleanup type: ' .. type, 'RegisterCleanup')
         return false
     end
     
-    table.insert(CleanupRegistry[type], handler)
+    table.insert(cleanupHandlers[type], handler)
     return true
 end
 
--- State cleanup
-local function CleanupState()
-    for _, handler in ipairs(CleanupRegistry.state) do
-        local success, result = pcall(handler)
-        if not success then
-            Utils.HandleError('State cleanup failed: ' .. tostring(result), 'CleanupState')
-        end
+-- Execute cleanup for a specific type
+local function ExecuteCleanup(type)
+    if not cleanupHandlers[type] then
+        Utils.HandleError('Invalid cleanup type: ' .. type, 'ExecuteCleanup')
+        return false
     end
-end
-
--- Event cleanup
-local function CleanupEvents()
-    for _, handler in ipairs(CleanupRegistry.events) do
-        local success, result = pcall(handler)
-        if not success then
-            Utils.HandleError('Event cleanup failed: ' .. tostring(result), 'CleanupEvents')
-        end
-    end
-end
-
--- NUI cleanup
-local function CleanupNUI()
-    for _, handler in ipairs(CleanupRegistry.nui) do
-        local success, result = pcall(handler)
-        if not success then
-            Utils.HandleError('NUI cleanup failed: ' .. tostring(result), 'CleanupNUI')
-        end
-    end
-end
-
--- Database cleanup
-local function CleanupDatabase()
-    for _, handler in ipairs(CleanupRegistry.database) do
-        local success, result = pcall(handler)
-        if not success then
-            Utils.HandleError('Database cleanup failed: ' .. tostring(result), 'CleanupDatabase')
-        end
-    end
-end
-
--- Main cleanup function
-local function Cleanup()
-    Utils.PrintDebug('Starting resource cleanup', 'cleanup')
     
-    -- Cleanup in order
-    CleanupState()
-    CleanupEvents()
-    CleanupNUI()
-    CleanupDatabase()
+    for _, handler in pairs(cleanupHandlers[type]) do
+        local success, error = pcall(handler)
+        if not success then
+            Utils.HandleError('Cleanup handler failed: ' .. tostring(error), 'ExecuteCleanup')
+        end
+    end
     
-    Utils.PrintDebug('Resource cleanup completed', 'cleanup')
+    return true
 end
 
--- Register resource stop handler
-AddEventHandler('onResourceStop', function(resourceName)
-    if resourceName ~= GetCurrentResourceName() then return end
-    Cleanup()
+-- Execute all cleanup
+local function ExecuteAllCleanup()
+    Utils.PrintInfo('Executing cleanup for all systems...', 'CleanupSystem')
+    
+    for type, handlers in pairs(cleanupHandlers) do
+        ExecuteCleanup(type)
+    end
+    
+    Utils.PrintInfo('Cleanup completed', 'CleanupSystem')
+end
+
+-- Initialize cleanup system
+local function Initialize()
+    Utils.PrintInfo('Initializing Cleanup System...', 'CleanupSystem')
+    
+    -- Register default cleanup handlers
+    RegisterCleanup('state', function()
+        Utils.PrintDebug('Cleaning up state data', 'CleanupSystem')
+        -- Add state cleanup logic here
+    end)
+    
+    RegisterCleanup('nui', function()
+        Utils.PrintDebug('Cleaning up NUI data', 'CleanupSystem')
+        -- Add NUI cleanup logic here
+    end)
+    
+    RegisterCleanup('database', function()
+        Utils.PrintDebug('Cleaning up database connections', 'CleanupSystem')
+        -- Add database cleanup logic here
+    end)
+    
+    RegisterCleanup('general', function()
+        Utils.PrintDebug('Executing general cleanup', 'CleanupSystem')
+        -- Add general cleanup logic here
+    end)
+    
+    Utils.PrintInfo('Cleanup System initialized', 'CleanupSystem')
+end
+
+-- Export functions
+exports('RegisterCleanup', RegisterCleanup)
+exports('ExecuteCleanup', ExecuteCleanup)
+exports('ExecuteAllCleanup', ExecuteAllCleanup)
+
+-- Initialize on resource start
+CreateThread(function()
+    Initialize()
 end)
 
--- Exports
-exports('RegisterCleanup', RegisterCleanup)
+-- Cleanup on resource stop
+AddEventHandler('onResourceStop', function(resourceName)
+    if GetCurrentResourceName() == resourceName then
+        ExecuteAllCleanup()
+    end
+end)
+
+-- Return the cleanup system
+return CleanupSystem
 
 -- Cleanup Documentation
 --[[

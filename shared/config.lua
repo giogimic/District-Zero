@@ -325,6 +325,66 @@ Config.Districts = {
     influencePerCapture = 25
 }
 
+-- Districts Data
+Config.Districts = {
+    {
+        id = 'downtown',
+        name = 'Downtown',
+        description = 'The heart of the city',
+        blip = {
+            sprite = 1,
+            color = 0,
+            scale = 0.8,
+            coords = vector3(-200.0, -800.0, 30.0)
+        },
+        zones = {
+            {
+                name = 'Downtown Core',
+                coords = vector3(-200.0, -800.0, 30.0),
+                radius = 200.0,
+                isSafeZone = false
+            }
+        },
+        controlPoints = {
+            {
+                id = 'city_hall',
+                name = 'City Hall',
+                coords = vector3(-200.0, -800.0, 30.0),
+                radius = 50.0,
+                influence = 25
+            }
+        }
+    },
+    {
+        id = 'entertainment',
+        name = 'Entertainment District',
+        description = 'The entertainment hub of the city',
+        blip = {
+            sprite = 1,
+            color = 1,
+            scale = 0.8,
+            coords = vector3(200.0, -600.0, 30.0)
+        },
+        zones = {
+            {
+                name = 'Entertainment Core',
+                coords = vector3(200.0, -600.0, 30.0),
+                radius = 200.0,
+                isSafeZone = false
+            }
+        },
+        controlPoints = {
+            {
+                id = 'casino',
+                name = 'Casino',
+                coords = vector3(200.0, -600.0, 30.0),
+                radius = 50.0,
+                influence = 25
+            }
+        }
+    }
+}
+
 -- Mission System Configuration
 Config.Missions = {
     enabled = true,
@@ -336,6 +396,44 @@ Config.Missions = {
     maxMissionsPerPlayer = 3
 }
 
+-- Missions Data
+Config.Missions = {
+    {
+        id = 'pvp_1',
+        title = 'Territory Control',
+        description = 'Capture and hold control points',
+        type = 'pvp',
+        reward = 2000,
+        district = 'downtown',
+        timeLimit = 300, -- 5 minutes
+        objectives = {
+            {
+                type = 'capture',
+                description = 'Capture the control point',
+                coords = vector3(-200.0, -800.0, 30.0),
+                radius = 10.0
+            }
+        }
+    },
+    {
+        id = 'pve_1',
+        title = 'District Patrol',
+        description = 'Patrol the district and eliminate threats',
+        type = 'pve',
+        reward = 1500,
+        district = 'downtown',
+        timeLimit = 300, -- 5 minutes
+        objectives = {
+            {
+                type = 'patrol',
+                description = 'Complete patrol route',
+                coords = vector3(-200.0, -800.0, 30.0),
+                radius = 50.0
+            }
+        }
+    }
+}
+
 -- Team System Configuration
 Config.Teams = {
     enabled = true,
@@ -344,6 +442,28 @@ Config.Teams = {
     autoBalanceThreshold = 0.4, -- 40% difference triggers auto-balance
     teamSwitchCooldown = 300, -- 5 minutes
     allowTeamSwitching = true
+}
+
+-- Teams Data
+Config.Teams = {
+    pvp = {
+        name = 'PvP Team',
+        color = '#FF0000',
+        blip = {
+            sprite = 1,
+            color = 1,
+            scale = 0.8
+        }
+    },
+    pve = {
+        name = 'PvE Team',
+        color = '#0000FF',
+        blip = {
+            sprite = 1,
+            color = 2,
+            scale = 0.8
+        }
+    }
 }
 
 -- Event System Configuration
