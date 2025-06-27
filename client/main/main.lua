@@ -1,7 +1,7 @@
 -- client/main/main.lua
 -- District Zero Main Client Handler
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -17,6 +17,9 @@ local State = {
         data = nil
     }
 }
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Initialize
 local function Initialize()

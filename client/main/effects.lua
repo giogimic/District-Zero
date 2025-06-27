@@ -1,9 +1,12 @@
 -- client/main/effects.lua
 -- District Zero Effects Handler
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Effects State
 local State = {

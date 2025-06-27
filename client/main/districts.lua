@@ -1,4 +1,4 @@
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -31,6 +31,9 @@ local ControlPointSystem = {
     captureBlips = {},
     captureMarkers = {}
 }
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Create district blips
 local function CreateDistrictBlip(district)

@@ -87,8 +87,8 @@ end
 -- Save configuration
 function ErrorHandler.SaveConfiguration()
     local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not DoesDirectoryExist(configDir) then
-        CreateDirectory(configDir)
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
     end
     
     SaveResourceFile(GetCurrentResourceName(), "config/error_handler.json", json.encode(CONFIG, {indent = true}))
@@ -205,8 +205,8 @@ end
 -- Save error log
 function ErrorHandler.SaveErrorLog()
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     local logData = {
@@ -249,8 +249,8 @@ end
 -- Save performance log
 function ErrorHandler.SavePerformanceLog()
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     local perfData = {
@@ -449,5 +449,37 @@ AddEventHandler("onResourceStart", function(resourceName)
         ErrorHandler.Initialize()
     end
 end)
+
+-- Save configuration to file
+local function SaveConfiguration(configName, configData)
+    if not configName or not configData then
+        Utils.HandleError('Invalid parameters for SaveConfiguration', 'ErrorHandler')
+        return false
+    end
+    
+    local configDir = GetResourcePath(GetCurrentResourceName()) .. '/config'
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
+    end
+    
+    local configFile = configDir .. '/' .. configName .. '.json'
+    local success, error = pcall(function()
+        local file = io.open(configFile, 'w')
+        if file then
+            file:write(json.encode(configData, { indent = true }))
+            file:close()
+            return true
+        end
+        return false
+    end)
+    
+    if not success then
+        Utils.HandleError('Failed to save configuration: ' .. tostring(error), 'ErrorHandler')
+        return false
+    end
+    
+    Utils.PrintDebug('Configuration saved: ' .. configName, 'ErrorHandler')
+    return true
+end
 
 return ErrorHandler 

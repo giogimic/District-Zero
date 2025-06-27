@@ -1,9 +1,14 @@
--- District Events Client Handler
-local QBX = exports['qbx_core']:GetSharedObject()
+-- Client District Events System
+-- Version: 1.0.0
+
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local activeEvents = {}
 local eventBlips = {}
 local eventNPCs = {}
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Error handling wrapper
 local function SafeCall(fn, ...)

@@ -199,14 +199,36 @@ function ConfigManager.MergeConfigurations(defaultConfig, loadedConfig)
     return merged
 end
 
--- Save configuration
-function ConfigManager.SaveConfiguration(configName, config)
-    local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not DoesDirectoryExist(configDir) then
-        CreateDirectory(configDir)
+-- Save configuration to file
+local function SaveConfiguration(configName, configData)
+    if not configName or not configData then
+        Utils.HandleError('Invalid parameters for SaveConfiguration', 'ConfigManager')
+        return false
     end
     
-    SaveResourceFile(GetCurrentResourceName(), "config/" .. configName .. ".json", json.encode(config, {indent = true}))
+    local configDir = GetResourcePath(GetCurrentResourceName()) .. '/config'
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
+    end
+    
+    local configFile = configDir .. '/' .. configName .. '.json'
+    local success, error = pcall(function()
+        local file = io.open(configFile, 'w')
+        if file then
+            file:write(json.encode(configData, { indent = true }))
+            file:close()
+            return true
+        end
+        return false
+    end)
+    
+    if not success then
+        Utils.HandleError('Failed to save configuration: ' .. tostring(error), 'ConfigManager')
+        return false
+    end
+    
+    Utils.PrintDebug('Configuration saved: ' .. configName, 'ConfigManager')
+    return true
 end
 
 -- Setup configuration watchers
@@ -338,8 +360,8 @@ function ConfigManager.ExportConfiguration(configName)
     local config = configState.configs[configName]
     if config then
         local exportDir = GetResourcePath(GetCurrentResourceName()) .. "/exports"
-        if not DoesDirectoryExist(exportDir) then
-            CreateDirectory(exportDir)
+        if not Utils.DoesDirectoryExist(exportDir) then
+            Utils.CreateDirectory(exportDir)
         end
         
         local filename = "config_" .. configName .. "_" .. os.date("%Y%m%d_%H%M%S") .. ".json"
@@ -513,6 +535,7 @@ exports("ResetConfiguration", ConfigManager.ResetConfiguration)
 exports("ExportConfiguration", ConfigManager.ExportConfiguration)
 exports("ImportConfiguration", ConfigManager.ImportConfiguration)
 exports("GetConfigurationStatistics", ConfigManager.GetConfigurationStatistics)
+exports("GetConfig", ConfigManager.GetConfiguration) -- Alias for compatibility
 
 -- Initialize on resource start
 AddEventHandler("onResourceStart", function(resourceName)

@@ -94,8 +94,8 @@ end
 -- Save release configuration
 function Release.SaveConfiguration()
     local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not DoesDirectoryExist(configDir) then
-        CreateDirectory(configDir)
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
     end
     
     SaveResourceFile(GetCurrentResourceName(), "config/release.json", json.encode(CONFIG, {indent = true}))
@@ -118,8 +118,8 @@ end
 -- Save release history
 function Release.SaveReleaseHistory()
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     local history = {
@@ -191,8 +191,8 @@ function Release.SaveChangelog()
     if not CONFIG.CHANGELOG_ENABLED then return end
     
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     SaveResourceFile(GetCurrentResourceName(), "data/changelog.json", json.encode(releaseState.changelog, {indent = true}))
@@ -253,8 +253,8 @@ function Release.SaveReleaseNotes()
     if not CONFIG.RELEASE_NOTES_ENABLED then return end
     
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     SaveResourceFile(GetCurrentResourceName(), "data/release_notes.json", json.encode(releaseState.releaseNotes, {indent = true}))

@@ -1,5 +1,5 @@
 -- Missions Client Handler
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 
@@ -66,6 +66,9 @@ local State = {
     missionTimer = 0,
     missionStartTime = 0
 }
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Event Validation
 local function ValidateEvent(eventName, data)

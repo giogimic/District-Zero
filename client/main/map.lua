@@ -1,5 +1,5 @@
 -- Map Handler for District Zero
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
 local districtBlips = {}
@@ -13,6 +13,9 @@ local activeWaypoint = nil
 local minimapEnabled = true
 local navigationEnabled = false
 local PlayerData = {}
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Essential Keybindings (only unique to our system)
 local Keys = {

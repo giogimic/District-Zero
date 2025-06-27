@@ -1,8 +1,11 @@
 -- Database Manager for District Zero
 -- Version: 1.0.0
 
-local QBX = exports['qbx_core']:GetCoreObject()
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Database Configuration
 local DatabaseConfig = {

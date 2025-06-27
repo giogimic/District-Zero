@@ -1,7 +1,12 @@
--- District Zero Menu Handler
-local QBX = exports['qbx_core']:GetCoreObject()
+-- Client Menu System
+-- Version: 1.0.0
+
+local QBoxIntegration = require 'shared/qbox_integration'
 local Utils = require 'shared/utils'
 local Events = require 'shared/events'
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject()
 
 -- Menu State
 local State = {

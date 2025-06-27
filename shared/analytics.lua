@@ -678,7 +678,7 @@ local function TrackPlayerBehavior(playerId, behaviorType, data)
     AddAnalyticsData('player_behavior', 'player_' .. behaviorType, {
         playerId = playerId,
         type = behaviorType,
-        ...data
+        data = data
     })
 end
 
@@ -686,7 +686,7 @@ local function TrackTeamPerformance(teamId, performanceType, data)
     AddAnalyticsData('team_performance', 'team_' .. performanceType, {
         teamId = teamId,
         type = performanceType,
-        ...data
+        data = data
     })
 end
 
@@ -694,7 +694,7 @@ local function TrackDistrictControl(districtId, controlType, data)
     AddAnalyticsData('district_control', 'district_' .. controlType, {
         districtId = districtId,
         type = controlType,
-        ...data
+        data = data
     })
 end
 
@@ -702,35 +702,35 @@ local function TrackMissionStatistics(missionId, statType, data)
     AddAnalyticsData('mission_statistics', 'mission_' .. statType, {
         missionId = missionId,
         type = statType,
-        ...data
+        data = data
     })
 end
 
 local function TrackSystemMetrics(metricType, data)
     AddAnalyticsData('system_metrics', 'system_' .. metricType, {
         type = metricType,
-        ...data
+        data = data
     })
 end
 
 local function TrackEconomicAnalytics(transactionType, data)
     AddAnalyticsData('economic_analytics', 'economic_' .. transactionType, {
         type = transactionType,
-        ...data
+        data = data
     })
 end
 
 local function TrackSocialAnalytics(interactionType, data)
     AddAnalyticsData('social_analytics', 'social_' .. interactionType, {
         type = interactionType,
-        ...data
+        data = data
     })
 end
 
 local function TrackPerformanceAnalytics(performanceType, data)
     AddAnalyticsData('performance_analytics', 'performance_' .. performanceType, {
         type = performanceType,
-        ...data
+        data = data
     })
 end
 

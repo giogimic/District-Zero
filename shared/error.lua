@@ -77,7 +77,6 @@ local function CheckPermission(source, permission)
     if IsDuplicityVersion() then
         -- Try to get QBX player data
         local success, result = pcall(function()
-            local QBX = exports['qbx_core']:GetCoreObject()
             local Player = QBX.Functions.GetPlayer(source)
             if Player then
                 return Player.PlayerData.permission == permission
@@ -93,7 +92,6 @@ local function CheckPermission(source, permission)
     else
         -- Client-side permission check
         local success, result = pcall(function()
-            local QBX = exports['qbx_core']:GetCoreObject()
             local PlayerData = QBX.Functions.GetPlayerData()
             return PlayerData.permission == permission
         end)
@@ -160,4 +158,13 @@ Usage:
 - ValidateInput(input, type, context)
 - CheckPermission(source, permission)
 - ValidateState(state, required)
-]] 
+]]
+
+-- Error Handling System
+-- Version: 1.0.0
+
+local QBoxIntegration = require 'shared/qbox_integration'
+local Utils = require 'shared/utils'
+
+-- Get QBX Core object
+local QBX = QBoxIntegration.GetCoreObject() 

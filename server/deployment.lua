@@ -84,8 +84,8 @@ end
 -- Save deployment configuration
 function Deployment.SaveConfiguration()
     local configDir = GetResourcePath(GetCurrentResourceName()) .. "/config"
-    if not DoesDirectoryExist(configDir) then
-        CreateDirectory(configDir)
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
     end
     
     SaveResourceFile(GetCurrentResourceName(), "config/deployment.json", json.encode(CONFIG, {indent = true}))
@@ -107,8 +107,8 @@ end
 -- Save deployment history
 function Deployment.SaveDeploymentHistory()
     local dataDir = GetResourcePath(GetCurrentResourceName()) .. "/data"
-    if not DoesDirectoryExist(dataDir) then
-        CreateDirectory(dataDir)
+    if not Utils.DoesDirectoryExist(dataDir) then
+        Utils.CreateDirectory(dataDir)
     end
     
     local history = {
@@ -654,5 +654,37 @@ AddEventHandler("onResourceStart", function(resourceName)
         Deployment.Initialize()
     end
 end)
+
+-- Save configuration to file
+local function SaveConfiguration(configName, configData)
+    if not configName or not configData then
+        Utils.HandleError('Invalid parameters for SaveConfiguration', 'Deployment')
+        return false
+    end
+    
+    local configDir = GetResourcePath(GetCurrentResourceName()) .. '/config'
+    if not Utils.DoesDirectoryExist(configDir) then
+        Utils.CreateDirectory(configDir)
+    end
+    
+    local configFile = configDir .. '/' .. configName .. '.json'
+    local success, error = pcall(function()
+        local file = io.open(configFile, 'w')
+        if file then
+            file:write(json.encode(configData, { indent = true }))
+            file:close()
+            return true
+        end
+        return false
+    end)
+    
+    if not success then
+        Utils.HandleError('Failed to save configuration: ' .. tostring(error), 'Deployment')
+        return false
+    end
+    
+    Utils.PrintDebug('Configuration saved: ' .. configName, 'Deployment')
+    return true
+end
 
 return Deployment 
